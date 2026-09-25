@@ -30,10 +30,13 @@ def dominios_permitidos() -> frozenset[str]:
     )
 
 
+def host_permitido(host: str, permitidos: frozenset[str]) -> bool:
+    return any(host == d or host.endswith(f".{d}") for d in permitidos)
+
+
 def exigir_dominio_permitido(url: str) -> str:
     host = urlparse(url).netloc.lower().split(":")[0]
-    permitidos = dominios_permitidos()
-    if host not in permitidos:
+    if not host_permitido(host, dominios_permitidos()):
         raise DominioNaoPermitido(f"{host} nao esta em config/fontes.yaml")
     return host
 
@@ -54,10 +57,17 @@ def consultar_robots(url: str, client: httpx.Client | None = None) -> DecisaoRob
         if proprio and not client.is_closed:
             client.close()
 
-    if resposta.status_code == 404:
-        return DecisaoRobots(url, True, False, None, "sem robots.txt, coleta liberada")
-    if resposta.status_code >= 400:
-        return DecisaoRobots(url, False, False, None, f"robots status {resposta.status_code}")
+    codigo = resposta.status_code
+    if codigo == 429 or codigo >= 500:
+        return DecisaoRobots(
+            url, False, False, None, f"robots inacessivel (status {codigo}), RFC 9309 manda recusar"
+        )
+    if 400 <= codigo < 500:
+        return DecisaoRobots(
+            url, True, False, None, f"robots indisponivel (status {codigo}), RFC 9309 libera"
+        )
+    if codigo != 200:
+        return DecisaoRobots(url, False, False, None, f"robots status inesperado {codigo}")
 
     parser = RobotFileParser()
     parser.parse(resposta.text.splitlines())

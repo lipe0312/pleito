@@ -1,22 +1,50 @@
 fontes:
   greenhouse:
-    tipo: api_publica
-    dominios: [boards-api.greenhouse.io, boards.greenhouse.io]
+    tipo: api_publica_por_empresa
+    dominios: [boards-api.greenhouse.io, boards.greenhouse.io, job-boards.greenhouse.io]
     verificar_robots: true
-    boards: [nubank, loft, wellhub, remote, doist]
+    boards: [stone, xpinc, c6bank, quintoandar, gympass, ebanx, vtex, stripe, datadog,
+             elastic, canonical, gitlab, airbnb, dropbox]
   lever:
-    tipo: api_publica
+    tipo: api_publica_por_empresa
     dominios: [api.lever.co, jobs.lever.co]
     verificar_robots: true
-    empresas: [mercadolibre, swile, hotmart, voltron-data]
+    empresas: [swile, zippi]
   ashby:
-    tipo: api_publica
+    tipo: api_publica_por_empresa
     dominios: [api.ashbyhq.com, jobs.ashbyhq.com]
     verificar_robots: true
-    boards: [ramp, deel, openai]
+    boards: [openai, ramp, notion, cursor, perplexity, vanta, replit, supabase, render,
+             linear, posthog]
+  remotive:
+    tipo: agregador_api_publica
+    dominios: [remotive.com]
+    verificar_robots: true
+  arbeitnow:
+    tipo: agregador_api_publica
+    dominios: [www.arbeitnow.com, arbeitnow.com]
+    verificar_robots: true
+  himalayas:
+    tipo: agregador_api_publica
+    dominios: [himalayas.app]
+    verificar_robots: true
+  remoteok:
+    tipo: agregador_api_publica
+    dominios: [remoteok.com, remoteok.io]
+    verificar_robots: true
+    atribuicao_exigida: true
+  jobicy:
+    tipo: agregador_api_publica
+    dominios: [jobicy.com]
+    verificar_robots: true
+  hackernews:
+    tipo: texto_livre
+    dominios: [hn.algolia.com]
+    verificar_robots: true
+    observacao: thread mensal Who is hiring, comentario sem campo estruturado
   gupy:
     tipo: portal_investigacao
-    dominios: [portal.api.gupy.io, www.gupy.io, gupy.io]
+    dominios: [employability-portal.gupy.io, portal.api.gupy.io, portal.gupy.io, www.gupy.io, gupy.io]
     verificar_robots: true
     tos: https://www.gupy.io/termos-de-uso
   solides:
@@ -28,6 +56,20 @@ fontes:
     tipo: email_alerta
     dominios: []
     verificar_robots: false
-    observacao: site nunca automatizado, entrada apenas por email de alerta
+    observacao: site nunca automatizado, entrada apenas por email de alerta no Gmail
+
+descobertas_pendentes:
+  workable:
+    endpoint: https://apply.workable.com/api/v1/widget/accounts/{conta}?details=true
+    estado: endpoint valido, nenhuma conta brasileira conhecida ainda
+  smartrecruiters:
+    endpoint: https://api.smartrecruiters.com/v1/companies/{empresa}/postings
+    estado: endpoint valido, identificador exato das empresas a descobrir
+  personio:
+    endpoint: https://{empresa}.jobs.personio.de/xml
+    estado: respondeu 429 na sondagem, precisa de backoff
+  comeet:
+    endpoint: https://www.comeet.co/careers-api/2.0/company/{id}/positions
+    estado: exige token por empresa
 
 empresas_alvo: []

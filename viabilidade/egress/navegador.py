@@ -5,9 +5,14 @@ from contextlib import contextmanager
 from urllib.parse import urlparse
 
 from viabilidade.config import ambiente
-from viabilidade.conformidade import dominios_permitidos
+from viabilidade.conformidade import dominios_permitidos, host_permitido
 
 CAMPOS_PROIBIDOS = ("password", "senha", "cpf", "credit", "cartao")
+
+TIPOS_ESTATICOS = frozenset(
+    {"script", "stylesheet", "font", "image", "media", "manifest", "texttrack", "other"}
+)
+TIPOS_NAVEGACAO = frozenset({"document", "xhr", "fetch", "websocket"})
 
 
 class SubmitBloqueado(Exception):
@@ -49,15 +54,22 @@ def navegador_persistente(rota_bloqueada: bool = True) -> Iterator:
             user_agent=env.user_agent,
         )
         if rota_bloqueada:
+            bloqueados: list[str] = []
 
             def filtrar(rota):
-                host = urlparse(rota.request.url).netloc.lower().split(":")[0]
-                if host and not any(host.endswith(d) for d in permitidos):
-                    rota.abort()
-                else:
+                pedido = rota.request
+                host = urlparse(pedido.url).netloc.lower().split(":")[0]
+                if not host or host_permitido(host, permitidos):
                     rota.continue_()
+                    return
+                if pedido.resource_type in TIPOS_ESTATICOS:
+                    rota.continue_()
+                    return
+                bloqueados.append(f"{pedido.resource_type} {host}")
+                rota.abort()
 
             contexto.route("**/*", filtrar)
+            contexto.pleito_bloqueados = bloqueados
         try:
             yield contexto
         finally:

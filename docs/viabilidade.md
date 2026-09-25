@@ -1,40 +1,36 @@
 # Veredito de viabilidade
 
-Gerado por `python -m viabilidade.cli veredito`. Este arquivo e sobrescrito pelo comando.
+Gerado em 2026-09-25 02:46 UTC.
 
-**Veredito global: nao testado**
+**Veredito global: GO com ressalva**
 
 ## Ingest por fonte
 
-| fonte | veredito | como testar |
-| --- | --- | --- |
-| greenhouse | nao testado | `cli ingest greenhouse`, API publica de job board por empresa |
-| lever | nao testado | `cli ingest lever`, API publica de postings por empresa |
-| ashby | nao testado | `cli ingest ashby`, API publica de job board |
-| gupy | nao testado | `cli ingest gupy`, Q14 do plano, depende de robots e leitura dos termos |
-| solides | nao testado | `cli ingest solides`, sem API publica conhecida |
-| linkedin_alertas | nao testado | depende da fase 1, entrada por email, site nunca automatizado |
+| fonte | veredito | vagas | completude | robots | motivos |
+| --- | --- | --- | --- | --- | --- |
+| arbeitnow | GO | 250 | 76% | True | - |
+| ashby | GO | 600 | 81% | True | - |
+| greenhouse | GO | 600 | 74% | True | - |
+| gupy | GO com ressalva | 600 | 95% | True | - |
+| hackernews | GO | 211 | 91% | True | - |
+| himalayas | GO | 20 | 94% | True | - |
+| jobicy | GO | 50 | 90% | True | - |
+| lever | GO | 35 | 84% | True | - |
+| remoteok | GO | 99 | 90% | True | - |
+| remotive | GO | 19 | 96% | True | - |
+| solides | NO-GO | 0 | 0% | True | sem_dados |
 
 ## Egress por plataforma
 
-| plataforma | veredito | como testar |
-| --- | --- | --- |
-| gupy | nao testado | `cli egress <url> --pdf <pdf>` em dry_run, depois uma execucao real autorizada |
+| plataforma | veredito |
+| --- | --- |
+| ashby | GO com ressalva |
+| greenhouse | GO com ressalva |
+| gupy | NO-GO |
 
 ## Baseline do curriculo
 
-| idioma | veredito | observacao |
-| --- | --- | --- |
-| pt | go | compila limpo, 1 pagina, sem overfull |
-| en | go | 1 pagina apos as duas correcoes previstas no plano 15.1 |
-
-## Criterio de GO
-
-Ingest por fonte: GO exige robots permitindo, ao menos 5 vagas e 70% de completude media nos
-campos que a triagem usa. Termos de uso nao lidos limitam a fonte a GO com ressalva.
-
-Egress: dry-run bem sucedido vale no maximo GO com ressalva. GO pleno exige uma execucao real
-autorizada com prova de confirmacao detectada.
-
-Global: o pior veredito entre as tres fronteiras. Sem egress testado, o global fica em
-nao testado, e a flag `sistema_ativo` permanece desligada.
+| idioma | veredito |
+| --- | --- |
+| en | GO |
+| pt | GO |

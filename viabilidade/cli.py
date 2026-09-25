@@ -7,8 +7,14 @@ from pathlib import Path
 
 from viabilidade.baseline import extrair_bases, validar_tex
 from viabilidade.config import RAIZ, ambiente
-from viabilidade.contratos import VagaBruta
-from viabilidade.eda import perfilar, renderizar_markdown
+from viabilidade.contratos import Funcao, VagaBruta
+from viabilidade.eda import (
+    avaliar_cenarios,
+    cruzar,
+    perfilar,
+    renderizar_cenarios,
+    renderizar_markdown,
+)
 from viabilidade.ingest import registro
 from viabilidade.veredito import Consolidado
 
@@ -26,6 +32,8 @@ def _serializar(vaga: VagaBruta) -> dict:
         "pais": vaga.pais,
         "senioridade": vaga.senioridade.value,
         "modelo": vaga.modelo.value,
+        "funcao": vaga.funcao.value,
+        "anos_experiencia": vaga.anos_experiencia,
         "publicada_em": vaga.publicada_em.isoformat() if vaga.publicada_em else None,
         "coletada_em": vaga.coletada_em.isoformat(),
         "hash_conteudo": vaga.hash_conteudo,
@@ -99,21 +107,44 @@ def cmd_egress(args: argparse.Namespace) -> int:
         return 3
     resultado = executar_fluxo(args.url, Path(args.pdf), respostas={})
     destino = resultado.salvar(SAIDA / "egress" / f"{args.plataforma}.json")
+    consolidado = SAIDA / "egress.json"
+    acumulado = json.loads(consolidado.read_text(encoding="utf-8")) if consolidado.exists() else {}
+    acumulado.setdefault("egress", {})[args.plataforma] = resultado.veredito().value
+    acumulado.setdefault("detalhes", {})[f"egress.{args.plataforma}"] = {
+        "url": resultado.url,
+        "modo": resultado.modo,
+        "etapas": resultado.etapas,
+        "campos": len(resultado.campos_detectados),
+        "obrigatorios": len([c for c in resultado.campos_detectados if c["obrigatorio"]]),
+        "motivos": [m.value for m in resultado.motivos],
+        "evidencia": resultado.evidencia,
+    }
+    consolidado.write_text(json.dumps(acumulado, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"modo={resultado.modo} veredito={resultado.veredito().value}")
     for etapa, ok in resultado.etapas.items():
-        print(f"  {etapa:24s} {'ok' if ok else 'nao'}")
-    print(f"campos detectados: {len(resultado.campos_detectados)}")
+        print(f"  {etapa:24s} {'sim' if ok else 'nao'}")
+    obrigatorios = [c for c in resultado.campos_detectados if c["obrigatorio"]]
+    print(
+        f"campos detectados: {len(resultado.campos_detectados)}, "
+        f"obrigatorios: {len(obrigatorios)}"
+    )
+    if resultado.evidencia:
+        print(f"evidencia captcha: {resultado.evidencia}")
+    for campo in obrigatorios[:12]:
+        etiqueta = campo["rotulo"] or campo["nome"] or campo["id"]
+        print(f"  obrigatorio: {etiqueta[:60]:60s} tipo={campo['tipo']}")
+    if resultado.motivos:
+        print(f"motivos: {', '.join(m.value for m in resultado.motivos)}")
     print(f"evidencia em {destino}")
     return 0
 
 
-def cmd_eda(args: argparse.Namespace) -> int:
+def carregar_vagas() -> list[VagaBruta]:
     from viabilidade.contratos import ModeloTrabalho, Senioridade
 
     bruto = SAIDA / "vagas.jsonl"
     if not bruto.exists():
-        print(f"rode 'viabilidade ingest' primeiro, {bruto} nao existe", file=sys.stderr)
-        return 2
+        return []
     vagas = []
     with bruto.open(encoding="utf-8") as fh:
         for linha in fh:
@@ -130,8 +161,49 @@ def cmd_eda(args: argparse.Namespace) -> int:
                     pais=d.get("pais", ""),
                     senioridade=Senioridade(d["senioridade"]),
                     modelo=ModeloTrabalho(d["modelo"]),
+                    funcao=Funcao(d.get("funcao", "indefinida")),
+                    anos_experiencia=d.get("anos_experiencia"),
                 )
             )
+    return vagas
+
+
+def cmd_cenarios(args: argparse.Namespace) -> int:
+    from viabilidade.config import carregar
+
+    vagas = carregar_vagas()
+    if not vagas:
+        print("rode 'viabilidade ingest' primeiro", file=sys.stderr)
+        return 2
+    linhas = avaliar_cenarios(vagas, carregar("filtros")["cenarios"])
+    markdown = renderizar_cenarios(linhas, len(vagas))
+
+    cruz = cruzar(vagas)
+    senioridades = sorted({s for s, _ in cruz})
+    modelos = sorted({m for _, m in cruz})
+    tabela = [
+        "## Senioridade por modelo de trabalho",
+        "",
+        "| senioridade | " + " | ".join(modelos) + " | total |",
+        "| --- " * (len(modelos) + 2) + "|",
+    ]
+    for s in senioridades:
+        celulas = [str(cruz.get((s, m), 0)) for m in modelos]
+        tabela.append(f"| {s} | " + " | ".join(celulas) + f" | {sum(int(c) for c in celulas)} |")
+    markdown = markdown + "\n" + "\n".join(tabela) + "\n"
+
+    destino = RAIZ / "docs" / "cenarios.md"
+    destino.write_text(markdown, encoding="utf-8")
+    print(markdown)
+    print(f"gravado em {destino}")
+    return 0
+
+
+def cmd_eda(args: argparse.Namespace) -> int:
+    vagas = carregar_vagas()
+    if not vagas:
+        print("rode 'viabilidade ingest' primeiro", file=sys.stderr)
+        return 2
     perfil = perfilar(vagas)
     markdown = renderizar_markdown(perfil)
     destino = RAIZ / "docs" / "eda.md"
@@ -183,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("eda")
     p.set_defaults(func=cmd_eda)
+
+    p = sub.add_parser("cenarios")
+    p.set_defaults(func=cmd_cenarios)
 
     p = sub.add_parser("veredito")
     p.set_defaults(func=cmd_veredito)

@@ -5,6 +5,8 @@ paises_aceitos: [BR, US, PT, ES, MX, AR, CL, CO, remoto_global]
 
 termos_busca:
   pt: [estagio desenvolvimento, estagio backend, estagio dados, desenvolvedor junior, analista de dados junior]
+  gupy: [estagio, estagiario, junior, desenvolvedor, desenvolvimento, dados, programador,
+         software, analista de dados, backend, fullstack, java, qa, devops]
   en: [software engineer intern, backend intern, data intern, junior software engineer, junior data analyst]
 
 eliminatorios:
@@ -24,3 +26,64 @@ pontuacao:
 limites_eda:
   minimo_vagas_por_fonte: 5
   minimo_completude: 0.7
+
+cenarios:
+  - nome: escopo do plano
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+  - nome: estagio qualquer modelo
+    senioridades: [estagio]
+    modelos: [remoto, hibrido, presencial, indefinido]
+  - nome: estagio remoto ou hibrido
+    senioridades: [estagio]
+    modelos: [remoto, hibrido]
+  - nome: junior qualquer modelo
+    senioridades: [junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+  - nome: junior remoto ou hibrido
+    senioridades: [junior]
+    modelos: [remoto, hibrido]
+  - nome: estagio ou junior remoto
+    senioridades: [estagio, junior]
+    modelos: [remoto]
+  - nome: estagio ou junior no Brasil
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+    paises: [BR]
+  - nome: estagio ou junior remoto global
+    senioridades: [estagio, junior]
+    modelos: [remoto]
+    paises: [remoto_global]
+  - nome: escopo ampliado com pleno
+    senioridades: [estagio, junior, pleno]
+    modelos: [remoto, hibrido, presencial, indefinido]
+  - nome: pleno remoto ou hibrido
+    senioridades: [pleno]
+    modelos: [remoto, hibrido]
+  - nome: LATAM estagio ou junior
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+    paises: [BR, AR, CL, CO, MX, UY, PE]
+  - nome: presencial fora do escopo
+    senioridades: [estagio, junior]
+    modelos: [presencial]
+  - nome: FUNIL FINAL estagio ou junior tech
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+    funcoes: [engenharia, dados, infra, qa]
+    anos_experiencia_max: 2
+  - nome: funil final no Brasil
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+    funcoes: [engenharia, dados, infra, qa]
+    paises: [BR]
+    anos_experiencia_max: 2
+  - nome: funil final remoto
+    senioridades: [estagio, junior]
+    modelos: [remoto]
+    funcoes: [engenharia, dados, infra, qa]
+    anos_experiencia_max: 2
+  - nome: tech qualquer senioridade
+    senioridades: [estagio, junior, pleno, senior, indefinida]
+    modelos: [remoto, hibrido, presencial, indefinido]
+    funcoes: [engenharia, dados, infra, qa]

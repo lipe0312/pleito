@@ -31,6 +31,20 @@ def test_dominio_do_yaml_passa():
     assert exigir_dominio_permitido("https://boards-api.greenhouse.io/v1/boards/x/jobs")
 
 
+def test_subdominio_de_dominio_permitido_passa():
+    assert exigir_dominio_permitido("https://visagio.gupy.io/job/abc") == "visagio.gupy.io"
+
+
+def test_dominio_que_apenas_termina_igual_e_bloqueado():
+    with pytest.raises(DominioNaoPermitido):
+        exigir_dominio_permitido("https://malicioso-gupy.io/job/abc")
+
+
+def test_sufixo_nao_vale_sem_ponto():
+    with pytest.raises(DominioNaoPermitido):
+        exigir_dominio_permitido("https://fakegupy.io/job/abc")
+
+
 def test_linkedin_nunca_entra_nos_dominios_permitidos():
     assert not any("linkedin" in d for d in dominios_permitidos())
 
@@ -49,15 +63,17 @@ def test_robots_allow_permite_e_le_crawl_delay():
     assert d.crawl_delay == 3.0
 
 
-def test_robots_ausente_libera():
-    with _client("", status=404) as c:
+@pytest.mark.parametrize("status", [401, 403, 404, 410, 451])
+def test_robots_indisponivel_4xx_libera_conforme_rfc9309(status):
+    with _client("", status=status) as c:
         d = consultar_robots("https://boards-api.greenhouse.io/v1/boards/x/jobs", c)
     assert d.permitido is True
     assert d.robots_encontrado is False
 
 
-def test_robots_com_erro_de_servidor_nao_libera():
-    with _client("", status=500) as c:
+@pytest.mark.parametrize("status", [429, 500, 502, 503])
+def test_robots_inacessivel_exige_recusa(status):
+    with _client("", status=status) as c:
         d = consultar_robots("https://portal.api.gupy.io/api/v1/jobs", c)
     assert d.permitido is False
 

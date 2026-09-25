@@ -5,7 +5,16 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from enum import Enum, StrEnum
 
-CAMPOS_TRIAGEM = ("titulo", "empresa", "url", "descricao", "local", "senioridade", "modelo")
+CAMPOS_TRIAGEM = (
+    "titulo",
+    "empresa",
+    "url",
+    "descricao",
+    "local",
+    "senioridade",
+    "modelo",
+    "funcao",
+)
 
 LIMITE_DESCRICAO_UTIL = 200
 
@@ -23,6 +32,15 @@ class ModeloTrabalho(StrEnum):
     HIBRIDO = "hibrido"
     PRESENCIAL = "presencial"
     INDEFINIDO = "indefinido"
+
+
+class Funcao(StrEnum):
+    ENGENHARIA = "engenharia"
+    DADOS = "dados"
+    INFRA = "infra"
+    QA = "qa"
+    OUTRA = "outra"
+    INDEFINIDA = "indefinida"
 
 
 class Veredito(StrEnum):
@@ -55,6 +73,8 @@ class VagaBruta:
     pais: str = ""
     senioridade: Senioridade = Senioridade.INDEFINIDA
     modelo: ModeloTrabalho = ModeloTrabalho.INDEFINIDO
+    funcao: Funcao = Funcao.INDEFINIDA
+    anos_experiencia: int | None = None
     publicada_em: date | None = None
     coletada_em: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -79,6 +99,8 @@ class VagaBruta:
             if isinstance(valor, Enum):
                 if valor.value.startswith("indefinid"):
                     ausentes.append(campo)
+            elif isinstance(valor, int):
+                pass
             elif not str(valor).strip():
                 ausentes.append(campo)
             elif campo == "descricao" and len(str(valor).strip()) < LIMITE_DESCRICAO_UTIL:
