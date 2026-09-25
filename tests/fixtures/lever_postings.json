@@ -1,0 +1,10 @@
+[
+  {
+    "id": "abc-123",
+    "text": "Junior Data Analyst",
+    "hostedUrl": "https://jobs.lever.co/hotmart/abc-123",
+    "createdAt": 1757500000000,
+    "categories": {"location": "Remote - Brazil", "commitment": "Full-time"},
+    "descriptionPlain": "Join our data team as a junior analyst. You will write SQL, build dashboards with Python and support business questions. We look for someone studying or recently graduated, comfortable with statistics and data modeling. Remote friendly across Brazil with quarterly meetups."
+  }
+]

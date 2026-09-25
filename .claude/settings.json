@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk *)",
+      "Bash(make testes)",
+      "Bash(make lint)",
+      "Bash(.venv/bin/python -m pytest*)",
+      "Bash(.venv/bin/ruff check*)",
+      "Bash(.venv/bin/python -m viabilidade.cli baseline*)",
+      "Bash(.venv/bin/python -m viabilidade.cli eda*)",
+      "Bash(.venv/bin/python -m viabilidade.cli veredito*)",
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs*)"
+    ],
+    "ask": [
+      "Bash(.venv/bin/python -m viabilidade.cli ingest*)",
+      "Bash(.venv/bin/python -m viabilidade.cli egress*)",
+      "Bash(docker compose up*)",
+      "Bash(docker compose down*)",
+      "Bash(make migrar)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./segredos/**)",
+      "Read(./dados/**)",
+      "Bash(git add -f*)"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+horarios:
+  descoberta: "06:30"
+  resumo_diario: "07:45"
+  email_intervalo_min: 30
+  retry_ao_acordar: true
+
+diarios:
+  vagas_avaliadas_max: 40
+  variantes_geradas_max: 8
+  aplicacoes_max: 10
+  fila_aprovacao_max: 25
+
+llm:
+  orcamento_usd_dia: 1.50
+  rodadas_chat_por_vaga: 3
+  tamanho_pedido_chat_max_chars: 600
+
+retencao_dias:
+  variante_rejeitada: 14
+  vaga_encerrada: 90
+  campeao: -1
+  captura_egress: 30
+
+rede:
+  rps_por_dominio: 0.5
+  timeout_s: 20
+  tentativas: 3

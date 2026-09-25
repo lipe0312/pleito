@@ -1,0 +1,20 @@
+provedor_padrao: claude
+
+tiers:
+  rapido:
+    uso: [extracao, classificacao_email, pre_pontuacao, mapeamento_campos]
+    claude: claude-haiku-4-5-20251001
+    openai: gpt-4.1-mini
+  forte:
+    uso: [pontuacao_final, escrita_slots, chat_edicao, revisao_cruzada]
+    claude: claude-opus-5-5
+    openai: gpt-4.1
+
+revisao_cruzada:
+  ativa_quando: [nota_quase_maxima, chat_usado]
+  nota_minima: 85
+
+conjunto_avaliacao:
+  vagas_reais: 20
+  armadilhas: [prompt_injection, tech_fora_do_inventario, senior_disfarcado, email_nao_autenticado]
+  obrigatorio_antes_de_trocar: [modelo, prompt, regra_de_validacao]

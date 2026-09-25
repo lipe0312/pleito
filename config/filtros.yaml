@@ -1,0 +1,26 @@
+senioridades_aceitas: [estagio, junior]
+senioridades_recusadas: [pleno, senior]
+modelos_aceitos: [remoto, hibrido, presencial, indefinido]
+paises_aceitos: [BR, US, PT, ES, MX, AR, CL, CO, remoto_global]
+
+termos_busca:
+  pt: [estagio desenvolvimento, estagio backend, estagio dados, desenvolvedor junior, analista de dados junior]
+  en: [software engineer intern, backend intern, data intern, junior software engineer, junior data analyst]
+
+eliminatorios:
+  exige_anos_experiencia_max: 2
+  recusa_titulos_com: [senior, sr., staff, principal, lead, especialista, gerente, coordenador, head]
+  recusa_se_exige_presencial_fora_de: [Salvador, Bahia, remoto]
+  idade_maxima_dias: 30
+
+pontuacao:
+  peso_stack: 35
+  peso_senioridade: 25
+  peso_modelo: 15
+  peso_pais: 10
+  peso_empresa_alvo: 10
+  peso_recencia: 5
+
+limites_eda:
+  minimo_vagas_por_fonte: 5
+  minimo_completude: 0.7

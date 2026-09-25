@@ -1,0 +1,33 @@
+fontes:
+  greenhouse:
+    tipo: api_publica
+    dominios: [boards-api.greenhouse.io, boards.greenhouse.io]
+    verificar_robots: true
+    boards: [nubank, loft, wellhub, remote, doist]
+  lever:
+    tipo: api_publica
+    dominios: [api.lever.co, jobs.lever.co]
+    verificar_robots: true
+    empresas: [mercadolibre, swile, hotmart, voltron-data]
+  ashby:
+    tipo: api_publica
+    dominios: [api.ashbyhq.com, jobs.ashbyhq.com]
+    verificar_robots: true
+    boards: [ramp, deel, openai]
+  gupy:
+    tipo: portal_investigacao
+    dominios: [portal.api.gupy.io, www.gupy.io, gupy.io]
+    verificar_robots: true
+    tos: https://www.gupy.io/termos-de-uso
+  solides:
+    tipo: portal_investigacao
+    dominios: [vagas.solides.com.br, solides.com.br]
+    verificar_robots: true
+    tos: https://solides.com.br/termos-de-uso/
+  linkedin_alertas:
+    tipo: email_alerta
+    dominios: []
+    verificar_robots: false
+    observacao: site nunca automatizado, entrada apenas por email de alerta
+
+empresas_alvo: []

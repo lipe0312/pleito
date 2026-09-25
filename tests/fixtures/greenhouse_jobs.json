@@ -1,0 +1,26 @@
+{
+  "jobs": [
+    {
+      "id": 4567,
+      "title": "Software Engineer Intern, Backend",
+      "absolute_url": "https://boards.greenhouse.io/nubank/jobs/4567",
+      "location": {"name": "Sao Paulo, Brazil - Remote"},
+      "first_published": "2026-09-10T12:00:00.000Z",
+      "content": "<p>We are looking for an <b>intern</b> to work with Python and PostgreSQL.</p><p>Requirements: studying Computer Science, SQL, Git. This is a remote position open to candidates in Brazil. You will build APIs, write tests and review code with the team. Benefits include stipend and mentoring.</p>"
+    },
+    {
+      "id": 4568,
+      "title": "Senior Staff Engineer",
+      "absolute_url": "https://boards.greenhouse.io/nubank/jobs/4568",
+      "location": {"name": "Berlin, Germany"},
+      "content": "<p>Lead architecture for the platform team. 10+ years required. On-site role in Berlin with occasional travel. You will mentor engineers and own technical direction across multiple squads.</p>"
+    },
+    {
+      "id": 4569,
+      "title": "Broken Job",
+      "absolute_url": "http://insecure.example.com/jobs/4569",
+      "location": {"name": "Remote"},
+      "content": "short"
+    }
+  ]
+}
