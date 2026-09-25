@@ -69,11 +69,24 @@ class FonteGupy(ColetorHttp):
 
         filtros = carregar("filtros")
         termos = filtros["termos_busca"].get("gupy") or filtros["termos_busca"]["pt"]
+        recortes = filtros.get("recortes_gupy") or [{}]
         vistos: set[str] = set()
 
-        for termo in termos:
+        alvos = [
+            (termo, recorte)
+            for recorte in recortes
+            for termo in (recorte.get("termos") or termos)
+        ]
+
+        for termo, recorte in alvos:
             if len(resultado.vagas) >= limite:
                 break
+            extra = "".join(
+                f"&{chave}={valor}"
+                for chave, valor in recorte.items()
+                if chave in ("workplaceType", "type")
+            )
+            rotulo = f"{termo}{extra}"
             novas = 0
             total = 0
             for pagina in range(PAGINAS_POR_TERMO_MAX):
@@ -81,7 +94,7 @@ class FonteGupy(ColetorHttp):
                     break
                 offset = pagina * PAGINA_POR_TERMO
                 resposta = self._buscar(
-                    f"{API}?jobName={termo}&offset={offset}&limit={PAGINA_POR_TERMO}"
+                    f"{API}?jobName={termo}&offset={offset}&limit={PAGINA_POR_TERMO}{extra}"
                 )
                 resultado.http_status = resposta.status_code
                 if resposta.status_code in (401, 403):
@@ -91,7 +104,7 @@ class FonteGupy(ColetorHttp):
                     resultado.motivos.append(MotivoNoGo.BLOQUEIO_HTTP)
                     return
                 if resposta.status_code != 200:
-                    resultado.evidencia[termo] = f"status {resposta.status_code}"
+                    resultado.evidencia[rotulo] = f"status {resposta.status_code}"
                     break
 
                 corpo = resposta.json()
@@ -110,7 +123,7 @@ class FonteGupy(ColetorHttp):
                     if vaga:
                         resultado.vagas.append(vaga)
                         novas += 1
-            resultado.evidencia[termo] = f"{novas} novas de {total} disponiveis"
+            resultado.evidencia[rotulo] = f"{novas} novas de {total} disponiveis"
 
         if not resultado.vagas and not resultado.motivos:
             resultado.motivos.append(MotivoNoGo.SEM_DADOS)

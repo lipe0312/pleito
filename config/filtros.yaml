@@ -7,6 +7,9 @@ termos_busca:
   pt: [estagio desenvolvimento, estagio backend, estagio dados, desenvolvedor junior, analista de dados junior]
   gupy: [estagio, estagiario, junior, desenvolvedor, desenvolvimento, dados, programador,
          software, analista de dados, backend, fullstack, java, qa, devops]
+  gupy_dados: [dados, analista de dados, engenheiro de dados, cientista de dados, bi,
+               business intelligence, power bi, sql, analytics, python, data analyst,
+               data engineer]
   en: [software engineer intern, backend intern, data intern, junior software engineer, junior data analyst]
 
 eliminatorios:
@@ -26,6 +29,17 @@ pontuacao:
 limites_eda:
   minimo_vagas_por_fonte: 5
   minimo_completude: 0.7
+
+recortes_gupy:
+  - {}
+  - workplaceType: remote
+  - workplaceType: remote
+    termos: [dados, analista de dados, engenheiro de dados, cientista de dados, bi,
+             business intelligence, power bi, sql, analytics, python, data analyst,
+             data engineer]
+  - type: vacancy_type_internship
+    workplaceType: remote
+  - type: vacancy_type_internship
 
 cenarios:
   - nome: escopo do plano
@@ -87,3 +101,27 @@ cenarios:
     senioridades: [estagio, junior, pleno, senior, indefinida]
     modelos: [remoto, hibrido, presencial, indefinido]
     funcoes: [engenharia, dados, infra, qa]
+  - nome: FOCO remoto dados estagio ou junior
+    senioridades: [estagio, junior]
+    modelos: [remoto]
+    funcoes: [dados]
+    anos_experiencia_max: 2
+  - nome: FOCO remoto ou hibrido dados estagio ou junior
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido]
+    funcoes: [dados]
+    anos_experiencia_max: 2
+  - nome: FOCO dados estagio ou junior qualquer modelo
+    senioridades: [estagio, junior]
+    modelos: [remoto, hibrido, presencial, indefinido]
+    funcoes: [dados]
+    anos_experiencia_max: 2
+  - nome: FOCO remoto dados qualquer senioridade
+    senioridades: [estagio, junior, pleno, senior, indefinida]
+    modelos: [remoto]
+    funcoes: [dados]
+  - nome: FOCO remoto tech estagio ou junior
+    senioridades: [estagio, junior]
+    modelos: [remoto]
+    funcoes: [engenharia, dados, infra, qa]
+    anos_experiencia_max: 2

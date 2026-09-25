@@ -4,18 +4,23 @@ fontes:
     dominios: [boards-api.greenhouse.io, boards.greenhouse.io, job-boards.greenhouse.io]
     verificar_robots: true
     boards: [stone, xpinc, c6bank, quintoandar, gympass, ebanx, vtex, stripe, datadog,
-             elastic, canonical, gitlab, airbnb, dropbox]
+             elastic, canonical, gitlab, airbnb, dropbox,
+             databricks, mongodb, cloudflare, fivetran, remotecom, grafanalabs, vercel,
+             hightouch, sigmacomputing, neo4j, singlestore, starburst, cockroachlabs,
+             yugabyte, imply]
   lever:
     tipo: api_publica_por_empresa
     dominios: [api.lever.co, jobs.lever.co]
     verificar_robots: true
-    empresas: [swile, zippi]
+    empresas: [swile, zippi, metabase]
   ashby:
     tipo: api_publica_por_empresa
     dominios: [api.ashbyhq.com, jobs.ashbyhq.com]
     verificar_robots: true
     boards: [openai, ramp, notion, cursor, perplexity, vanta, replit, supabase, render,
-             linear, posthog]
+             linear, posthog,
+             snowflake, clickhouse, sentry, astronomer, confluent, percona, airbyte, zapier,
+             atlan, prefect, montecarlodata, hex, materialize, buffer]
   remotive:
     tipo: agregador_api_publica
     dominios: [remotive.com]
@@ -36,6 +41,18 @@ fontes:
   jobicy:
     tipo: agregador_api_publica
     dominios: [jobicy.com]
+    verificar_robots: true
+  weworkremotely:
+    tipo: rss_remoto
+    dominios: [weworkremotely.com, www.weworkremotely.com]
+    verificar_robots: true
+  jobspresso:
+    tipo: rss_remoto
+    dominios: [jobspresso.co, www.jobspresso.co]
+    verificar_robots: true
+  workingnomads:
+    tipo: agregador_api_publica
+    dominios: [www.workingnomads.com, workingnomads.com]
     verificar_robots: true
   hackernews:
     tipo: texto_livre

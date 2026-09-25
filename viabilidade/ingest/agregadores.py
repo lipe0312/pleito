@@ -234,3 +234,33 @@ class FonteJobicy(ColetorAgregador):
             "modelo": ModeloTrabalho.REMOTO,
             "publicada_em": data.date() if data else None,
         }
+
+
+@registrar
+class FonteWorkingNomads(ColetorAgregador):
+    slug = "workingnomads"
+    url = "https://www.workingnomads.com/api/exposed_jobs/"
+    chave_lista = None
+
+    def _tem_vaga(self, item: dict) -> bool:
+        return bool(item.get("url") and item.get("title"))
+
+    def _traduzir(self, item: dict) -> dict | None:
+        titulo = item.get("title", "")
+        local = item.get("location", "") or ""
+        descricao = limpar_html(item.get("description", ""))
+        categorias = item.get("category_name", "") or ""
+        data = _data_iso(item.get("pub_date"))
+        link = item.get("url", "")
+        return {
+            "id_externo": str(item.get("id") or link.rstrip("/").split("/")[-1]),
+            "url": link,
+            "titulo": titulo,
+            "empresa": item.get("company_name", "") or "desconhecida",
+            "descricao": descricao,
+            "local": local or "remoto",
+            "pais": inferir_pais(local) or "remoto_global",
+            "senioridade": inferir_senioridade(f"{titulo} {descricao[:400]} {categorias}"),
+            "modelo": ModeloTrabalho.REMOTO,
+            "publicada_em": data.date() if data else None,
+        }

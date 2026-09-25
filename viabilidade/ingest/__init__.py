@@ -4,6 +4,7 @@ from viabilidade.ingest.agregadores import (
     FonteJobicy,
     FonteRemoteok,
     FonteRemotive,
+    FonteWorkingNomads,
 )
 from viabilidade.ingest.ashby import FonteAshby
 from viabilidade.ingest.base import Fonte, registrar, registro
@@ -12,6 +13,7 @@ from viabilidade.ingest.greenhouse import FonteGreenhouse
 from viabilidade.ingest.gupy import FonteGupy
 from viabilidade.ingest.hackernews import FonteHackerNews
 from viabilidade.ingest.lever import FonteLever
+from viabilidade.ingest.rss import FonteJobspresso, FonteWeWorkRemotely
 from viabilidade.ingest.solides import FonteSolides
 
 __all__ = [
@@ -26,7 +28,10 @@ __all__ = [
     "FonteLever",
     "FonteRemoteok",
     "FonteRemotive",
+    "FonteJobspresso",
     "FonteSolides",
+    "FonteWeWorkRemotely",
+    "FonteWorkingNomads",
     "coletar_de_emails",
     "extrair_alerta_linkedin",
     "registrar",

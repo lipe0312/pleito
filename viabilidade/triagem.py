@@ -33,9 +33,21 @@ TERMOS_FORA = (
     "recrut", "recursos humanos", "people", "financeiro", "contabil", "juridico", "legal",
     "marketing", "brand", "social media", "logistica", "estoque", "motorista", "auxiliar",
     "atendimento", "customer success", "customer support", "suporte ao cliente", "enfermeir",
+    "administrativ", "assistente admin", "auxiliar admin",
     "mecanic", "manutencao", "maintenance", "office assistant", "secretari", "recepcion",
     "product manager", "gerente de produto", "product owner", "scrum master", "designer",
     "ux ", "ui ", "redator", "writer", "editor", "professor", "instrutor", "consultor de",
+)
+
+SIGLAS_FUNCAO = {
+    Funcao.DADOS: ("bi", "etl", "ml", "nlp", "dw"),
+    Funcao.INFRA: ("sre", "k8s"),
+    Funcao.QA: ("qa", "sdet"),
+    Funcao.ENGENHARIA: ("swe", "api"),
+}
+
+TERMOS_GENERICOS = frozenset(
+    {"dados", "bi", "analytics", "python", "sql", "mobile", "android", "ios", "web developer"}
 )
 
 ANOS = re.compile(
@@ -44,10 +56,17 @@ ANOS = re.compile(
 )
 
 
+def _tem_sigla(texto: str, siglas: tuple[str, ...]) -> bool:
+    return any(re.search(rf"\b{s}\b", texto) for s in siglas)
+
+
 def inferir_funcao(titulo: str, descricao: str = "") -> Funcao:
     baixo = f" {titulo.lower()} "
     for funcao, termos in TERMOS_FUNCAO.items():
         if any(t in baixo for t in termos):
+            return funcao
+    for funcao, siglas in SIGLAS_FUNCAO.items():
+        if _tem_sigla(baixo, siglas):
             return funcao
     if any(t in baixo for t in TERMOS_FORA):
         return Funcao.OUTRA
@@ -57,7 +76,8 @@ def inferir_funcao(titulo: str, descricao: str = "") -> Funcao:
         return Funcao.ENGENHARIA
     corpo = (descricao or "")[:600].lower()
     for funcao, termos in TERMOS_FUNCAO.items():
-        if any(t in corpo for t in termos):
+        especificos = [t for t in termos if t not in TERMOS_GENERICOS]
+        if any(t in corpo for t in especificos):
             return funcao
     return Funcao.INDEFINIDA
 

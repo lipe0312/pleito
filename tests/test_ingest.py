@@ -98,3 +98,55 @@ def test_coletor_recusa_dominio_fora_do_yaml(coletor):
 
     with pytest.raises(DominioNaoPermitido):
         coletor._buscar("https://sitequalquer.com/api")
+
+
+def test_rss_recusa_entidade_externa():
+    from defusedxml.common import EntitiesForbidden
+
+    from viabilidade.ingest.rss import fromstring_seguro
+
+    ataque = (
+        b'<?xml version="1.0"?><!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]>'
+        b"<rss><channel><item><title>&x;</title></item></channel></rss>"
+    )
+    with pytest.raises(EntitiesForbidden):
+        fromstring_seguro(ataque)
+
+
+def test_rss_recusa_bomba_de_entidades():
+    from defusedxml.common import EntitiesForbidden
+
+    from viabilidade.ingest.rss import fromstring_seguro
+
+    bomba = (
+        b'<?xml version="1.0"?><!DOCTYPE b [<!ENTITY a "aaaa"><!ENTITY b "&a;&a;&a;&a;">]>'
+        b"<rss><channel><item><title>&b;</title></item></channel></rss>"
+    )
+    with pytest.raises(EntitiesForbidden):
+        fromstring_seguro(bomba)
+
+
+@pytest.mark.parametrize(
+    "titulo,descricao,esperado",
+    [
+        (
+            "Estagiario(a) de Servicos",
+            "Trataremos seus dados pessoais conforme a LGPD",
+            "indefinida",
+        ),
+        ("Estagio em Suporte", "Voce cuidara dos dados cadastrais dos clientes", "indefinida"),
+        ("Estagio em Analise de Dados", "", "dados"),
+        ("Data Analyst Intern", "", "dados"),
+        ("Analista de BI Junior", "", "dados"),
+        ("Assistente Administrativo", "Cadastro de dados no sistema", "outra"),
+        ("Analista de BI Pleno", "", "dados"),
+        ("Estagio em ETL", "", "dados"),
+        ("Bibliotecario", "", "indefinida"),
+        ("Analista de QA Junior", "", "qa"),
+        ("Estagio", "Voce vai construir pipelines com data engineer no time", "dados"),
+    ],
+)
+def test_palavra_generica_nao_classifica_pela_descricao(titulo, descricao, esperado):
+    from viabilidade.triagem import inferir_funcao
+
+    assert inferir_funcao(titulo, descricao).value == esperado

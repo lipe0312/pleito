@@ -127,3 +127,118 @@ classificador de funcao e extrator de anos de experiencia exigidos, ambos determ
 - Workable e SmartRecruiters tem endpoint valido e identificador desconhecido, registrados em
   `config/fontes.yaml` sob `descobertas_pendentes`
 - constraints de worktree e paralelizacao, a definir, ver `CLAUDE.md`
+
+---
+
+# Rodada 2 (2026-09-25): foco em remoto, dados, estagio e junior
+
+## LinkedIn: sim, pelo caminho do email
+
+Verificado na caixa real: chegam alertas de `jobs-noreply@linkedin.com`, com assuntos como
+"Novas vagas semelhantes a de Software Development Intern na iHerb" e "Programa de Estagio
+Santander 2026". O corpo em texto plano tem estrutura fixa e limpa:
+
+```
+Titulo da vaga
+Empresa
+Cidade
+Visualizar vaga: https://www.linkedin.com/comm/jobs/view/<id>?<rastreio>
+```
+
+O parser foi reescrito orientado a linha e testado contra esse formato. Extrai titulo, empresa
+e local alinhados, ignora o link de cabecalho e os de busca, e **descarta o rastreio**: a URL
+guardada e `https://www.linkedin.com/jobs/view/<id>`, sem query.
+
+Um teste de remetente forjado encontrou um furo real: `jobs-noreply@linkedin.com.golpe.net`
+passava na checagem por substring. Qualquer um pode registrar esse dominio e injetar vagas
+falsas. A checagem agora separa caixa e dominio e compara o dominio exato.
+
+**Fetch autenticado do site do LinkedIn nao foi implementado e nao e recomendado.** E o unico
+caminho que a secao 10.7 do plano proibe, viola os termos de uso e arrisca a conta. O email de
+alerta entrega o mesmo algoritmo personalizado da conta, com risco zero.
+
+## Solides: nao, nao foi descartada
+
+O NO-GO anterior valia so para coleta por HTTP. Pelo navegador a pagina **renderiza**: o site
+anuncia 73441 oportunidades e a primeira ja aparece com titulo, empresa, cidade e salario.
+
+O que o teste revelou: os cartoes nao linkam para `/vaga/...`, linkam para **subdominio por
+empresa**, como `drogal.vagas.solides.com.br`. A Solides e um diretorio de paginas de carreira,
+o mesmo padrao da Gupy. Os subdominios nao expoem API: `/api/v1/jobs`, `/api/jobs` e
+`/api/vagas` devolvem 404, e `/_next/data` devolve 403.
+
+Conclusao: viavel apenas por navegador, com custo por pagina. Fica como opcao documentada, nao
+implementada, porque a Gupy ja entrega o volume brasileiro por API.
+
+## Fontes novas nesta rodada
+
+Cinco fontes e 34 boards novos. Total agora: 14 fontes, 3554 vagas por rodada.
+
+| fonte | tipo | vagas |
+| --- | --- | --- |
+| weworkremotely | RSS remoto | 84 |
+| workingnomads | API remoto | 57 |
+| jobspresso | RSS remoto | 10 |
+| greenhouse | +15 boards de dados e remote-first | 900 |
+| ashby | +14 boards de dados e remote-first | 900 |
+| lever | +1 board | 54 |
+
+Os boards novos sao de empresas de dados e remote-first: Databricks, Snowflake, MongoDB,
+Cloudflare, Fivetran, ClickHouse, Grafana, Airbyte, Astronomer, Confluent, dbt, Hightouch,
+Sigma, Neo4j, Starburst, CockroachDB, Sentry, Zapier, PostHog, Atlan, Prefect, Materialize,
+Metabase, Hex, Monte Carlo, Percona, Buffer, Vercel, Remote.com e outros.
+
+A Gupy ganhou os filtros nativos que a API aceita: `workplaceType=remote` e
+`type=vacancy_type_internship`, com recortes configuraveis em `filtros.yaml`. Sozinha ela tem
+2088 vagas remotas e 47 estagios remotos.
+
+RSS e texto de terceiro nao confiavel, entao o parser usa `defusedxml`, com teste que recusa
+entidade externa e bomba de entidades.
+
+## O numero que voce precisa ver
+
+Escopo estrito: **remoto + dados + estagio ou junior = 3 vagas em 3554**, de 2 fontes.
+
+| recorte | vagas | fontes |
+| --- | --- | --- |
+| dados + estagio/junior + remoto | 3 | 2 |
+| dados + estagio/junior + remoto ou hibrido | 8 | 2 |
+| dados + estagio/junior + qualquer modelo | 21 | 4 |
+| dados + estagio/junior/sem senioridade + remoto, ate 2 anos | 26 | 8 |
+| **dados + estagio/junior/sem senioridade + remoto ou hibrido, ate 2 anos** | **35** | **8** |
+| tech + estagio/junior + remoto | 25 | 9 |
+| tech + estagio/junior + qualquer modelo | 141 | 11 |
+
+Das 21 vagas de dados para estagio ou junior, apenas 3 sao remotas: 8 sao presenciais e 5
+hibridas. **Estagio em dados no Brasil e majoritariamente presencial.** Isso e mercado, nao
+limitacao de ferramenta: 14 fontes e 3554 vagas produzem esse numero.
+
+O recorte com melhor relacao entre volume e aderencia e o da linha destacada: aceitar hibrido e
+aceitar vaga sem senioridade declarada, filtrando por ate 2 anos de experiencia exigidos. Sai
+de 3 para 35 vagas sem sair da area de dados.
+
+Ampliar para engenharia leva a 141 vagas em qualquer modelo, mas a amostra mostra que incluir
+senioridade indeclarada em tech traz ruido: cargos como Security Engineer e Inference Engineer
+da OpenAI entram sem serem junior.
+
+## Defeitos corrigidos nesta rodada
+
+| # | Problema | Correcao |
+| --- | --- | --- |
+| 12 | remetente do LinkedIn checado por substring: `jobs-noreply@linkedin.com.golpe.net` era aceito | caixa e dominio separados, dominio comparado por igualdade |
+| 13 | parser do alerta desalinhava os campos, porque a linha do link comeca com "Visualizar vaga:" | parser orientado a linha, com rotulo reconhecido |
+| 14 | a palavra "dados" aparece em qualquer descricao em portugues ("seus dados pessoais"), e classificava vaga administrativa como dados | termos genericos so valem no titulo, nunca na descricao. 145 caiu para 121 vagas de dados, 24 falsos positivos removidos |
+| 15 | siglas comuns em portugues nao eram reconhecidas: "Analista de BI Junior" ficava indefinida | siglas com fronteira de palavra: bi, etl, ml, nlp, dw, sre, qa, sdet |
+| 16 | RSS de terceiro parseado com `xml.etree`, vulneravel a XXE e bomba de entidades | `defusedxml` com teste dos dois ataques |
+| 17 | `vagas.solides.com.br` dado como sem dados por seletor errado no navegador | o conteudo renderiza; os cartoes apontam para subdominio por empresa |
+
+## Decisao pendente sua
+
+O escopo remoto mais dados mais estagio nao sustenta um fluxo diario: sao 3 vagas. Escolha uma
+direcao antes da proxima fase:
+
+1. aceitar hibrido e vaga sem senioridade declarada, filtrando por ate 2 anos: 35 vagas, segue
+   so em dados
+2. incluir engenharia junto de dados: 25 remotas ou 141 em qualquer modelo, com mais ruido
+3. aceitar presencial em Salvador e regiao: recupera as 8 presenciais de dados
+4. manter o escopo estrito e aceitar fluxo de poucas vagas por semana
