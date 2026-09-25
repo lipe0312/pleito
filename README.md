@@ -18,7 +18,8 @@ deterministico local: se falhar, e bug, e se corrige. As duas fronteiras acima p
 **bloqueio duro** (termos que proibem, CAPTCHA, muro de login, ausencia de API). O modulo
 `viabilidade/` existe para separar *"da trabalho"* de *"nao da"*, com teste que roda e prova.
 
-Ver `docs/viabilidade.md` para o veredito corrente e `docs/adr/0007` para a decisao.
+Ver `docs/estado.md` para onde o projeto esta, `docs/viabilidade.md` para o veredito corrente
+e `docs/adr/0002` para a decisao de inverter a ordem do roteiro.
 
 ## Estrutura
 
