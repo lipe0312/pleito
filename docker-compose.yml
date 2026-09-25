@@ -25,6 +25,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pleito-pgadmin
+    profiles: [pgadmin-container]
     restart: unless-stopped
     depends_on:
       postgres:

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-baixo migrar psql testes lint viabilidade limpar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql testes lint viabilidade limpar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -11,19 +11,25 @@ setup:
 	$(PY) -m playwright install chromium
 
 banco:
-	docker compose up -d
-	@echo "postgres  -> 127.0.0.1:$${POSTGRES_PORT:-55432}"
-	@echo "pgadmin   -> http://127.0.0.1:$${PGADMIN_PORT:-55050}"
+	docker compose up -d postgres
+	@set -a && source .env && set +a && \
+	echo "postgres do pleito -> 127.0.0.1:$$POSTGRES_PORT (cluster proprio, isolado do 5432)"
+
+banco-status:
+	@docker compose ps postgres
+	@set -a && source .env && set +a && \
+	docker compose exec -T postgres psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" \
+	  -c "select current_database(), current_user, version();"
+
+pgadmin-container:
+	docker compose --profile pgadmin-container up -d pgadmin
+	@set -a && source .env && set +a && echo "pgadmin -> http://127.0.0.1:$$PGADMIN_PORT"
 
 banco-baixo:
 	docker compose down
 
 migrar:
-	@set -a && source .env && set +a && \
-	for f in db/migrations/*.sql db/policies/*.sql; do \
-	  echo "aplicando $$f"; \
-	  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" < "$$f"; \
-	done
+	./scripts/migrar.sh
 
 psql:
 	@set -a && source .env && set +a && \
