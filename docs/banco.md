@@ -44,12 +44,24 @@ python3 -c 'import secrets; print("POSTGRES_APP_PASSWORD=" + secrets.token_urlsa
 ```
 
 Copie cada linha inteira e substitua a linha correspondente no `.env`. Confirme que as duas
-saem preenchidas e que o arquivo esta fechado para outros usuarios:
+saem preenchidas, sem imprimir o valor, e que o arquivo esta fechado para outros usuarios:
 
 ```bash
-grep -E '^POSTGRES_(APP_)?PASSWORD=.+' .env | sed 's/=.*/=<preenchida>/'
+awk -F= '/^POSTGRES_(APP_)?PASSWORD=/{print $1 "=" length($2) " chars"}' .env
 ls -l .env
 ```
+
+`secrets.token_urlsafe(32)` gera 43 caracteres com 256 bits de entropia, no alfabeto
+`A-Za-z0-9_-`. Nao ha o que reforcar nisso: e mais forte que qualquer senha escolhida a mao, e
+o alfabeto sem aspas nem barra evita problema de escape em `.pgpass`, em URL de conexao e em
+SQL.
+
+### Nao use `grep` para ler a senha
+
+No shell deste projeto `grep` e uma funcao injetada pelo hook do rtk, que resume a saida em vez
+de imprimir a linha. Um `grep ... | cut -d= -f2- | pbcopy` copia vazio, porque o `cut` recebe o
+resumo e nao a linha. Use `awk`, `/usr/bin/grep` ou, melhor, os alvos do Makefile abaixo. A
+regra vale para qualquer pipeline onde a saida de `grep` alimenta outro comando.
 
 `PGADMIN_EMAIL` e `PGADMIN_PASSWORD` sao usados apenas pelo container de pgAdmin. Usando o app
 nativo, pode deixar os dois em branco.
@@ -66,7 +78,17 @@ make migrar
 versao, e serve para confirmar que voce esta falando com o cluster do pleito e nao com o da
 materia. `make migrar` aplica `db/migrations/` e depois `db/policies/`.
 
-## Passo 4: registrar os dois servidores no pgAdmin
+## Passo 4: copiar a senha sem ela aparecer na tela
+
+```bash
+make senha-banco
+```
+
+Copia `POSTGRES_PASSWORD` para a area de transferencia e imprime apenas a contagem de
+caracteres. `make senha-app` faz o mesmo para a senha da aplicacao. Nenhum dos dois escreve a
+senha no terminal nem no historico do shell.
+
+## Passo 5: registrar os dois servidores no pgAdmin
 
 Abra o pgAdmin 4 pelo Launchpad. Na primeira vez ele pede uma master password, que protege as
 senhas guardadas dentro do proprio pgAdmin. Gere uma e guarde no seu gerenciador de senhas:
@@ -109,7 +131,7 @@ container, onde o host passaria a ser `postgres` e a porta `5432`.
 Depois de salvar, o schema do pleito fica em `pleito - docker > Databases > pleito > Schemas >
 pleito`. As tabelas nao aparecem em `public`, porque a migracao cria um schema proprio.
 
-## Passo 5 (opcional): psql sem digitar senha
+## Passo 6 (opcional): psql sem digitar senha
 
 Para usar `psql` direto do Mac contra o container sem repetir a senha, use `~/.pgpass`, que e o
 mecanismo do proprio Postgres e evita a senha no historico do shell:
@@ -129,6 +151,23 @@ Alternativa sem `.pgpass`, que entra pelo container e nao pede senha nenhuma:
 ```bash
 make psql
 ```
+
+## Rotacionar senha
+
+Se uma senha vazar, se aparecer num log ou por higiene periodica:
+
+```bash
+make senha-rotacionar          # owner
+./scripts/rotacionar-senha.sh app
+```
+
+O script gera uma senha nova, aplica o `ALTER ROLE`, atualiza a linha do `.env`, refaz o
+`chmod 600` e deixa a nova na area de transferencia. Depois disso, atualize a senha salva no
+pgAdmin e no `~/.pgpass`, se voce usa.
+
+A senha nunca vai por argumento de linha de comando: o `ALTER ROLE` entra por stdin do `psql`,
+porque argumento de processo aparece em `ps` para qualquer usuario da maquina. Verificado: apos
+a rotacao a senha nova autentica e a antiga passa a ser recusada.
 
 ## Onde cada senha vive
 

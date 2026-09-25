@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql testes lint viabilidade limpar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes lint viabilidade limpar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -34,6 +34,19 @@ migrar:
 psql:
 	@set -a && source .env && set +a && \
 	docker compose exec -it postgres psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+
+senha-banco:
+	@set -a && source .env && set +a && \
+	printf '%s' "$$POSTGRES_PASSWORD" | pbcopy && \
+	echo "POSTGRES_PASSWORD copiada ($${#POSTGRES_PASSWORD} chars). Cole no pgAdmin com Cmd+V."
+
+senha-app:
+	@set -a && source .env && set +a && \
+	printf '%s' "$$POSTGRES_APP_PASSWORD" | pbcopy && \
+	echo "POSTGRES_APP_PASSWORD copiada ($${#POSTGRES_APP_PASSWORD} chars)."
+
+senha-rotacionar:
+	./scripts/rotacionar-senha.sh
 
 testes:
 	$(PY) -m pytest -m "not rede and not navegador and not latex"
