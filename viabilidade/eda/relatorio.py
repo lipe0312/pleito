@@ -110,6 +110,13 @@ def avaliar_cenarios(vagas: list[VagaBruta], cenarios: list[dict]) -> list[dict]
         paises = set(cenario.get("paises") or [])
         funcoes = set(cenario.get("funcoes") or [])
         anos_max = cenario.get("anos_experiencia_max")
+        cidades_presencial = [c.lower() for c in (cenario.get("cidades_presencial") or [])]
+
+        def _local_ok(v: VagaBruta, cidades: list[str] = cidades_presencial) -> bool:
+            if v.modelo.value != "presencial" or not cidades:
+                return True
+            return any(c in v.local.lower() for c in cidades)
+
         aceitas = [
             v
             for v in vagas
@@ -118,6 +125,7 @@ def avaliar_cenarios(vagas: list[VagaBruta], cenarios: list[dict]) -> list[dict]
             and (not paises or v.pais in paises)
             and (not funcoes or v.funcao.value in funcoes)
             and (anos_max is None or v.anos_experiencia is None or v.anos_experiencia <= anos_max)
+            and _local_ok(v)
         ]
         unicas = {v.hash_conteudo for v in aceitas}
         saida.append(

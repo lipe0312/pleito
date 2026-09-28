@@ -23,6 +23,7 @@ Avaliados sobre 3554 vagas coletadas.
 | FOCO dados estagio ou junior qualquer modelo | estagio, junior | hibrido, indefinido, presencial, remoto | qualquer | dados | 19 | 19 | 0.5% | 4 |
 | funil final remoto | estagio, junior | remoto | qualquer | dados, engenharia, infra, qa | 16 | 16 | 0.5% | 7 |
 | FOCO remoto tech estagio ou junior | estagio, junior | remoto | qualquer | dados, engenharia, infra, qa | 16 | 16 | 0.5% | 7 |
+| ESCOLHIDO dados hibrido presencial-SSA sem senioridade ate 2 anos | estagio, indefinida, junior | hibrido, presencial | qualquer | dados | 9 | 9 | 0.3% | 2 |
 | FOCO remoto ou hibrido dados estagio ou junior | estagio, junior | hibrido, remoto | qualquer | dados | 8 | 8 | 0.2% | 2 |
 | FOCO remoto dados estagio ou junior | estagio, junior | remoto | qualquer | dados | 3 | 3 | 0.1% | 2 |
 

@@ -242,3 +242,95 @@ direcao antes da proxima fase:
 2. incluir engenharia junto de dados: 25 remotas ou 141 em qualquer modelo, com mais ruido
 3. aceitar presencial em Salvador e regiao: recupera as 8 presenciais de dados
 4. manter o escopo estrito e aceitar fluxo de poucas vagas por semana
+
+---
+
+# Rodada 3 (2026-09-28): Gupy trava o egress, escopo final fechado
+
+## Virada de enquadramento (decisao do Filipe)
+
+O objetivo do sistema nao e "aplicar 100% sozinho". E ter a **variante do curriculo sempre
+pronta**, validada, para a candidatura sair rapido mesmo quando o envio automatico nao rola.
+Isso muda a leitura de qualquer NO-GO de egress: uma plataforma travar o envio automatico nao
+mata o projeto, so move essa plataforma de "aplicador" para "pendencia assistida", que a secao
+4.9 e a Q7 do plano ja previam como caminho normal, nao excecao.
+
+## Gupy: egress automatizado e NO-GO, confirmado com evidencia tecnica e contratual
+
+Duas evidencias independentes, nenhuma inferida:
+
+1. **Termos de uso**, secao "Diretrizes Gerais do Usuario", texto literal: *"agregar, copiar ou
+   duplicar partes do Gupy Recrutamento e Selecao, incluindo oportunidades de trabalho
+   expiradas"* e proibido. A API publica que o ingest usa e descrita nos proprios termos como
+   destinada a **empresas** integrarem o Gupy, nao a terceiro consumir listagem de vaga.
+2. **Cloudflare Turnstile ativo no login** (`/candidates/signin`), confirmado pelo console do
+   navegador real do Filipe tentando logar (`cf__reactTurnstileOnLoad`). Turnstile e desenhado
+   para detectar exatamente navegador controlado por automacao.
+
+Foi cogitado extrair a sessao autenticada do navegador pessoal do Filipe e injetar no perfil de
+automacao, para contornar o Turnstile. **Decisao: nao fazer.** E transplante de sessao para
+mascarar automacao como humano, contra um controle anti-bot ativo, empilhado sobre uma clausula
+contratual que ja proibe a acao de fundo. O risco (suspensao de conta, violacao de termos) nao
+compensa, e ha caminho legitimo: candidatura manual.
+
+**Resultado pratico:** Gupy fica como fonte de **ingest** (GO com ressalva, ver rodada 1) e
+**nunca** como plataforma de egress automatizado. Toda vaga da Gupy vira pendencia com link
+direto, currículo ja gerado e validado esperando so o clique do Filipe. Greenhouse e Ashby
+continuam os unicos candidatos a aplicador automatico (dry-run GO com ressalva, sem Turnstile,
+sem clausula equivalente encontrada nos termos deles).
+
+## Escopo final travado em config/filtros.yaml
+
+Combinando as duas ampliacoes que o Filipe escolheu: hibrido OU presencial-Salvador, dados, sem
+exigir senioridade declarada, ate 2 anos de experiencia exigidos. O motor de cenarios ganhou
+suporte a filtro de cidade que so se aplica a vaga presencial (`cidades_presencial`), sem afetar
+as outras.
+
+**Resultado sobre 3554 vagas coletadas: 9 vagas.**
+
+| fonte | senioridade | modelo | titulo | local |
+| --- | --- | --- | --- | --- |
+| gupy | estagio | hibrido | Estagio Business Intelligence | Belo Horizonte |
+| gupy | estagio | hibrido | Estagiario(a) de Gente e Gestao Docente (Dados) | Rio de Janeiro |
+| gupy | estagio | hibrido | Estagiario(a) de Tecnologia, Dados e Sistemas | Nova Lima |
+| gupy | junior | hibrido | Data Engineer Junior | Santiago (Chile) |
+| gupy | indefinida | hibrido | Analista de Dados Junior - CRM | Barueri |
+| gupy | junior | hibrido | Analista de BI Junior | Barueri |
+| hackernews | indefinida | hibrido | Data Engineer | - |
+| hackernews | indefinida | hibrido | Machine Learning Engineer | - |
+| hackernews | indefinida | hibrido | ML/AI Engineer | - |
+
+**Zero vagas presenciais em Salvador nesta amostra.** A ampliacao "aceitar presencial em
+Salvador" nao rendeu nenhuma vaga de dados nesta coleta: nao tem estagio de dados presencial em
+Salvador entre as 3554 vagas de 14 fontes agora. Isso pode ser (a) realidade do mercado local
+nesta janela de tempo, ou (b) os termos de busca da Gupy nao cobrirem bem Salvador
+especificamente. Ainda nao investigado a fundo; ver pendencias.
+
+9 vagas por coleta e pouco para um fluxo diario (limites.yaml preve ate 40 avaliadas por dia),
+mas a Gupy sozinha ja tem 1737 resultados para "estagio" sem filtro de funcao: o gargalo aqui e
+o cruzamento (dados + hibrido/SSA + baixa senioridade), nao falta de vaga no geral. Rodar o
+ingest com mais frequencia (diario, nao so nesta sessao) tende a acumular volume ao longo do
+tempo, porque vaga nova aparece todo dia.
+
+## Falta algo na analise de viabilidade?
+
+As tres fronteiras foram testadas com dado real, nao leitura de documentacao. O que falta e
+pequeno e nao bloqueia decisao de seguir:
+
+**Unico item que ainda depende de acao para fechar GO pleno:**
+- uma execucao de **submit real autorizado** numa vaga do Greenhouse ou Ashby, escolhida pelo
+  Filipe, para provar que a pagina de confirmacao e detectavel. Sem isso o egress fica
+  permanentemente em "GO com ressalva" por construcao (dry-run nunca vale GO pleno).
+
+**Itens que nao bloqueiam, ficam para a implementacao (fases 1+), nao para o spike:**
+- vinculo do email de confirmacao a vaga, depende da integracao com Gmail (fase 1 do roteiro)
+- Sólides so foi provada como viavel-por-navegador, nao implementada: decisao adiada, nao
+  bloqueante, porque a Gupy ja cobre volume BR
+- Workable e SmartRecruiters tem endpoint valido e identificador de empresa desconhecido,
+  registrados em `descobertas_pendentes`, opcional
+- investigar por que "presencial Salvador dados" deu zero: pode precisar de termo de busca
+  dedicado na Gupy (`workplaceType` nao filtra cidade, so remoto/hibrido/presencial)
+
+**Conclusao: o spike de viabilidade esta tecnicamente completo.** Nao ha mais pergunta de
+viabilidade tecnica em aberto que precise de investigacao antes de decidir seguir para a fase 0
+do roteiro (fundacao). A unica pendencia real e uma decisao/acao sua, nao uma incerteza tecnica.

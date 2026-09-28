@@ -125,3 +125,9 @@ cenarios:
     modelos: [remoto]
     funcoes: [engenharia, dados, infra, qa]
     anos_experiencia_max: 2
+  - nome: ESCOLHIDO dados hibrido presencial-SSA sem senioridade ate 2 anos
+    senioridades: [estagio, junior, indefinida]
+    modelos: [hibrido, presencial]
+    funcoes: [dados]
+    anos_experiencia_max: 2
+    cidades_presencial: [salvador]
