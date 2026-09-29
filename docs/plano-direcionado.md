@@ -15,7 +15,8 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] Etapa 0.5, ajustes da revisão (commits bbbfb7b, b75f05b, a4d6496, 4efa4f6)
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
 - [x] ADRs 0001 a 0019 versionadas
-- [ ] Pré-requisitos da Fase 1, feitos pelo Filipe (seção abaixo)
+- [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
+  interativa e o push no iPhone
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
@@ -111,11 +112,12 @@ Etapa concluída; decisões e verificações:
 
 ### Pré-requisitos da Fase 1, feitos pelo Filipe
 
-- [ ] Projeto no Google Cloud com a Gmail API ativada e cliente OAuth do tipo Desktop
-- [ ] Autorizar a própria conta uma vez no navegador e publicar o app para o token não expirar
-  em 7 dias
-- [ ] Baixar o JSON do cliente para `segredos/` (fora do git)
-- [ ] Preencher `PLEITO_EMAIL_DESTINO` e `OPENAI_API_KEY` no `.env`
+- [x] Projeto no Google Cloud com a Gmail API ativada e cliente OAuth do tipo Desktop
+- [x] App publicado em produção (Externo, 1 de 100 usuários) para o token não expirar em 7 dias
+- [ ] Autorizar a própria conta uma vez no navegador, feito na primeira execução da Fase 1
+- [x] JSON do cliente em `segredos/gmail_cliente.json`, chmod 600, fora do git
+- [x] `PLEITO_EMAIL_DESTINO` e `OPENAI_API_KEY` preenchidos no `.env`
+- [x] Política de privacidade pública em `docs/privacidade.md`, exigida pelo Google
 - [ ] Ativar o push do Gmail no iPhone para o rótulo `Candidaturas/Prontas`
 
 ### Fase 1: email organizado e resumo diário
