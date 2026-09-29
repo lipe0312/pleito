@@ -7,47 +7,48 @@ alvo="${1:-owner}"
 case "$alvo" in
     owner) chave=POSTGRES_PASSWORD ;;
     app)   chave=POSTGRES_APP_PASSWORD ;;
-    *)     echo "uso: $0 [owner|app]" >&2; exit 2 ;;
+    panel) chave=POSTGRES_PANEL_PASSWORD ;;
+    *)     echo "uso: $0 [owner|app|panel]" >&2; exit 2 ;;
 esac
 
 set -a
 source .env
 set +a
 
-if [ "$alvo" = "owner" ]; then
-    role="$POSTGRES_USER"
-else
-    role="pleito_app_login"
-fi
+case "$alvo" in
+    owner) role="$POSTGRES_USER" ;;
+    app)   role="pleito_app_login" ;;
+    panel) role="pleito_painel_login" ;;
+esac
 
 nova=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
 
-python3 - "$role" "$nova" <<'PY' | docker compose exec -T postgres \
-    psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+printf '%s\n' "$nova" | python3 -c '
 import re
 import sys
 
-role, senha = sys.argv[1], sys.argv[2]
+role, senha = sys.argv[1], sys.stdin.readline().rstrip("\n")
 if not re.fullmatch(r"[A-Za-z0-9_]+", role):
     raise SystemExit(f"nome de role inesperado: {role!r}")
 if not re.fullmatch(r"[A-Za-z0-9_-]+", senha):
     raise SystemExit("senha gerada tem caractere inesperado")
-print(f"ALTER ROLE \"{role}\" WITH PASSWORD '{senha}';")
-PY
+print(f"ALTER ROLE \"{role}\" LOGIN WITH PASSWORD '{senha}';")
+' "$role" | docker compose exec -T postgres \
+    psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 
-python3 - "$chave" "$nova" <<'PY'
+printf '%s\n' "$nova" | python3 -c '
 import re
 import sys
 from pathlib import Path
 
-chave, nova = sys.argv[1], sys.argv[2]
+chave, nova = sys.argv[1], sys.stdin.readline().rstrip("\n")
 p = Path(".env")
 t = p.read_text()
 t, n = re.subn(rf"^{chave}=.*$", f"{chave}={nova}", t, flags=re.MULTILINE)
 if n != 1:
     raise SystemExit(f"esperava 1 linha {chave} no .env, achei {n}")
 p.write_text(t)
-PY
+' "$chave"
 
 chmod 600 .env
 printf '%s' "$nova" | pbcopy

@@ -23,7 +23,7 @@ app nativo torna ele desnecessario.
 | host e porta | 127.0.0.1:5432 | 127.0.0.1:55432 |
 | sobe com | `brew services` (ja ativo) | `make banco` |
 | banco | `MATA_60_2026_2` | `pleito` |
-| roles | `mainfilipe`, `aluno` | `pleito_owner`, `pleito_app_login` |
+| roles | `mainfilipe`, `aluno` | `pleito_owner`, `pleito_app_login`, `pleito_painel_login` |
 
 ## Passo 1: ir para a pasta e criar o .env
 
@@ -41,10 +41,11 @@ Nunca escolha senha a mao e nunca digite senha direto no terminal, porque o coma
 ```bash
 python3 -c 'import secrets; print("POSTGRES_PASSWORD=" + secrets.token_urlsafe(32))'
 python3 -c 'import secrets; print("POSTGRES_APP_PASSWORD=" + secrets.token_urlsafe(32))'
+python3 -c 'import secrets; print("POSTGRES_PANEL_PASSWORD=" + secrets.token_urlsafe(32))'
 ```
 
-Copie cada linha inteira e substitua a linha correspondente no `.env`. Confirme que as duas
-saem preenchidas, sem imprimir o valor, e que o arquivo esta fechado para outros usuarios:
+Copie cada linha inteira e substitua a linha correspondente no `.env`. Confirme que as tres
+saem preenchidas, sem imprimir os valores, e que o arquivo esta fechado para outros usuarios:
 
 ```bash
 awk -F= '/^POSTGRES_(APP_)?PASSWORD=/{print $1 "=" length($2) " chars"}' .env
@@ -175,6 +176,7 @@ a rotacao a senha nova autentica e a antiga passa a ser recusada.
 | --- | --- | --- |
 | `POSTGRES_PASSWORD` | `.env`, fora do git, `chmod 600` | permissao de arquivo |
 | `POSTGRES_APP_PASSWORD` | idem | idem |
+| `POSTGRES_PANEL_PASSWORD` | idem | idem |
 | a mesma, para o psql | `~/.pgpass`, `chmod 600` | permissao de arquivo |
 | a mesma, no pgAdmin | store interno do pgAdmin | master password do pgAdmin |
 | master password do pgAdmin | seu gerenciador de senhas | fora da maquina |
@@ -188,12 +190,24 @@ nao cair no historico; nunca reaproveitada entre o cluster da materia e o do ple
 | papel | para que serve | pode |
 | --- | --- | --- |
 | `pleito_owner` | migracoes e pgAdmin | tudo dentro do banco `pleito` |
-| `pleito_app` | coletor, gerador, aplicador, email | select, insert, update; insert em auditoria |
-| `pleito_painel` | painel | o mesmo, mais criar aprovacao e mexer em flag |
+| `pleito_app` | coletor, gerador, aplicador, email, LLM | select e escrita por tabela/coluna; insert em auditoria |
+| `pleito_painel` | painel | select e escrita limitada a configuracao, respostas, aprovacao e flags |
 | `pleito_leitura` | consulta e metricas | apenas select |
 
-Os tres ultimos nao tem login. `pleito_app_login` herda `pleito_app` e e o unico com senha,
-aplicada por `db/policies/0002_usuario_app.sql`.
+Os tres ultimos nao tem login. `pleito_app_login` herda `pleito_app` e
+`pleito_painel_login` herda `pleito_painel`; cada um recebe uma senha diferente. A migracao
+`db/policies/0002_usuario_app.sql` configura a senha da aplicacao. O login do painel fica
+inicialmente desabilitado; depois de aplicar as migracoes, ative-o com
+`./scripts/rotacionar-senha.sh panel`.
+
+O codigo abre conexoes de aplicacao e painel com credenciais distintas. A conexao recusa
+qualquer destino diferente de `127.0.0.1:55432/pleito`. Grants especificam colunas de escrita,
+nao ha permissao de delete para esses papeis e auditoria e append-only. O painel nao altera o
+estado da vaga nem a prova de candidatura; a aplicacao nao altera flags nem cria aprovacoes.
+
+`make testes-banco` roda testes de permissao negativos contra esse banco depois de `make migrar`.
+O alvo recusa conexao a qualquer porta que nao seja 55432, e os testes normais offline nao
+conectam ao banco.
 
 ## O que o banco garante sozinho
 
