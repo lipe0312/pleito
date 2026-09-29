@@ -5,6 +5,57 @@ Não substitui o `docs/PLANO.md`: é o caminho até o produto final, já com as 
 Cada fase diz o objetivo, o que o Filipe passa a ver, o que criar e quando está pronta.
 Quem implementar analisa a viabilidade de cada ponto e propõe ajuste antes de discordar em código.
 
+## Andamento
+
+Legenda: [x] concluído e verificado, [ ] pendente.
+
+- [x] Spike de viabilidade, veredito GO com ressalva (`docs/viabilidade.md`)
+- [x] Fase 0, fundação: banco com papéis e RLS, auditoria, flag, roteador LLM com orçamento,
+  painel vazio (commits 4588e24, de48423, 3af8c71, e7eaa7f)
+- [x] Etapa 0.5, ajustes da revisão (commits bbbfb7b, b75f05b, a4d6496, 4efa4f6)
+- [x] Rótulos `Candidaturas/*` criados na conta do Gmail
+- [x] ADRs 0001 a 0019 versionadas
+- [ ] Pré-requisitos da Fase 1, feitos pelo Filipe (seção abaixo)
+- [ ] Fase 1 a Fase 9 e monitor de disponibilidade
+
+## Contexto a ler antes de implementar
+
+Ordem de leitura. Quem começa uma fase relê o que ela toca; nada aqui é opcional.
+
+**Regras e estado**
+- [x] `CLAUDE.md`: constraints de código, commit e fluxo
+- [x] `docs/onboarding-novo-agente.md` e `docs/estado.md`: o que o spike provou e os 17 defeitos achados
+- [x] `docs/plano-direcionado.md`: este arquivo
+
+**Plano-mãe**, `docs/PLANO.md`, por fase:
+- todas: seção 3 (arquitetura e roteador), 10 (segurança), 12 (custo), 13 (dados), 14 (roteiro),
+  16 e 18.7 (questões em aberto)
+- Fase 1: 4.8 (acompanhamento por email), 8.5 (validação de eventos de email), 10.6 (Gmail),
+  18.6 (organização do Gmail)
+- Fase 2 e 3: 7 (currículo, blocos, famílias, uma página), 8.1 a 8.4, 8.6 (conjunto de avaliação)
+- Fase 4: 4.1 a 4.3, 6 (filtros e pontuação), 11 (fontes)
+- Fase 5: 5 (painel), 7.6 a 7.8 (uma página, retenção, chat)
+- Fase 6: 4.6, 4.7, 9 (banco de respostas), 10.7 (navegador), 18.3 e 18.4 (diversidade e confirmação)
+- Fase 7: 7.9 e 18.5 (campeões)
+
+**Decisões**, `docs/adr/`:
+- [x] 0001 a 0011: nome, spike, dry-run, banco, painel, LLM por tier, slots, segredos, função antes
+  de senioridade, fontes, Gupy manual
+- [x] 0012 a 0014: OpenAI por API e orçamento, resumo por email, celular descartado
+- [x] 0015 a 0019: triagem em config, permissões do banco, registro e orçamento do roteador,
+  fallback de saldo, cache de prompt desligado
+
+**Configuração**, `config/`:
+- [x] `limites.yaml` (horários, orçamento, limites), `modelos.yaml` (tiers, preços, habilitação),
+  `triagem.yaml`, `filtros.yaml`, `fontes.yaml`, `painel.yaml`
+- [ ] a criar: `emails.yaml`, `rotulos.yaml` (Fase 1)
+
+**Código e banco**
+- [x] `src/config.py`, `src/llm/roteador.py`, `src/llm/orcamento.py`, `src/db/`, `src/painel/`
+- [x] `db/migrations/0000` a `0002`, `db/policies/0001` a `0003`, `docs/banco.md`
+- [x] `viabilidade/ingest/email_alertas.py`: origem do verificador de remetente da Fase 1
+- [x] `tests/`: 146 testes offline e 11 de banco
+
 ## Objetivo em alto nível
 
 Antes das 8h de cada dia, o Mac busca vagas de estágio e júnior em dados, descarta as ruins sem
@@ -57,6 +108,15 @@ Etapa concluída; decisões e verificações:
    `make testes-banco` antes de cada commit.
 
 ## Fases
+
+### Pré-requisitos da Fase 1, feitos pelo Filipe
+
+- [ ] Projeto no Google Cloud com a Gmail API ativada e cliente OAuth do tipo Desktop
+- [ ] Autorizar a própria conta uma vez no navegador e publicar o app para o token não expirar
+  em 7 dias
+- [ ] Baixar o JSON do cliente para `segredos/` (fora do git)
+- [ ] Preencher `PLEITO_EMAIL_DESTINO` e `OPENAI_API_KEY` no `.env`
+- [ ] Ativar o push do Gmail no iPhone para o rótulo `Candidaturas/Prontas`
 
 ### Fase 1: email organizado e resumo diário
 
