@@ -28,9 +28,10 @@ usando o tamanho máximo configurado do prompt, a sobrecarga de tokens, o máxim
 saída e os preços verificados. Uma trava transacional serializa reservas concorrentes. O limite
 efetivo do dia é o menor entre `orcamento_usd_dia_max` e o saldo mensal restante dividido pelos
 dias restantes do mês. Ao atingir qualquer teto, a chamada não ocorre. Para o tier forte,
-saldo mensal abaixo de `saldo_minimo_forte_usd` adia a tarefa, sem rebaixar o tier. Após
-resposta, a reserva é reconciliada com o custo calculado a partir dos tokens; falhas liberam a
-reserva e permanecem registradas sem conteúdo pessoal.
+saldo mensal abaixo de `saldo_minimo_forte_usd` adia a tarefa, exceto o fallback seletivo
+configurado para pontuação final na ADR 0018. Após resposta, a reserva é reconciliada com o
+custo calculado a partir dos tokens; falhas liberam a reserva e permanecem registradas sem
+conteúdo pessoal.
 
 Os valores verificados em 2026-09-28 são: GPT-6 Luna, entrada US$ 0,10 e saída US$ 0,50 por
 milhão de tokens; GPT-6 Sol, entrada US$ 2,00 e saída US$ 10,00 por milhão. Ambos suportam

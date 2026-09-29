@@ -7,6 +7,10 @@ class OrcamentoEsgotado(RuntimeError):
     pass
 
 
+class SaldoInsuficienteTierForte(OrcamentoEsgotado):
+    pass
+
+
 def calcular_limite_diario(
     orcamento_mensal: Decimal,
     limite_diario: Decimal,
@@ -21,4 +25,4 @@ def calcular_limite_diario(
 
 def exigir_saldo_tier(tier: str, saldo: Decimal, saldo_minimo_forte: Decimal) -> None:
     if tier == "forte" and saldo < saldo_minimo_forte:
-        raise OrcamentoEsgotado("saldo mensal insuficiente para o tier forte")
+        raise SaldoInsuficienteTierForte("saldo mensal insuficiente para o tier forte")

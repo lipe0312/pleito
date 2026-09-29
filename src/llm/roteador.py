@@ -12,9 +12,10 @@ import httpx
 from dotenv import load_dotenv
 from pydantic import BaseModel, ValidationError
 
+from src.config import carregar
 from src.db.flags import exigir_sistema_ativo
 from src.db.uso_llm import falhar_uso_llm, finalizar_uso_llm, reservar_uso_llm
-from viabilidade.config import carregar
+from src.llm.orcamento import SaldoInsuficienteTierForte
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -117,28 +118,31 @@ class Roteador:
         if not prompt.strip() or not versao_prompt.strip():
             raise ValueError("prompt e versao sao obrigatorios")
         schema = esquema.model_json_schema()
-        tamanho_prompt = len(prompt.encode("utf-8")) + len(
-            json.dumps(schema, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        )
-        if tamanho_prompt > int(modelo["tamanho_prompt_max_bytes"]):
-            raise ValueError("prompt excede o limite configurado para o modelo")
-        tokens_entrada_reservados = tamanho_prompt + int(modelo["tokens_sobrecarga_entrada"])
-        custo_maximo = (
-            Decimal(tokens_entrada_reservados)
-            * Decimal(str(modelo["preco_entrada_usd_milhao"]))
-            + Decimal(int(modelo["max_tokens_saida"]))
-            * Decimal(str(modelo["preco_saida_usd_milhao"]))
-        ) / Decimal(1_000_000)
-        if custo_maximo > Decimal(str(modelo["custo_maximo_chamada_usd"])):
-            raise ValueError("custo maximo da chamada excede o limite configurado")
-        uso_id = self.reservar(
-            etapa=tarefa,
-            provedor=modelo["provedor"],
-            modelo=modelo["modelo"],
-            tier=tier,
-            prompt_versao=versao_prompt,
-            custo_maximo_usd=custo_maximo,
-        )
+        custo_maximo = self._custo_maximo(modelo, prompt, schema)
+        try:
+            uso_id = self.reservar(
+                etapa=tarefa,
+                provedor=modelo["provedor"],
+                modelo=modelo["modelo"],
+                tier=tier,
+                prompt_versao=versao_prompt,
+                custo_maximo_usd=custo_maximo,
+            )
+        except SaldoInsuficienteTierForte:
+            tarefas_fallback = self.configuracao.get("fallback_saldo_insuficiente", [])
+            if tier != "forte" or tarefa not in tarefas_fallback:
+                raise
+            tier = "rapido"
+            modelo = self._modelo(tarefa, tier)
+            custo_maximo = self._custo_maximo(modelo, prompt, schema)
+            uso_id = self.reservar(
+                etapa=tarefa,
+                provedor=modelo["provedor"],
+                modelo=modelo["modelo"],
+                tier=tier,
+                prompt_versao=versao_prompt,
+                custo_maximo_usd=custo_maximo,
+            )
         pedido = {
             "model": modelo["modelo"],
             "input": prompt,
@@ -253,6 +257,24 @@ class Roteador:
         ):
             raise ModeloIndisponivel("saida excede a capacidade documentada do modelo")
         return modelo
+
+    @staticmethod
+    def _custo_maximo(modelo: dict, prompt: str, schema: dict) -> Decimal:
+        tamanho_prompt = len(prompt.encode("utf-8")) + len(
+            json.dumps(schema, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        )
+        if tamanho_prompt > int(modelo["tamanho_prompt_max_bytes"]):
+            raise ValueError("prompt excede o limite configurado para o modelo")
+        tokens_entrada_reservados = tamanho_prompt + int(modelo["tokens_sobrecarga_entrada"])
+        custo_maximo = (
+            Decimal(tokens_entrada_reservados)
+            * Decimal(str(modelo["preco_entrada_usd_milhao"]))
+            + Decimal(int(modelo["max_tokens_saida"]))
+            * Decimal(str(modelo["preco_saida_usd_milhao"]))
+        ) / Decimal(1_000_000)
+        if custo_maximo > Decimal(str(modelo["custo_maximo_chamada_usd"])):
+            raise ValueError("custo maximo da chamada excede o limite configurado")
+        return custo_maximo
 
     @staticmethod
     def _sem_chaves_duplicadas(pares: list[tuple[str, object]]) -> dict[str, object]:

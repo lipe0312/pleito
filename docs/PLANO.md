@@ -149,7 +149,10 @@ tiers permanecem desabilitados até passar pelo conjunto de avaliação da seç�
 
 Regras do roteador:
 
-- **Escrita nunca desce de tier.** Se o modelo forte estiver indisponível ou o orçamento acabar, a geração é adiada, não feita com modelo mais fraco.
+- **Escrita nunca desce de tier.** Se o modelo forte estiver indisponível ou o orçamento
+  acabar, a geração e o chat são adiados, não feitos com modelo mais fraco. A pontuação final
+  pode usar o tier rápido quando o saldo mensal cai abaixo do mínimo do tier forte; a
+  classificação de email já usa o tier rápido. Ver ADR 0018.
 - **Mesmas defesas para todos os modelos:** nenhum tem ferramentas, todos devolvem JSON validado, todos passam pelos mesmos validadores.
 - **Troca de modelo exige teste.** Antes de habilitar ou trocar um modelo na configuração, roda
   um conjunto fixo de vagas de teste (seção 8.6) e compara os resultados. A troca é registrada
@@ -158,9 +161,10 @@ Regras do roteador:
   tokens, custo reservado/real e resultado da validação (tabela `uso_llm`).
 - **Privacidade por provedor:** cada provedor usado recebe texto de vagas e trechos do currículo. Usar mais de um provedor aumenta a superfície de exposição de dados. Ver Q21.
 - **Assinatura e provedores:** o provedor inicial é OpenAI por chave de API, fora do banco e
-  guardada no `.env`. As respostas usam `store: false`, cache de prompt sem breakpoints e
-  nenhuma ferramenta; isso não elimina os logs de monitoramento de abuso do provedor. Ver
-  ADRs 0012 e 0017.
+  guardada no `.env`. As respostas usam `store: false`, cache de prompt em modo explícito sem
+  breakpoints e nenhuma ferramenta; isso evita cache writes, mas abre mão do desconto de tokens
+  em cache e não elimina os logs de monitoramento de abuso do provedor. Ver ADRs 0012, 0017 e
+  0019.
 
 ---
 
@@ -801,7 +805,8 @@ Regras: respeitar limites de requisição, termos de uso e robots.txt de cada fo
 - Aplicação sem LLM.
 - Classificação de email por regras, LLM só em caso ambíguo.
 - Orçamento mensal com teto diário, reserva transacional antes de cada chamada e corte
-  automático. Saldo insuficiente adia a tarefa, sem fallback para tier inferior.
+  automático. A pontuação final pode usar o tier rápido abaixo do saldo mínimo do forte;
+  escrita e chat ficam adiados. Teto diário ou mensal nunca provoca fallback. Ver ADR 0018.
 - Flag desligada encerra tudo antes de qualquer custo.
 
 ---

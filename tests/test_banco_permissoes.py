@@ -9,7 +9,7 @@ from decimal import Decimal
 import pytest
 
 from src.db.uso_llm import falhar_uso_llm, finalizar_uso_llm, reservar_uso_llm
-from src.llm.orcamento import OrcamentoEsgotado
+from src.llm.orcamento import OrcamentoEsgotado, SaldoInsuficienteTierForte
 from viabilidade.config import carregar
 
 
@@ -201,6 +201,40 @@ def test_orcamento_llm_recusa_reserva_acima_do_limite_diario(banco):
             diario + Decimal("1"),
             agora=datetime(2000, 1, 1, tzinfo=UTC),
         )
+
+
+def test_reserva_forte_identifica_saldo_baixo_para_fallback_seletivo(banco):
+    with banco.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO pleito.uso_llm (
+                etapa, provedor, modelo, tier, custo_usd, custo_reservado_usd, estado,
+                ocorrido_em
+            )
+            VALUES (
+                'teste_fase_0_5', 'openai', 'modelo-teste', 'forte', 4, 0, 'concluido',
+                '2000-01-10T00:00:00+00:00'
+            )
+            RETURNING id
+            """
+        )
+        uso_id = cursor.fetchone()[0]
+    banco.commit()
+    try:
+        with pytest.raises(SaldoInsuficienteTierForte):
+            reservar_uso_llm(
+                "pontuacao_final",
+                "openai",
+                "modelo-forte",
+                "forte",
+                "teste-v1",
+                Decimal("0.000001"),
+                agora=datetime(2000, 1, 10, tzinfo=UTC),
+            )
+    finally:
+        with banco.cursor() as cursor:
+            cursor.execute("DELETE FROM pleito.uso_llm WHERE id = %s", (uso_id,))
+        banco.commit()
 
 
 def test_update_nao_autorizado_falha_no_postgres(banco):

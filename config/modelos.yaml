@@ -1,9 +1,10 @@
 provedor_padrao: openai
 modo_cache_prompt: explicit
+fallback_saldo_insuficiente: [pontuacao_final]
 
 tiers:
   rapido:
-    uso: [extracao, classificacao_email, pre_pontuacao, mapeamento_campos]
+    uso: [extracao, classificacao_email, pre_pontuacao, pontuacao_final, mapeamento_campos]
     provedor: openai
     modelo: gpt-6-luna
     habilitado: false
