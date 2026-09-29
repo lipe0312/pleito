@@ -1,14 +1,55 @@
-provedor_padrao: claude
+provedor_padrao: openai
+modo_cache_prompt: explicit
 
 tiers:
   rapido:
     uso: [extracao, classificacao_email, pre_pontuacao, mapeamento_campos]
-    claude: claude-haiku-4-5-20251001
-    openai: gpt-4.1-mini
+    provedor: openai
+    modelo: gpt-6-luna
+    habilitado: false
+    avaliacao:
+      status: pendente
+      conjunto:
+      data:
+    preco_entrada_usd_milhao: 0.10
+    preco_saida_usd_milhao: 0.50
+    custo_maximo_chamada_usd: 0.01
+    tamanho_prompt_max_bytes: 30000
+    tokens_sobrecarga_entrada: 256
+    max_tokens_saida: 1500
+    esforco_raciocinio: low
+    capacidade:
+      janela_contexto_tokens: 1050000
+      entrada_max_tokens: 922000
+      saida_max_tokens: 128000
+      saida_estruturada: true
+      esforcos_raciocinio: [none, low, medium, high, xhigh, max]
+    precos_verificados_em: "2026-09-28"
+    documentacao_modelo: https://developers.openai.com/api/docs/models/gpt-6-luna
   forte:
     uso: [pontuacao_final, escrita_slots, chat_edicao, revisao_cruzada]
-    claude: claude-opus-5-5
-    openai: gpt-4.1
+    provedor: openai
+    modelo: gpt-6-sol
+    habilitado: false
+    avaliacao:
+      status: pendente
+      conjunto:
+      data:
+    preco_entrada_usd_milhao: 2.00
+    preco_saida_usd_milhao: 10.00
+    custo_maximo_chamada_usd: 0.15
+    tamanho_prompt_max_bytes: 30000
+    tokens_sobrecarga_entrada: 256
+    max_tokens_saida: 6000
+    esforco_raciocinio: low
+    capacidade:
+      janela_contexto_tokens: 1050000
+      entrada_max_tokens: 922000
+      saida_max_tokens: 128000
+      saida_estruturada: true
+      esforcos_raciocinio: [none, low, medium, high, xhigh, max]
+    precos_verificados_em: "2026-09-28"
+    documentacao_modelo: https://developers.openai.com/api/docs/models/gpt-6-sol
 
 revisao_cruzada:
   ativa_quando: [nota_quase_maxima, chat_usado]
@@ -18,3 +59,8 @@ conjunto_avaliacao:
   vagas_reais: 20
   armadilhas: [prompt_injection, tech_fora_do_inventario, senior_disfarcado, email_nao_autenticado]
   obrigatorio_antes_de_trocar: [modelo, prompt, regra_de_validacao]
+
+documentacao:
+  precos: https://developers.openai.com/api/docs/pricing
+  saida_estruturada: https://developers.openai.com/api/docs/guides/structured-outputs
+  raciocinio: https://developers.openai.com/api/docs/guides/reasoning

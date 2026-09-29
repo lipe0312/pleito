@@ -139,35 +139,28 @@ O sistema não trata a "LLM" como uma coisa só. Cada tarefa tem um **tier**, e 
 | Rascunho de resposta para pergunta nova                                       | **Forte**                              | Texto que vai para recrutador                                |
 | Revisão cruzada do currículo (opcional)                                       | **Forte**, de preferência outro modelo | Um segundo olhar independente pega distorções                |
 
-**Modelos são configuração, não código.** Os nomes mudam rápido (vários citados na conversa original, como Claude 3.5 Haiku, Claude 3.5 Sonnet e GPT-4o, já foram substituídos por versões mais novas). Exemplo de configuração, a revisar na hora de implementar:
-
-```yaml
-tiers:
-  rapido:
-    provedor: anthropic
-    modelo: claude-haiku-4-5 # exemplo, confirmar versão vigente
-    max_tokens_saida: 1500
-    orcamento_diario_chamadas: 80
-  forte:
-    provedor: anthropic
-    modelo: claude-sonnet-5 # exemplo, confirmar versão vigente
-    max_tokens_saida: 6000
-    orcamento_diario_chamadas: 25
-escalonamento:
-  falha_de_schema_repetida: sobe_para_forte # 2 falhas seguidas no tier rápido
-  nota_na_faixa_de_corte: [55, 70] # reavaliada pelo tier forte
-fallback:
-  forte_indisponivel: adiar_tarefa # nunca cai para o tier rápido na escrita
-```
+**Modelos são configuração, não código.** Identificadores, preços e capacidades verificados
+ficam em `config/modelos.yaml`, com fonte e data. Em 2026-09-28, a documentação oficial
+confirmou `gpt-6-luna` para o tier rápido e `gpt-6-sol` para o forte; ambos suportam Responses
+API, saída estruturada e esforço de raciocínio `low`. Os preços padrão de contexto curto são
+US$ 0,10/0,50 e US$ 2,00/10,00 por milhão de tokens de entrada/saída, respectivamente. Os
+tiers permanecem desabilitados até passar pelo conjunto de avaliação da seção 8.6. Ver ADRs
+0012 e 0017.
 
 Regras do roteador:
 
 - **Escrita nunca desce de tier.** Se o modelo forte estiver indisponível ou o orçamento acabar, a geração é adiada, não feita com modelo mais fraco.
 - **Mesmas defesas para todos os modelos:** nenhum tem ferramentas, todos devolvem JSON validado, todos passam pelos mesmos validadores.
-- **Troca de modelo exige teste.** Antes de trocar um modelo na configuração, roda um conjunto fixo de vagas de teste (seção 8.5) e compara os resultados. A troca é registrada na auditoria.
-- **Rastreabilidade:** toda chamada registra tarefa, tier, provedor, modelo, versão do prompt, tokens e resultado da validação (tabela `uso_llm`).
+- **Troca de modelo exige teste.** Antes de habilitar ou trocar um modelo na configuração, roda
+  um conjunto fixo de vagas de teste (seção 8.6) e compara os resultados. A troca é registrada
+  na auditoria.
+- **Rastreabilidade:** toda chamada registra tarefa, tier, provedor, modelo, versão do prompt,
+  tokens, custo reservado/real e resultado da validação (tabela `uso_llm`).
 - **Privacidade por provedor:** cada provedor usado recebe texto de vagas e trechos do currículo. Usar mais de um provedor aumenta a superfície de exposição de dados. Ver Q21.
-- **Assinatura e provedores:** usar a assinatura do Claude (via Claude Code em modo não interativo) só cobre modelos Claude. Modelos de outros provedores exigem chave de API e custo separado. Ver Q2 e Q21.
+- **Assinatura e provedores:** o provedor inicial é OpenAI por chave de API, fora do banco e
+  guardada no `.env`. As respostas usam `store: false`, cache de prompt sem breakpoints e
+  nenhuma ferramenta; isso não elimina os logs de monitoramento de abuso do provedor. Ver
+  ADRs 0012 e 0017.
 
 ---
 
@@ -796,7 +789,7 @@ Regras: respeitar limites de requisição, termos de uso e robots.txt de cada fo
 
 ---
 
-## 12. Custo e uso da assinatura
+## 12. Custo e uso dos modelos
 
 - Tiering de modelos (seção 3.3): extração, pontuação e classificação no tier rápido, só escrita e chat no tier forte.
 - Filtros e pré-pontuação sem LLM. Só as N melhores recebem avaliação da LLM.
@@ -807,7 +800,8 @@ Regras: respeitar limites de requisição, termos de uso e robots.txt de cada fo
 - Inventário atualizado uma vez por semana, não a cada vaga.
 - Aplicação sem LLM.
 - Classificação de email por regras, LLM só em caso ambíguo.
-- Orçamento diário com corte automático.
+- Orçamento mensal com teto diário, reserva transacional antes de cada chamada e corte
+  automático. Saldo insuficiente adia a tarefa, sem fallback para tier inferior.
 - Flag desligada encerra tudo antes de qualquer custo.
 
 ---
@@ -835,7 +829,7 @@ Regras: respeitar limites de requisição, termos de uso e robots.txt de cada fo
 | `respostas`         | pergunta normalizada, resposta, aprovada em                                                                                     |
 | `inventario`        | tech, âncoras, status (aprovada ou sugerida)                                                                                    |
 | `auditoria`         | ação, ator, alvo, data                                                                                                          |
-| `uso_llm`           | rotina, tarefa, tier, provedor, modelo, versão do prompt, tokens, resultado, data                                               |
+| `uso_llm`           | tarefa, tier, provedor, modelo, versão do prompt, tokens, reserva e custo real, validação, estado, data                          |
 
 ---
 
@@ -886,7 +880,7 @@ Compilação de teste das duas versões base do guia:
 | #   | Questão                               | Opções ou sugestão                                                                                                                                                                                                                                                                                                                       |
 | --- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Q1  | Nome definitivo do projeto e da pasta | `aplicador-curriculos` é provisório (SUGIRA UM NOME DE MERCADO MELHOR )                                                                                                                                                                                                                                                                  |
-| Q2  | Como chamar a LLM                     | Claude Code em modo não interativo usando a assinatura, com todas as ferramentas desligadas, ou chave de API com custo separado. (O que ficar com menos custo, atualmente ja pago claude mas estou disposto a carregar a api da OpenAI que já tenho conta). Verificar limites e termos de uso da assinatura para uso automatizado        |
+| Q2  | Como chamar a LLM                     | **Resolvida pela ADR 0012:** OpenAI por chave de API no `.env`; os tiers candidatos seguem desabilitados até avaliação da seção 8.6.                                                        |
 | Q3  | Stack do painel                       | FastAPI + HTMX (mais leve) ou React + Vite (mais familiar) (Foco no mais leve, o painel é simles e direto, sem rebuscagem, mas deve ser manutenivel e facilmente migrável se escalar)                                                                                                                                                    |
 | Q4  | Banco                                 | Postgres em Docker (tem RLS) é a sugestão. Confirmar se aceita rodar Docker no Mac, sim pode ser, gostaria de configurar esse banco no PgAdmin pessoa também, isso envolve alteração manual? da pra fazer pelo terminal né?                                                                                                              |
 | Q5  | Ponto e vírgula no currículo          | Manter como no base ou trocar por vírgula também no currículo , manter a base do currículo original. Se for trovar, apenas por vírgula, nunca travessão                                                                                                                                                                                  |
@@ -905,8 +899,8 @@ Compilação de teste das duas versões base do guia:
 | Q18 | Backup                                | Onde guardar o backup criptografado (disco externo, Drive) disco por enquanto                                                                                                                                                                                                                                                            |
 | Q19 | Banco de respostas inicial            | Levantar pretensão, disponibilidade, carga horária e demais respostas padrão SIm                                                                                                                                                                                                                                                         |
 | Q20 | Critério de "diferença pequena"       | Quando a variante da vaga reaproveita a família sem gerar arquivo Quanto for do mesmo tipo de aplicação , com poucas mudanças na stack, pode até reutilizar currículo se for viável                                                                                                                                                      |
-| Q21 | Provedores de modelo                  | Só Claude (um provedor, cabe na assinatura, menos exposição de dados) ou misto (Claude + outros via API). Recomendação inicial: um provedor só, com o roteador pronto para trocar já falado, se der usar claude como inscrição, mas sem problema de usar openAI                                                                          |
-| Q22 | Modelos de cada tier                  | Escolher e testar no conjunto de avaliação na hora de implementar, porque as versões mudam rápido SIm                                                                                                                                                                                                                                    |
+| Q21 | Provedores de modelo                  | **Resolvida pela ADR 0012:** um provedor inicial, OpenAI por API; o roteador mantém a fronteira para troca futura.                                                                                |
+| Q22 | Modelos de cada tier                  | Candidatos e preços oficiais registrados nas ADRs 0012/0017 e em `config/modelos.yaml`; ativação depende do conjunto de avaliação da seção 8.6.                                                  |
 | Q23 | Revisão cruzada ativa                 | Sempre, só para vagas de nota alta, ou só quando o chat foi usado Vagas de nota quase máxima ou/e quando o chat foi usado                                                                                                                                                                                                                |
 | Q24 | Limites do chat                       | Rodadas por vaga e tamanho máximo do pedido deve existir baseado no usage ou no quanto eu já usei( se for via api)                                                                                                                                                                                                                       |
 | Q25 | Promoção de campeão                   | Automática para `forte` e com confirmação para `campeao` (proposta atual), ou tudo com confirmação . ta bom com niveis de curriculo assim                                                                                                                                                                                                |
