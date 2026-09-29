@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import uvicorn
 
+from src.config import carregar
 from src.painel.app import app
-from viabilidade.config import carregar
 
 
 def main() -> None:

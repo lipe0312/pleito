@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
+from src.config import carregar
 from src.db.conexao import conectar
 from src.llm.orcamento import OrcamentoEsgotado, calcular_limite_diario, exigir_saldo_tier
-from viabilidade.config import carregar
 
 
 def _limites() -> tuple[Decimal, Decimal]:

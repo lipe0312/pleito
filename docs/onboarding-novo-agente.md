@@ -2,7 +2,7 @@
 
 > Cole este arquivo inteiro como primeira mensagem para um novo agente (Claude Code ou outro)
 > assumir o projeto. Ele substitui uma explicação verbal: tudo que importa está aqui ou nos
-> arquivos citados. Gerado em 2026-09-28, ao fechar o spike de viabilidade.
+> arquivos citados. Atualizado em 2026-09-28, após a etapa 0.5 da fundação.
 
 ---
 
@@ -31,8 +31,8 @@ modelado e rodando, testes passando. Leia antes de escrever qualquer linha:
 8. `docs/adr/0001` a `docs/adr/0011` — cada decisão de arquitetura com contexto, decisão e
    consequências. Leia todas antes de propor mudança estrutural; é provável que a pergunta já
    tenha sido decidida e justificada ali.
-9. `docs/adr/0012` a `docs/adr/0017` — decisões posteriores ao spike, incluindo OpenAI,
-   destinatário de email configurável e fundação de auditoria/uso
+9. `docs/adr/0012` a `docs/adr/0019` — decisões posteriores ao spike, incluindo OpenAI,
+   destinatário configurável, fundação, fallback seletivo e privacidade de cache
 10. `CLAUDE.md` — constraints de código e de commit deste repositório especificamente
 
 ## As perguntas do plano (`docs/PLANO.md`, seção 16) já respondidas nesta sessão
@@ -55,10 +55,11 @@ resposta e onde está registrada:
   - **Sólides**: não tem API. Por HTTP simples, NO-GO (conteúdo montado no cliente). Por
     navegador, o conteúdo renderiza (73441 vagas anunciadas), mas os cartões apontam para
     subdomínio por empresa sem API própria. Fica documentada como possível, não implementada.
-- **Q21 (provedor de LLM):** um provedor só no início (Claude), roteador pronto para trocar.
-  ADR 0006.
+- **Q2, Q21 e Q22 (provedor e modelos):** OpenAI por chave de API no `.env`; modelos e custos
+  registrados em configuração e tiers bloqueados até avaliação. ADRs 0012 e 0017.
 
-Questões **ainda em aberto**, não tocadas nesta sessão: Q2, Q5, Q6, Q9–Q13, Q15–Q20, Q22–Q27.
+Questões **ainda em aberto**, não tocadas nesta sessão: Q5, Q6, Q9–Q11, Q12–Q13, Q15–Q20,
+Q23–Q27.
 Não presuma resposta para elas — pergunte ao Filipe quando forem relevantes.
 
 ## O que a verificação revelou (não repita esses erros)
@@ -67,7 +68,7 @@ Dezessete defeitos foram encontrados **rodando** código real contra sistemas re
 leitura. Os mais importantes, porque são armadilhas fáceis de reintroduzir:
 
 - **robots.txt com status 4xx não é proibição** (RFC 9309): 4xx = indisponível = libera. Só
-  429 e 5xx exigem recusar. Isso já está implementado em `viabilidade/conformidade.py` — não
+  429 e 5xx exigem recusar. Isso já está implementado em `src/coletor/conformidade.py` — não
   "simplifique" essa lógica achando que está errada.
 - **Filtro de domínio do navegador precisa liberar assets estáticos de terceiro** (script,
   stylesheet, font, image), senão qualquer página renderizada no cliente (React, Next.js) fica
@@ -78,10 +79,10 @@ leitura. Os mais importantes, porque são armadilhas fáceis de reintroduzir:
   scripts de sites sem nenhum widget visível. Checar elemento visível, não texto.
 - **Allowlist de domínio precisa aceitar subdomínio por sufixo com ponto** (`visagio.gupy.io`
   deve passar se `gupy.io` está na lista; `malicioso-gupy.io` não deve). Ver `host_permitido`
-  em `viabilidade/conformidade.py`.
+  em `src/coletor/conformidade.py`.
 - **Palavra genérica em português ("dados") não pode classificar pela descrição inteira** — "seus
   dados pessoais" aparece em qualquer texto de LGPD e inflava falsos positivos. Termo genérico
-  só vale no título. Ver `viabilidade/triagem.py`, `TERMOS_GENERICOS`.
+  só vale no título. Ver `src/triagem/regra.py`, `TERMOS_GENERICOS`.
 - **Remetente de email não pode ser checado por substring** — `jobs-noreply@linkedin.com.golpe.net`
   contém a string do remetente legítimo. Sempre separar caixa e domínio, comparar domínio por
   igualdade exata. Ver `viabilidade/ingest/email_alertas.py`, `remetente_confiavel`.
@@ -151,7 +152,7 @@ gargalo é o cruzamento de critérios, não falta de vaga: a Gupy sozinha tem 17
 ```bash
 cd ~/Documents/PESSOAL/DOCUMENTOS/Curriculos/pleito
 
-# ambiente Python 3.11 e Node.js/npm
+# ambiente Python 3.11
 cp .env.example .env   # se ainda não existe; gerar senhas com secrets.token_urlsafe(32)
 make setup
 make banco && make banco-status && make migrar
@@ -193,13 +194,14 @@ pleito/
     ameacas.md                   modelo de ameaças
     banco.md                     como configurar/acessar o banco
     onboarding-novo-agente.md    este arquivo
-    adr/0001 a 0011              decisões de arquitetura
+    adr/0001 a 0019              decisões de arquitetura
 
   config/
     fontes.yaml                  as 14 fontes, domínios permitidos, boards por empresa
     filtros.yaml                 termos de busca, cenários de filtro, o escopo escolhido
     limites.yaml                  horários, limites diários, orçamento de LLM
     modelos.yaml                  tiering de modelo por etapa
+    triagem.yaml                  vocabulário e limites da triagem
 
   db/
     migrations/0000_controle.sql  tabela de controle de migração (idempotência)
@@ -219,15 +221,18 @@ pleito/
     baseline/                      extrair.py (do guia) e validar.py (compila e mede)
     eda/                           relatorio.py (perfil e cenários)
 
-  src/                            módulos do sistema definitivo — AINDA VAZIOS (só __init__.py)
-    coletor/ triagem/ gerador/ validador/ aplicador/ email/ llm/ db/ painel/
+  src/                            implementação definitiva e compartilhada
+    config.py                     carregamento comum de ambiente e YAML
+    coletor/                      contratos e conformidade migrados do spike
+    triagem/                      classificação e extração de experiência
+    llm/ db/ painel/              roteador, orçamento, persistência e painel local
 
   scripts/
     migrar.sh                     aplica migrações com controle de idempotência
     rotacionar-senha.sh           gera senha nova, aplica ALTER ROLE, atualiza .env
     login_manual.py               abre perfil Playwright para login manual sem fechar sozinho
 
-  tests/                          73+ testes, todos offline (fixtures, sem rede real)
+  tests/                         testes offline e testes de integração restritos ao banco do projeto
   dados/                          FORA DO GIT — vagas.jsonl, resultados de ingest/egress/baseline
   segredos/                       FORA DO GIT — perfil do navegador
 ```
@@ -237,11 +242,11 @@ pleito/
 1. Se o Filipe autorizar: escolher com ele uma vaga do Greenhouse ou Ashby e rodar o submit
    real (`PLEITO_EGRESS_MODO=submit_real` + token no `.env`), fechando o único item pendente
    do veredito de egress.
-2. Migrar o que funcionou do `viabilidade/` para `src/`, que ainda está vazio — é a Fase 0/1 do
-   roteiro (`docs/PLANO.md`, seção 14).
+2. Iniciar a Fase 1: integração segura do Gmail, resumo diário e telas Hoje/Candidaturas, conforme
+   `docs/plano-direcionado.md`.
 3. Investigar por que "presencial Salvador + dados" deu zero nesta coleta — pode precisar de
    termo de busca dedicado no `config/filtros.yaml` para a Gupy.
-4. Perguntas em aberto do plano que bloqueiam decisão de arquitetura (Q2, Q9-Q13 etc.) — levar
+4. Perguntas em aberto do plano que bloqueiam decisão de arquitetura (Q9-Q13 etc.) — levar
    ao Filipe conforme forem ficando relevantes, não assumir resposta.
 
 ## Como se comportar neste projeto
