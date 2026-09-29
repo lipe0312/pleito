@@ -31,7 +31,9 @@ modelado e rodando, testes passando. Leia antes de escrever qualquer linha:
 8. `docs/adr/0001` a `docs/adr/0011` — cada decisão de arquitetura com contexto, decisão e
    consequências. Leia todas antes de propor mudança estrutural; é provável que a pergunta já
    tenha sido decidida e justificada ali.
-9. `CLAUDE.md` — constraints de código e de commit deste repositório especificamente
+9. `docs/adr/0012` a `docs/adr/0017` — decisões posteriores ao spike, incluindo OpenAI,
+   destinatário de email configurável e fundação de auditoria/uso
+10. `CLAUDE.md` — constraints de código e de commit deste repositório especificamente
 
 ## As perguntas do plano (`docs/PLANO.md`, seção 16) já respondidas nesta sessão
 
@@ -149,7 +151,7 @@ gargalo é o cruzamento de critérios, não falta de vaga: a Gupy sozinha tem 17
 ```bash
 cd ~/Documents/PESSOAL/DOCUMENTOS/Curriculos/pleito
 
-# ambiente
+# ambiente Python 3.11 e Node.js/npm
 cp .env.example .env   # se ainda não existe; gerar senhas com secrets.token_urlsafe(32)
 make setup
 make banco && make banco-status && make migrar

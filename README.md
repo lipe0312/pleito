@@ -3,8 +3,10 @@
 Sistema local-first que busca vagas de estagio e junior, gera uma variante do curriculo em LaTeX
 para cada vaga boa, aplica de forma assistida e acompanha o retorno pelo Gmail.
 
-Estado atual: **fase de spike de viabilidade**. Nenhuma fase do roteiro comeca antes de o
-veredito global fechar GO. A flag `sistema_ativo` nasce desligada no banco.
+Estado atual: **spike encerrado com GO com ressalva; fundacao da fase 0 em implementacao**.
+A flag `sistema_ativo` nasce desligada no banco. Modelos, precos e capacidades foram
+verificados na documentacao oficial, mas os dois tiers permanecem desabilitados ate a
+aprovacao no conjunto de avaliacao.
 
 ## Por que esse spike vem antes de tudo
 
@@ -31,9 +33,10 @@ viabilidade/        modulo do spike, descartavel sem tocar em src/
   eda/              perfil das vagas coletadas, completude, duplicidade, elegibilidade
   veredito.py       consolida GO / GO com ressalva / NO-GO por fronteira
 config/             filtros, fontes, limites, modelos (nada hardcoded no codigo)
+                    triagem por termos, modelos LLM desabilitados ate avaliacao
 db/migrations/      primeira modelagem
 db/policies/        papeis e RLS
-src/                modulos do sistema definitivo, ainda vazios
+src/                acessos ao banco, auditoria, flag, painel local e roteador LLM
 docs/adr/           decisoes de arquitetura em formato MADR minimo
 ```
 
@@ -46,6 +49,8 @@ make setup
 make banco
 make migrar
 make testes
+make testes-banco
+make painel
 ```
 
 ## Comandos do spike
@@ -64,6 +69,11 @@ preenche, anexa, encontra o botao e **para antes de clicar**, gravando captura d
 Submit real exige `PLEITO_EGRESS_MODO=submit_real` mais um token de 16+ caracteres no `.env`,
 e e uma decisao por execucao (ver `docs/adr/0008`).
 
+O painel vazio inicia somente em `127.0.0.1`, pela porta de `config/painel.yaml`; HTMX e servido
+localmente por dependencia fixada no `package-lock.json`, sem CDN. `make testes-banco` e opcional
+e exige o banco do projeto migrado na porta 55432; nunca conecta ao PostgreSQL da disciplina na
+porta 5432.
+
 ## Invariantes de seguranca
 
 - nenhuma senha e guardada, digitada ou lida pelo sistema, em lugar nenhum
@@ -73,6 +83,9 @@ e e uma decisao por execucao (ver `docs/adr/0008`).
 - o navegador do egress bloqueia toda requisicao para dominio fora da allowlist
 - `dados/` e `segredos/` nunca entram no git
 - curriculo com mais de uma pagina e recusado por constraint no banco, nao so por codigo
+- a aplicacao e o painel usam papeis e credenciais diferentes; grants limitam a escrita por
+  coluna e auditoria nao pode ser alterada nem apagada
+- o roteador LLM nao oferece ferramentas e valida JSON contra schema estrito
 
 ## Dado pessoal e repositorio publico
 

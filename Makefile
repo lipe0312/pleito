@@ -2,12 +2,13 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes lint viabilidade limpar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco painel lint viabilidade limpar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
 	$(PIP) install -q --upgrade pip
 	$(PIP) install -q -e ".[dev]"
+	npm ci --quiet
 	$(PY) -m playwright install chromium
 
 banco:
@@ -51,8 +52,14 @@ senha-rotacionar:
 testes:
 	$(PY) -m pytest -m "not rede and not navegador and not latex"
 
+testes-banco:
+	PLEITO_TEST_DATABASE=1 $(PY) -m pytest tests/test_banco_permissoes.py
+
 testes-todos:
 	$(PY) -m pytest
+
+painel:
+	$(PY) -m src.painel
 
 lint:
 	.venv/bin/ruff check .

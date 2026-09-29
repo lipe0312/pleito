@@ -8,9 +8,12 @@ dependencies = [
     "pydantic>=2.7",
     "python-dotenv>=1.0",
     "pyyaml>=6.0",
+    "psycopg[binary]>=3.2",
     "playwright>=1.44",
     "pypdf>=4.2",
     "defusedxml>=0.7",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +26,7 @@ dev = [
 
 [project.scripts]
 viabilidade = "viabilidade.cli:main"
+pleito-painel = "src.painel.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["viabilidade*", "src*"]
