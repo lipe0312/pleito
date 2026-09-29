@@ -1,8 +1,0 @@
-{
-  "name": "pleito",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "htmx.org": "2.0.11"
-  }
-}

@@ -70,9 +70,9 @@ Submit real exige `PLEITO_EGRESS_MODO=submit_real` mais um token de 16+ caracter
 e e uma decisao por execucao (ver `docs/adr/0008`).
 
 O painel vazio inicia somente em `127.0.0.1`, pela porta de `config/painel.yaml`; HTMX e servido
-localmente por dependencia fixada no `package-lock.json`, sem CDN. `make testes-banco` e opcional
-e exige o banco do projeto migrado na porta 55432; nunca conecta ao PostgreSQL da disciplina na
-porta 5432.
+localmente pelo arquivo versionado `src/painel/static/htmx.min.js`, validado por SHA-256, sem
+CDN ou runtime Node.js. `make testes-banco` e opcional e exige o banco do projeto migrado na
+porta 55432; nunca conecta ao PostgreSQL da disciplina na porta 5432.
 
 ## Invariantes de seguranca
 

@@ -8,7 +8,7 @@ setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
 	$(PIP) install -q --upgrade pip
 	$(PIP) install -q -e ".[dev]"
-	npm ci --quiet
+	git config core.hooksPath .githooks
 	$(PY) -m playwright install chromium
 
 banco:

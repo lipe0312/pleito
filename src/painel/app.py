@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 MODELO = Path(__file__).resolve().parent / "templates" / "index.html"
-HTMX = Path(__file__).resolve().parents[2] / "node_modules" / "htmx.org" / "dist"
+HTMX = Path(__file__).resolve().parent / "static"
 app.mount("/assets", StaticFiles(directory=HTMX), name="assets")
 
 
