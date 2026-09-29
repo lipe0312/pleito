@@ -1,7 +1,7 @@
 # Provedor unico no inicio, roteador por tier pronto para trocar
 
 ## Status
-Aceita
+Aceita. A escolha de provedor foi substituida pela 0012; o roteador por tier continua.
 
 ## Contexto
 Q2, Q21 e Q22 do plano. O Filipe ja paga Claude e tem conta OpenAI. O custo precisa ser
