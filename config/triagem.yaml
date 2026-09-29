@@ -1,0 +1,132 @@
+termos_funcao:
+  engenharia:
+    - software engineer
+    - engenheiro de software
+    - desenvolvedor
+    - developer
+    - programador
+    - backend
+    - back-end
+    - frontend
+    - front-end
+    - fullstack
+    - full stack
+    - full-stack
+    - mobile
+    - android
+    - ios
+    - web developer
+    - swe
+    - software developer
+    - engenharia de software
+    - python
+    - java developer
+    - desenvolvimento de sistemas
+    - desenvolvimento de software
+    - desenvolvimento web
+    - firmware
+    - embedded
+    - engenheiro de computacao
+    - computer engineer
+  dados:
+    - data engineer
+    - engenheiro de dados
+    - data scientist
+    - cientista de dados
+    - data analyst
+    - analista de dados
+    - analytics engineer
+    - machine learning
+    - ml engineer
+    - bi analyst
+    - business intelligence
+    - dados
+  infra:
+    - devops
+    - sre
+    - site reliability
+    - platform engineer
+    - infrastructure engineer
+    - cloud engineer
+    - infraestrutura
+    - kubernetes
+  qa:
+    - qa engineer
+    - quality assurance
+    - test engineer
+    - analista de teste
+    - automacao de teste
+    - sdet
+
+termos_fora:
+  - executivo
+  - comercial
+  - vendas
+  - sales
+  - account executive
+  - account manager
+  - recrut
+  - recursos humanos
+  - people
+  - financeiro
+  - contabil
+  - juridico
+  - legal
+  - marketing
+  - brand
+  - social media
+  - logistica
+  - estoque
+  - motorista
+  - auxiliar
+  - atendimento
+  - customer success
+  - customer support
+  - suporte ao cliente
+  - enfermeir
+  - administrativ
+  - assistente admin
+  - auxiliar admin
+  - mecanic
+  - manutencao
+  - maintenance
+  - office assistant
+  - secretari
+  - recepcion
+  - product manager
+  - gerente de produto
+  - product owner
+  - scrum master
+  - designer
+  - "ux "
+  - "ui "
+  - redator
+  - writer
+  - editor
+  - professor
+  - instrutor
+  - consultor de
+
+siglas_funcao:
+  dados: [bi, etl, ml, nlp, dw]
+  infra: [sre, k8s]
+  qa: [qa, sdet]
+  engenharia: [swe, api]
+
+termos_genericos:
+  - dados
+  - bi
+  - analytics
+  - python
+  - sql
+  - mobile
+  - android
+  - ios
+  - web developer
+
+limites:
+  descricao_util_min_chars: 200
+  descricao_funcao_max_chars: 600
+  descricao_anos_max_chars: 4000
+  anos_experiencia_min_detectavel: 1
+  anos_experiencia_max_detectavel: 20

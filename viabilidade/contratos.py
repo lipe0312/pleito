@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from enum import Enum, StrEnum
 
+from viabilidade.config import carregar
+
 CAMPOS_TRIAGEM = (
     "titulo",
     "empresa",
@@ -16,7 +18,7 @@ CAMPOS_TRIAGEM = (
     "funcao",
 )
 
-LIMITE_DESCRICAO_UTIL = 200
+LIMITE_DESCRICAO_UTIL = int(carregar("triagem")["limites"]["descricao_util_min_chars"])
 
 
 class Senioridade(StrEnum):

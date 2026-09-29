@@ -2,53 +2,24 @@ from __future__ import annotations
 
 import re
 
+from viabilidade.config import carregar
 from viabilidade.contratos import Funcao
 
+_CONFIG = carregar("triagem")
+_LIMITES = _CONFIG["limites"]
+LIMITE_DESCRICAO_UTIL = int(_LIMITES["descricao_util_min_chars"])
+LIMITE_TEXTO_FUNCAO = int(_LIMITES["descricao_funcao_max_chars"])
+LIMITE_TEXTO_ANOS = int(_LIMITES["descricao_anos_max_chars"])
+LIMITE_ANOS_MINIMO = int(_LIMITES["anos_experiencia_min_detectavel"])
+LIMITE_ANOS_EXPERIENCIA = int(_LIMITES["anos_experiencia_max_detectavel"])
 TERMOS_FUNCAO = {
-    Funcao.ENGENHARIA: (
-        "software engineer", "engenheiro de software", "desenvolvedor", "developer",
-        "programador", "backend", "back-end", "frontend", "front-end", "fullstack",
-        "full stack", "full-stack", "mobile", "android", "ios", "web developer",
-        "swe", "software developer", "engenharia de software", "python", "java developer",
-        "desenvolvimento de sistemas", "desenvolvimento de software", "desenvolvimento web",
-        "firmware", "embedded", "engenheiro de computacao", "computer engineer",
-    ),
-    Funcao.DADOS: (
-        "data engineer", "engenheiro de dados", "data scientist", "cientista de dados",
-        "data analyst", "analista de dados", "analytics engineer", "machine learning",
-        "ml engineer", "bi analyst", "business intelligence", "dados",
-    ),
-    Funcao.INFRA: (
-        "devops", "sre", "site reliability", "platform engineer", "infrastructure engineer",
-        "cloud engineer", "infraestrutura", "kubernetes",
-    ),
-    Funcao.QA: (
-        "qa engineer", "quality assurance", "test engineer", "analista de teste",
-        "automacao de teste", "sdet",
-    ),
+    Funcao(funcao): tuple(termos) for funcao, termos in _CONFIG["termos_funcao"].items()
 }
-
-TERMOS_FORA = (
-    "executivo", "comercial", "vendas", "sales", "account executive", "account manager",
-    "recrut", "recursos humanos", "people", "financeiro", "contabil", "juridico", "legal",
-    "marketing", "brand", "social media", "logistica", "estoque", "motorista", "auxiliar",
-    "atendimento", "customer success", "customer support", "suporte ao cliente", "enfermeir",
-    "administrativ", "assistente admin", "auxiliar admin",
-    "mecanic", "manutencao", "maintenance", "office assistant", "secretari", "recepcion",
-    "product manager", "gerente de produto", "product owner", "scrum master", "designer",
-    "ux ", "ui ", "redator", "writer", "editor", "professor", "instrutor", "consultor de",
-)
-
+TERMOS_FORA = tuple(_CONFIG["termos_fora"])
 SIGLAS_FUNCAO = {
-    Funcao.DADOS: ("bi", "etl", "ml", "nlp", "dw"),
-    Funcao.INFRA: ("sre", "k8s"),
-    Funcao.QA: ("qa", "sdet"),
-    Funcao.ENGENHARIA: ("swe", "api"),
+    Funcao(funcao): tuple(siglas) for funcao, siglas in _CONFIG["siglas_funcao"].items()
 }
-
-TERMOS_GENERICOS = frozenset(
-    {"dados", "bi", "analytics", "python", "sql", "mobile", "android", "ios", "web developer"}
-)
+TERMOS_GENERICOS = frozenset(_CONFIG["termos_genericos"])
 
 ANOS = re.compile(
     r"\b(\d{1,2})\s*(?:\+|\-\s*\d{1,2})?\s*(?:years?|yrs?|anos?)\b(?![^.]{0,20}old)",
@@ -74,7 +45,7 @@ def inferir_funcao(titulo: str, descricao: str = "") -> Funcao:
         return Funcao.ENGENHARIA
     if "estagi" in baixo and "desenvolv" in baixo:
         return Funcao.ENGENHARIA
-    corpo = (descricao or "")[:600].lower()
+    corpo = (descricao or "")[:LIMITE_TEXTO_FUNCAO].lower()
     for funcao, termos in TERMOS_FUNCAO.items():
         especificos = [t for t in termos if t not in TERMOS_GENERICOS]
         if any(t in corpo for t in especificos):
@@ -85,6 +56,8 @@ def inferir_funcao(titulo: str, descricao: str = "") -> Funcao:
 def extrair_anos_experiencia(descricao: str) -> int | None:
     if not descricao:
         return None
-    achados = [int(m.group(1)) for m in ANOS.finditer(descricao[:4000])]
-    plausiveis = [a for a in achados if 0 < a <= 20]
+    achados = [int(m.group(1)) for m in ANOS.finditer(descricao[:LIMITE_TEXTO_ANOS])]
+    plausiveis = [
+        a for a in achados if LIMITE_ANOS_MINIMO <= a <= LIMITE_ANOS_EXPERIENCIA
+    ]
     return min(plausiveis) if plausiveis else None
