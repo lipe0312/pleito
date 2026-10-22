@@ -49,3 +49,30 @@ def test_compatibilidade_do_spike_reexporta_as_implementacoes_definitivas():
     assert consultar_src is consultar_viabilidade
     assert VagaBrutaSrc is VagaBrutaViabilidade
     assert inferir_src is inferir_viabilidade
+
+
+def test_ingest_do_spike_so_reexporta_sem_logica():
+    for caminho in Path("viabilidade/ingest").glob("*.py"):
+        arvore = ast.parse(caminho.read_text(encoding="utf-8"))
+        definicoes = [
+            no for no in arvore.body if isinstance(no, (ast.FunctionDef, ast.ClassDef, ast.Assign))
+        ]
+        atribuicoes = [
+            no for no in definicoes if isinstance(no, ast.Assign) and no.targets[0].id != "__all__"
+        ]
+        funcoes_ou_classes = [no for no in definicoes if not isinstance(no, ast.Assign)]
+        assert not funcoes_ou_classes and not atribuicoes, str(caminho)
+
+
+def test_coletores_do_spike_sao_os_mesmos_objetos_de_src():
+    from src.coletor.base import ColetorHttp as ColetorSrc
+    from src.coletor.base import registro as registro_src
+    from src.coletor.greenhouse import FonteGreenhouse as GreenhouseSrc
+    from viabilidade.ingest import FonteGreenhouse as GreenhouseSpike
+    from viabilidade.ingest.base import ColetorHttp as ColetorSpike
+    from viabilidade.ingest.base import registro as registro_spike
+
+    assert ColetorSrc is ColetorSpike
+    assert GreenhouseSrc is GreenhouseSpike
+    assert registro_src() == registro_spike()
+    assert "greenhouse" in registro_spike()

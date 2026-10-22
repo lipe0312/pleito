@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from viabilidade.conformidade import (
+from src.coletor.conformidade import (
     DominioNaoPermitido,
     Limitador,
     consultar_robots,
@@ -86,3 +86,34 @@ def test_limitador_respeita_intervalo():
     inicio = time.monotonic()
     lim.esperar()
     assert time.monotonic() - inicio >= 0.04
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://greenhouse.io.evil.com/v1/boards/x/jobs",
+        "https://evilgreenhouse.io/v1/boards/x/jobs",
+        "https://boards-api.greenhouse.io.evil.com/v1/boards/x/jobs",
+        "https://evil.com/boards-api.greenhouse.io",
+    ],
+)
+def test_host_que_imita_dominio_permitido_e_bloqueado(url):
+    with pytest.raises(DominioNaoPermitido):
+        exigir_dominio_permitido(url)
+
+
+def test_coletor_com_robots_proibindo_nao_chega_a_requisitar_a_api():
+    from src.coletor.contratos import MotivoNoGo
+    from src.coletor.greenhouse import FonteGreenhouse
+
+    requisicoes: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requisicoes.append(request.url.path)
+        return httpx.Response(200, text="User-agent: *\nDisallow: /\n")
+
+    cliente = httpx.Client(transport=httpx.MockTransport(handler))
+    resultado = FonteGreenhouse(client=cliente).coletar(5)
+    assert requisicoes == ["/robots.txt"]
+    assert MotivoNoGo.ROBOTS_PROIBE in resultado.motivos
+    assert resultado.vagas == []

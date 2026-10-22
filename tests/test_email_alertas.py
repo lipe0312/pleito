@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from viabilidade.contratos import Funcao, ModeloTrabalho, Senioridade
-from viabilidade.ingest.email_alertas import (
+from src.coletor.contratos import Funcao, ModeloTrabalho, Senioridade
+from src.coletor.email_alertas import (
     coletar_de_emails,
     extrair_alerta_linkedin,
     remetente_confiavel,

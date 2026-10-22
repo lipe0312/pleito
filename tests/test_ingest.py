@@ -5,10 +5,10 @@ import json
 import httpx
 import pytest
 
-from viabilidade.contratos import ModeloTrabalho, Senioridade
-from viabilidade.ingest.base import ColetorHttp, inferir_modelo, inferir_senioridade
-from viabilidade.ingest.greenhouse import limpar_html, parse_jobs
-from viabilidade.ingest.lever import parse_postings
+from src.coletor.base import ColetorHttp, inferir_modelo, inferir_senioridade
+from src.coletor.contratos import ModeloTrabalho, Senioridade
+from src.coletor.greenhouse import limpar_html, parse_jobs
+from src.coletor.lever import parse_postings
 
 
 class ColetorFalso(ColetorHttp):
@@ -17,7 +17,7 @@ class ColetorFalso(ColetorHttp):
     def __init__(self) -> None:
         self._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200)))
         self._proprio = True
-        from viabilidade.conformidade import Limitador
+        from src.coletor.conformidade import Limitador
 
         self._limitador = Limitador(0)
 
@@ -94,7 +94,7 @@ def test_parse_lever_converte_timestamp_ms(coletor, fixtures):
 
 
 def test_coletor_recusa_dominio_fora_do_yaml(coletor):
-    from viabilidade.conformidade import DominioNaoPermitido
+    from src.coletor.conformidade import DominioNaoPermitido
 
     with pytest.raises(DominioNaoPermitido):
         coletor._buscar("https://sitequalquer.com/api")
@@ -103,7 +103,7 @@ def test_coletor_recusa_dominio_fora_do_yaml(coletor):
 def test_rss_recusa_entidade_externa():
     from defusedxml.common import EntitiesForbidden
 
-    from viabilidade.ingest.rss import fromstring_seguro
+    from src.coletor.rss import fromstring_seguro
 
     ataque = (
         b'<?xml version="1.0"?><!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]>'
@@ -116,7 +116,7 @@ def test_rss_recusa_entidade_externa():
 def test_rss_recusa_bomba_de_entidades():
     from defusedxml.common import EntitiesForbidden
 
-    from viabilidade.ingest.rss import fromstring_seguro
+    from src.coletor.rss import fromstring_seguro
 
     bomba = (
         b'<?xml version="1.0"?><!DOCTYPE b [<!ENTITY a "aaaa"><!ENTITY b "&a;&a;&a;&a;">]>'
@@ -147,6 +147,6 @@ def test_rss_recusa_bomba_de_entidades():
     ],
 )
 def test_palavra_generica_nao_classifica_pela_descricao(titulo, descricao, esperado):
-    from viabilidade.triagem import inferir_funcao
+    from src.triagem.regra import inferir_funcao
 
     assert inferir_funcao(titulo, descricao).value == esperado
