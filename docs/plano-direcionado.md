@@ -17,6 +17,8 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] ADRs 0001 a 0019 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
   interativa e o push no iPhone
+- [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
+  `src/email/` (sem Gmail e sem banco; F1.1 e F1.3 pendentes)
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
@@ -49,7 +51,7 @@ Ordem de leitura. Quem começa uma fase relê o que ela toca; nada aqui é opcio
 **Configuração**, `config/`:
 - [x] `limites.yaml` (horários, orçamento, limites), `modelos.yaml` (tiers, preços, habilitação),
   `triagem.yaml`, `filtros.yaml`, `fontes.yaml`, `painel.yaml`
-- [ ] a criar: `emails.yaml`, `rotulos.yaml` (Fase 1)
+- [x] `emails.yaml`, `rotulos.yaml` (Fase 1, item F1.2)
 
 **Código e banco**
 - [x] `src/config.py`, `src/llm/roteador.py`, `src/llm/orcamento.py`, `src/db/`, `src/painel/`
