@@ -14,9 +14,11 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   painel vazio (commits 4588e24, de48423, 3af8c71, e7eaa7f)
 - [x] Etapa 0.5, ajustes da revisão (commits bbbfb7b, b75f05b, a4d6496, 4efa4f6)
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
-- [x] ADRs 0001 a 0019 versionadas
+- [x] ADRs 0001 a 0020 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
   interativa e o push no iPhone
+- [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
+  refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
