@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,12 +15,19 @@ ESCOPOS_PERMITIDOS = frozenset(
     }
 )
 
+ROTULOS_SISTEMA_PROIBIDOS = frozenset({"TRASH", "SPAM", "SENT", "DRAFT", "INBOX"})
+PADRAO_ROTULO_USUARIO = re.compile(r"Label_[0-9]+")
+
 
 class EscopoProibido(ValueError):
     pass
 
 
 class LoopbackInvalido(ValueError):
+    pass
+
+
+class RotuloRecusado(ValueError):
     pass
 
 
@@ -31,6 +39,8 @@ class ConfiguracaoGmail:
     url_token: str
     url_api: str
     rotulo_caixa_entrada: str
+    rotulos_sistema_permitidos: frozenset[str]
+    listar_maximo: int
     timeout_s: float
     keychain_binario: str
     keychain_servico: str
@@ -48,6 +58,28 @@ def exigir_escopos_permitidos(escopos: tuple[str, ...] | list[str]) -> None:
     proibidos = sorted(set(escopos) - ESCOPOS_PERMITIDOS)
     if proibidos:
         raise EscopoProibido(f"escopos fora da allowlist: {proibidos}")
+
+
+def exigir_rotulos_permitidos(rotulos: list[str], sistema_permitidos: frozenset[str]) -> None:
+    for rotulo in rotulos:
+        if rotulo in sistema_permitidos or PADRAO_ROTULO_USUARIO.fullmatch(rotulo):
+            continue
+        raise RotuloRecusado(f"rotulo fora da allowlist: {rotulo!r}")
+
+
+def _rotulos_sistema(bruto: list[str]) -> frozenset[str]:
+    rotulos = frozenset(bruto)
+    proibidos = sorted(rotulos & ROTULOS_SISTEMA_PROIBIDOS)
+    if proibidos:
+        raise RotuloRecusado(f"rotulos de sistema proibidos na allowlist: {proibidos}")
+    return rotulos
+
+
+def _teto_positivo(valor: object) -> int:
+    teto = int(valor)
+    if teto < 1:
+        raise ValueError("listar_maximo precisa ser positivo")
+    return teto
 
 
 def _exigir_loopback(host: str) -> None:
@@ -73,6 +105,8 @@ def configuracao_gmail(dados: dict | None = None) -> ConfiguracaoGmail:
         url_token=bruto["url_token"],
         url_api=bruto["url_api"].rstrip("/"),
         rotulo_caixa_entrada=bruto["rotulo_caixa_entrada"],
+        rotulos_sistema_permitidos=_rotulos_sistema(bruto["rotulos_sistema_permitidos"]),
+        listar_maximo=_teto_positivo(bruto["listar_maximo"]),
         timeout_s=float(bruto["timeout_s"]),
         keychain_binario=keychain["binario"],
         keychain_servico=keychain["servico"],

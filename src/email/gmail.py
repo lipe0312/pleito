@@ -4,7 +4,7 @@ import re
 
 import httpx
 
-from src.email.configuracao import ConfiguracaoGmail
+from src.email.configuracao import ConfiguracaoGmail, exigir_rotulos_permitidos
 from src.email.oauth import ClienteOAuth, ler_cliente, renovar
 
 PADRAO_IDENTIFICADOR = re.compile(r"[A-Za-z0-9_-]+")
@@ -36,7 +36,9 @@ class ClienteGmail:
 
     def listar(self, consulta: str, maximo: int) -> list[dict]:
         resposta = self._requisitar(
-            "GET", "messages", params={"q": consulta, "maxResults": maximo}
+            "GET",
+            "messages",
+            params={"q": consulta, "maxResults": max(1, min(maximo, self._cfg.listar_maximo))},
         )
         return resposta.get("messages", [])
 
@@ -44,12 +46,18 @@ class ClienteGmail:
         return self._requisitar("GET", f"messages/{_exigir_identificador(identificador)}")
 
     def rotular(self, identificador: str, adicionar: list[str], remover: list[str]) -> dict:
+        exigir_rotulos_permitidos(
+            [*adicionar, *remover], self._cfg.rotulos_sistema_permitidos
+        )
+        return self._modificar(identificador, adicionar, remover)
+
+    def arquivar(self, identificador: str) -> dict:
+        return self._modificar(identificador, [], [self._cfg.rotulo_caixa_entrada])
+
+    def _modificar(self, identificador: str, adicionar: list[str], remover: list[str]) -> dict:
         caminho = f"messages/{_exigir_identificador(identificador)}/modify"
         corpo = {"addLabelIds": list(adicionar), "removeLabelIds": list(remover)}
         return self._requisitar("POST", caminho, json=corpo)
-
-    def arquivar(self, identificador: str) -> dict:
-        return self.rotular(identificador, [], [self._cfg.rotulo_caixa_entrada])
 
     def _renovar_acesso(self) -> str:
         if self._cliente_oauth is None:

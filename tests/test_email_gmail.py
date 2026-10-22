@@ -9,7 +9,7 @@ import pytest
 import respx
 
 from src.config import carregar
-from src.email.configuracao import configuracao_gmail
+from src.email.configuracao import RotuloRecusado, configuracao_gmail
 from src.email.gmail import ClienteGmail, IdentificadorInvalido
 from src.email.keychain import TokenAusente
 from src.email.oauth import ClienteOAuth
@@ -167,3 +167,44 @@ def test_sem_token_no_keychain_nao_chama_a_rede(cfg):
     with pytest.raises(TokenAusente):
         _cliente(cfg, ChaveFalsa(None)).ler("18abc")
     assert token.call_count == 0
+
+
+@respx.mock
+def test_listar_respeita_o_teto_do_config(cfg):
+    _token(cfg, _acesso())
+    rota = respx.get(f"{cfg.url_api}/messages").mock(return_value=httpx.Response(200, json={}))
+    _cliente(cfg).listar("", cfg.listar_maximo * 100)
+    assert rota.calls.last.request.url.params["maxResults"] == str(cfg.listar_maximo)
+
+
+@pytest.mark.parametrize(
+    "rotulo",
+    ["TRASH", "SPAM", "SENT", "DRAFT", "INBOX", "label_1", "Label_", "Label_1/../TRASH", ""],
+)
+@pytest.mark.parametrize("lado", ["adicionar", "remover"])
+@respx.mock
+def test_rotulo_de_sistema_fora_da_allowlist_e_recusado_sem_chamar_a_api(cfg, rotulo, lado):
+    token = _token(cfg, _acesso())
+    modify = respx.post(f"{cfg.url_api}/messages/18abc/modify").mock(
+        return_value=httpx.Response(200, json={"id": "18abc"})
+    )
+    argumentos = {"adicionar": [], "remover": []}
+    argumentos[lado] = ["Label_1", rotulo]
+    with pytest.raises(RotuloRecusado):
+        _cliente(cfg).rotular("18abc", **argumentos)
+    assert token.call_count == 0
+    assert modify.call_count == 0
+
+
+@respx.mock
+def test_rotulo_de_sistema_da_allowlist_do_config_e_aceito(cfg):
+    _token(cfg, _acesso())
+    rota = respx.post(f"{cfg.url_api}/messages/18abc/modify").mock(
+        return_value=httpx.Response(200, json={"id": "18abc"})
+    )
+    permitido = sorted(cfg.rotulos_sistema_permitidos)[0]
+    _cliente(cfg).rotular("18abc", ["Label_7"], [permitido])
+    assert json.loads(rota.calls.last.request.content) == {
+        "addLabelIds": ["Label_7"],
+        "removeLabelIds": [permitido],
+    }

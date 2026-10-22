@@ -10,6 +10,7 @@ from src.email.configuracao import (
     ESCOPOS_PERMITIDOS,
     EscopoProibido,
     LoopbackInvalido,
+    RotuloRecusado,
     configuracao_gmail,
 )
 
@@ -60,4 +61,19 @@ def test_loopback_fora_do_localhost_e_recusado(host):
     dados = _dados()
     dados["gmail"]["loopback"]["host"] = host
     with pytest.raises(LoopbackInvalido):
+        configuracao_gmail(dados)
+
+
+@pytest.mark.parametrize("rotulo", ["TRASH", "SPAM", "SENT", "DRAFT", "INBOX"])
+def test_rotulo_de_sistema_destrutivo_na_allowlist_do_config_e_recusado(rotulo):
+    dados = _dados()
+    dados["gmail"]["rotulos_sistema_permitidos"].append(rotulo)
+    with pytest.raises(RotuloRecusado):
+        configuracao_gmail(dados)
+
+
+def test_teto_de_listagem_precisa_ser_positivo():
+    dados = _dados()
+    dados["gmail"]["listar_maximo"] = 0
+    with pytest.raises(ValueError):
         configuracao_gmail(dados)

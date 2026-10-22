@@ -6,6 +6,10 @@ gmail:
   url_token: https://oauth2.googleapis.com/token
   url_api: https://gmail.googleapis.com/gmail/v1/users/me
   rotulo_caixa_entrada: INBOX
+  rotulos_sistema_permitidos:
+    - UNREAD
+    - STARRED
+  listar_maximo: 100
   timeout_s: 20
   keychain:
     binario: /usr/bin/security

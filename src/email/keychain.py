@@ -22,7 +22,7 @@ class ErroKeychain(RuntimeError):
 
 
 def executar_security(argumentos: list[str], entrada: str | None) -> subprocess.CompletedProcess:
-    return subprocess.run(  # noqa: S603
+    return subprocess.run(
         argumentos,
         input=entrada,
         capture_output=True,

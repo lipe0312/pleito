@@ -75,13 +75,17 @@ def montar_url_autorizacao(
     return f"{cfg.url_autorizacao}?{urlencode(parametros)}"
 
 
+def _state_confere(consulta: str, state_esperado: str) -> bool:
+    states = parse_qs(consulta, keep_blank_values=True).get("state", [])
+    if len(states) != 1 or not states[0] or not state_esperado:
+        return False
+    return hmac.compare_digest(states[0].encode(), state_esperado.encode())
+
+
 def validar_callback(consulta: str, state_esperado: str) -> str:
     parametros = parse_qs(consulta, keep_blank_values=True)
-    states = parametros.get("state", [])
-    if len(states) != 1 or not states[0]:
-        raise StateInvalido("state ausente ou repetido")
-    if not hmac.compare_digest(states[0].encode(), state_esperado.encode()):
-        raise StateInvalido("state nao confere")
+    if not _state_confere(consulta, state_esperado):
+        raise StateInvalido("state ausente, repetido ou diferente")
     if "error" in parametros:
         raise AutorizacaoNegada(parametros["error"][0])
     codigos = parametros.get("code", [])
@@ -136,14 +140,18 @@ def renovar(
 class ServidorLoopback:
     def __init__(self, host: str, porta: int, mensagem: str) -> None:
         recebidas: list[str] = []
+        esperado: dict[str, str] = {}
         corpo = mensagem.encode("utf-8")
 
         class Receptor(BaseHTTPRequestHandler):
             def do_GET(self) -> None:
                 consulta = urlsplit(self.path).query
-                parametros = parse_qs(consulta)
-                if "state" in parametros or "error" in parametros:
-                    recebidas.append(consulta)
+                if not _state_confere(consulta, esperado.get("state", "")):
+                    self.send_response(400)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                recebidas.append(consulta)
                 self.send_response(200)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
                 self.send_header("Content-Length", str(len(corpo)))
@@ -154,6 +162,7 @@ class ServidorLoopback:
                 return
 
         self._recebidas = recebidas
+        self._esperado = esperado
         self._servidor = HTTPServer((host, porta), Receptor)
         endereco, porta_real = self._servidor.server_address[:2]
         self.redirect_uri = f"http://{endereco}:{porta_real}/"
@@ -165,7 +174,8 @@ class ServidorLoopback:
         self._servidor.server_close()
         return False
 
-    def esperar(self, segundos: float) -> str:
+    def esperar(self, segundos: float, state_esperado: str) -> str:
+        self._esperado["state"] = state_esperado
         limite = time.monotonic() + segundos
         while not self._recebidas:
             restante = limite - time.monotonic()
@@ -192,7 +202,7 @@ def autorizar(
         abrir_navegador(
             montar_url_autorizacao(cfg, cliente.client_id, redirect_uri, state, challenge)
         )
-        consulta = servidor.esperar(cfg.espera_callback_s)
+        consulta = servidor.esperar(cfg.espera_callback_s, state)
     codigo = validar_callback(consulta, state)
     tokens = trocar_codigo(cfg, cliente, codigo, verifier, redirect_uri, http)
     concedidos = tokens.get("scope", "").split()

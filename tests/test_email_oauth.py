@@ -61,7 +61,7 @@ class ServidorFalso:
     def __exit__(self, *_exc):
         return False
 
-    def esperar(self, _segundos: float) -> str:
+    def esperar(self, _segundos: float, _state: str) -> str:
         state = parse_qs(urlsplit(self.url_aberta).query)["state"][0]
         return self.resposta(state)
 
@@ -224,6 +224,37 @@ def test_servidor_loopback_recebe_um_callback_local():
 
         linha = threading.Thread(target=chamar)
         linha.start()
-        consulta = servidor.esperar(5)
+        consulta = servidor.esperar(5, "s")
         linha.join()
     assert parse_qs(consulta) == {"code": ["c"], "state": ["s"]}
+
+
+def test_callback_forjado_antes_do_real_e_ignorado_pelo_servidor():
+    with ServidorLoopback("127.0.0.1", 0, "ok") as servidor:
+        partes = urlsplit(servidor.redirect_uri)
+        status: list[int] = []
+
+        def chamar() -> None:
+            for consulta in (
+                {"code": "forjado", "state": "forjado"},
+                {"error": "access_denied", "state": "forjado"},
+                {"code": "real", "state": "s"},
+            ):
+                conexao = http.client.HTTPConnection(partes.hostname, partes.port, timeout=5)
+                conexao.request("GET", "/?" + urlencode(consulta))
+                resposta = conexao.getresponse()
+                resposta.read()
+                status.append(resposta.status)
+                conexao.close()
+
+        linha = threading.Thread(target=chamar)
+        linha.start()
+        consulta = servidor.esperar(5, "s")
+        linha.join()
+    assert parse_qs(consulta) == {"code": ["real"], "state": ["s"]}
+    assert status == [400, 400, 200]
+
+
+def test_servidor_sem_callback_valido_estoura_o_tempo():
+    with ServidorLoopback("127.0.0.1", 0, "ok") as servidor, pytest.raises(TimeoutError):
+        servidor.esperar(0.2, "s")
