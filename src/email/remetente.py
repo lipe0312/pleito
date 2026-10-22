@@ -9,9 +9,10 @@ ENDERECO = re.compile(r"<([^>]+)>\s*$")
 
 
 def endereco_de(remetente: str) -> str:
-    bruto = (remetente or "").strip().lower()
+    bruto = (remetente or "").strip()
     achado = ENDERECO.search(bruto)
-    return (achado.group(1) if achado else bruto).strip()
+    endereco = (achado.group(1) if achado else bruto).strip()
+    return endereco.lower() if endereco.isascii() else endereco
 
 
 def nome_exibicao_de(remetente: str) -> str:
@@ -78,6 +79,15 @@ def _nome_de_plataforma_alheia(nome: str, dominio: str, configuradas: Regras) ->
     )
 
 
+def autenticacao_aprovada(cabecalho: str, configuradas: Regras | None = None) -> bool:
+    configuradas = configuradas or regras()
+    compacta = normalizar(cabecalho).replace(" ", "")
+    return any(
+        re.search(rf"(?<![a-z0-9-]){re.escape(termo)}", compacta)
+        for termo in configuradas.autenticacao_aprovada
+    )
+
+
 def motivo_forjado(email: Email, configuradas: Regras | None = None) -> Motivo | None:
     configuradas = configuradas or regras()
     dominio = dominio_de(email.remetente)
@@ -96,7 +106,6 @@ def motivo_forjado(email: Email, configuradas: Regras | None = None) -> Motivo |
         nome = plataforma_de(email.remetente, configuradas)
         if nome and dominio_reply not in configuradas.plataformas[nome].dominios:
             return Motivo.REPLY_TO_DIVERGENTE
-    compacta = normalizar(email.autenticacao).replace(" ", "")
-    if any(falha in compacta for falha in configuradas.autenticacao_falhas):
-        return Motivo.AUTENTICACAO_FALHOU
+    if email.autenticacao.strip() and not autenticacao_aprovada(email.autenticacao, configuradas):
+        return Motivo.AUTENTICACAO_NAO_APROVADA
     return None

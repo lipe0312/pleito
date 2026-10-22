@@ -139,8 +139,46 @@ def test_falha_de_autenticacao_e_forjado(autenticacao):
     assert motivo_forjado(email) is not None
 
 
+@pytest.mark.parametrize(
+    "autenticacao",
+    ["dmarc=none", "dmarc=temperror", "dmarc=permerror", "dmarc=neutral", "spf=pass; dkim=pass"],
+)
+def test_cabecalho_presente_sem_dmarc_pass_e_forjado(autenticacao):
+    email = _email("no-reply@gupy.com.br", autenticacao=f"mx.google.com; {autenticacao}")
+    assert motivo_forjado(email) is not None
+
+
+def test_cabecalho_ausente_nao_e_forjado_mas_remetente_fica_para_o_classificador():
+    assert motivo_forjado(_email("no-reply@gupy.com.br", autenticacao="")) is None
+    assert motivo_forjado(_email("no-reply@gupy.com.br", autenticacao="   ")) is None
+
+
+@pytest.mark.parametrize(
+    "remetente",
+    [
+        "jobs-noreply@lin\u212aedin.com",
+        "no-reply@\u212aupy.com.br",
+        "system@\u017folides.com",
+        "no-reply@gupy.com.br\uff0e",
+        "no-reply@\uff47upy.com.br",
+    ],
+)
+def test_caractere_de_compatibilidade_nao_vira_dominio_de_plataforma(remetente):
+    assert plataforma_de(remetente) is None
+    assert not remetente_confiavel(remetente)
+    assert motivo_forjado(_email(remetente)) is not None
+
+
+def test_kelvin_no_dominio_nao_passa_como_linkedin():
+    remetente = "jobs-noreply@lin\u212aedin.com"
+    assert endereco_de(remetente) != "jobs-noreply@linkedin.com"
+    assert not remetente_confiavel(remetente, "linkedin")
+    assert motivo_forjado(_email(remetente)) is not None
+
+
 def test_autenticacao_aprovada_nao_e_forjado():
-    email = _email("no-reply@gupy.com.br", autenticacao="mx.google.com; spf=pass; dkim=pass")
+    aprovada = "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+    email = _email("no-reply@gupy.com.br", autenticacao=aprovada)
     assert motivo_forjado(email) is None
 
 

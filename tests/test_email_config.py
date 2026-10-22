@@ -45,8 +45,17 @@ def test_regras_refletem_o_arquivo_de_config():
     assert set(atual.plataformas) == set(bruto["plataformas"])
 
 
+def test_autenticacao_e_lista_de_permissao_com_dmarc_pass():
+    assert carregar("emails")["autenticacao_aprovada"] == ["dmarc=pass"]
+    assert regras().autenticacao_aprovada == ("dmarc=pass",)
+
+
+def test_plataforma_dos_alertas_de_vagas_vem_de_config():
+    assert regras().plataforma_alertas in regras().plataformas
+
+
 def test_limiar_e_rigoroso():
-    assert regras().limiar_confianca >= 0.85
+    assert regras().limiar_confianca >= 0.9
 
 
 def test_configs_de_email_nao_tem_endereco_pessoal():

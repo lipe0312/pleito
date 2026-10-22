@@ -38,7 +38,8 @@ class Regras:
     peso_corpo: float
     confianca_suspeito: float
     confianca_remetente_desconhecido_max: float
-    autenticacao_falhas: tuple[str, ...]
+    autenticacao_aprovada: tuple[str, ...]
+    plataforma_alertas: str
     plataformas: dict[str, Plataforma]
     etapas: dict[Etapa, PadroesEtapa]
 
@@ -74,9 +75,10 @@ def montar(bruto: dict) -> Regras:
         confianca_remetente_desconhecido_max=float(
             bruto["confianca"]["remetente_desconhecido_max"]
         ),
-        autenticacao_falhas=tuple(
-            normalizar(falha).replace(" ", "") for falha in bruto["autenticacao_falhas"]
+        autenticacao_aprovada=tuple(
+            normalizar(termo).replace(" ", "") for termo in bruto["autenticacao_aprovada"]
         ),
+        plataforma_alertas=bruto["plataforma_alertas"],
         plataformas=plataformas,
         etapas=etapas,
     )

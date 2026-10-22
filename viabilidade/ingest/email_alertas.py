@@ -3,19 +3,19 @@ from __future__ import annotations
 import re
 from datetime import date
 
+from src.email.regras import regras
 from src.email.remetente import remetente_confiavel as remetente_confiavel_src
 from viabilidade.contratos import ResultadoColeta, VagaBruta
 from viabilidade.ingest.base import inferir_modelo, inferir_pais, inferir_senioridade
 from viabilidade.triagem import extrair_anos_experiencia, inferir_funcao
 
-PLATAFORMA_ALERTAS = "linkedin"
 LINK_VAGA = re.compile(r"https://www\.linkedin\.com/comm/jobs/view/(\d+)")
 ROTULOS_LINK = ("visualizar vaga", "view job", "ver vaga", "see job")
 RUIDO = ("ver todas as vagas", "pesquisar", "cancelar inscricao", "ajuda", "search-results")
 
 
 def remetente_confiavel(remetente: str) -> bool:
-    return remetente_confiavel_src(remetente, PLATAFORMA_ALERTAS)
+    return remetente_confiavel_src(remetente, regras().plataforma_alertas)
 
 
 def _limpar(linha: str) -> str:

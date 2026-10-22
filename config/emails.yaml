@@ -10,11 +10,10 @@ confianca:
   suspeito: 1.0
   remetente_desconhecido_max: 0.6
 
-autenticacao_falhas:
-  - spf=fail
-  - spf=softfail
-  - dkim=fail
-  - dmarc=fail
+autenticacao_aprovada:
+  - dmarc=pass
+
+plataforma_alertas: linkedin
 
 plataformas:
   gupy:

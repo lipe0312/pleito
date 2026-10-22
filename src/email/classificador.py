@@ -23,7 +23,9 @@ def classificar(email: Email, configuradas: Regras | None = None) -> Classificac
     if motivo:
         return Classificacao(Etapa.SUSPEITO, configuradas.confianca_suspeito, motivo)
 
-    plataforma = plataforma_de(email.remetente, configuradas)
+    plataforma = None
+    if email.autenticacao.strip():
+        plataforma = plataforma_de(email.remetente, configuradas)
     assunto = normalizar(email.assunto)
     corpo = normalizar((email.corpo or "")[: configuradas.corpo_max_chars])
 

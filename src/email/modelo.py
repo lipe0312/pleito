@@ -39,7 +39,7 @@ class Motivo(StrEnum):
     NOME_DE_EXIBICAO_DE_PLATAFORMA = "nome_de_exibicao_de_plataforma"
     REPLY_TO_DIVERGENTE = "reply_to_divergente"
     REPLY_TO_IMITA_PLATAFORMA = "reply_to_imita_plataforma"
-    AUTENTICACAO_FALHOU = "autenticacao_falhou"
+    AUTENTICACAO_NAO_APROVADA = "autenticacao_nao_aprovada"
     SEM_PADRAO = "sem_padrao"
     AMBIGUO = "ambiguo"
     ABAIXO_DO_LIMIAR = "abaixo_do_limiar"
