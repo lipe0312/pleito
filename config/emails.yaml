@@ -1,3 +1,99 @@
+limiar_confianca: 0.9
+margem_ambiguidade: 0.2
+corpo_max_chars: 4000
+
+peso:
+  assunto: 0.92
+  corpo: 0.4
+
+confianca:
+  suspeito: 1.0
+  remetente_desconhecido_max: 0.6
+
+autenticacao_aprovada:
+  - dmarc=pass
+
+plataforma_alertas: linkedin
+
+plataformas:
+  gupy:
+    marcas: [gupy]
+    dominios: [gupy.com.br]
+    caixas: [no-reply]
+    gatilho_candidatura:
+      - confirmacao de candidatura
+      - recebemos sua candidatura
+  solides:
+    marcas: [solides]
+    dominios: [solides.com]
+    caixas: [system]
+    gatilho_candidatura:
+      - candidatura efetuada em
+  inhire:
+    marcas: [inhire]
+    dominios: [ses-mail.inhire.app]
+    caixas: []
+    gatilho_candidatura:
+      - recebemos sua candidatura
+  linkedin:
+    marcas: [linkedin]
+    dominios: [linkedin.com]
+    caixas: [jobs-noreply, jobalerts-noreply, jobs-listings, jobs-noreply-comm]
+    gatilho_candidatura: []
+
+etapas:
+  aplicada:
+    assunto:
+      - confirmacao de candidatura
+      - recebemos sua candidatura
+      - candidatura efetuada
+      - candidatura recebida
+      - application received
+    corpo:
+      - sua candidatura foi recebida
+      - recebemos sua candidatura
+  teste:
+    assunto:
+      - teste tecnico
+      - desafio tecnico
+      - teste online
+      - coding challenge
+      - technical assessment
+    corpo:
+      - conclua o teste
+      - prazo para o teste
+      - link do teste
+  entrevista:
+    assunto:
+      - convite para entrevista
+      - agendamento de entrevista
+      - agendar entrevista
+      - agendar uma entrevista
+      - entrevista marcada
+      - interview invitation
+    corpo:
+      - gostariamos de agendar uma entrevista
+      - agendar uma entrevista
+      - escolha um horario
+  oferta:
+    assunto:
+      - proposta de emprego
+      - proposta de estagio
+      - carta oferta
+      - oferta de emprego
+      - job offer
+    corpo:
+      - temos o prazer de oferecer
+      - aprovado no processo
+  encerrada:
+    assunto:
+      - encerramento do processo
+      - processo encerrado
+    corpo:
+      - optamos por seguir com outro perfil
+      - nao seguiremos com sua candidatura
+      - outros candidatos
+
 gmail:
   cliente: segredos/gmail_cliente.json
   escopos:

@@ -29,6 +29,8 @@ def test_modulos_definitivos_nao_sao_apenas_reexportadores():
         Path("src/coletor/contratos.py"),
         Path("src/coletor/conformidade.py"),
         Path("src/triagem/regra.py"),
+        Path("src/email/remetente.py"),
+        Path("src/email/classificador.py"),
     )
     for caminho in caminhos:
         arvore = ast.parse(caminho.read_text(encoding="utf-8"))
@@ -49,3 +51,12 @@ def test_compatibilidade_do_spike_reexporta_as_implementacoes_definitivas():
     assert consultar_src is consultar_viabilidade
     assert VagaBrutaSrc is VagaBrutaViabilidade
     assert inferir_src is inferir_viabilidade
+
+
+def test_spike_de_alertas_usa_o_verificador_de_remetente_de_src():
+    from src.email.remetente import remetente_confiavel as definitivo
+    from viabilidade.ingest import email_alertas
+
+    assert email_alertas.remetente_confiavel_src is definitivo
+    assert email_alertas.remetente_confiavel("jobs-noreply@linkedin.com")
+    assert not email_alertas.remetente_confiavel("no-reply@gupy.com.br")
