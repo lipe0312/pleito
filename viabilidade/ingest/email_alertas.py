@@ -3,34 +3,19 @@ from __future__ import annotations
 import re
 from datetime import date
 
+from src.email.remetente import remetente_confiavel as remetente_confiavel_src
 from viabilidade.contratos import ResultadoColeta, VagaBruta
 from viabilidade.ingest.base import inferir_modelo, inferir_pais, inferir_senioridade
 from viabilidade.triagem import extrair_anos_experiencia, inferir_funcao
 
-CAIXAS_LINKEDIN = frozenset(
-    {"jobs-noreply", "jobalerts-noreply", "jobs-listings", "jobs-noreply-comm"}
-)
-DOMINIO_LINKEDIN = "linkedin.com"
-ENDERECO = re.compile(r"<([^>]+)>\s*$")
+PLATAFORMA_ALERTAS = "linkedin"
 LINK_VAGA = re.compile(r"https://www\.linkedin\.com/comm/jobs/view/(\d+)")
 ROTULOS_LINK = ("visualizar vaga", "view job", "ver vaga", "see job")
 RUIDO = ("ver todas as vagas", "pesquisar", "cancelar inscricao", "ajuda", "search-results")
 
 
-def endereco_de(remetente: str) -> str:
-    bruto = (remetente or "").strip().lower()
-    achado = ENDERECO.search(bruto)
-    return (achado.group(1) if achado else bruto).strip()
-
-
 def remetente_confiavel(remetente: str) -> bool:
-    endereco = endereco_de(remetente)
-    if endereco.count("@") != 1:
-        return False
-    caixa, _, dominio = endereco.partition("@")
-    if dominio != DOMINIO_LINKEDIN:
-        return False
-    return caixa in CAIXAS_LINKEDIN
+    return remetente_confiavel_src(remetente, PLATAFORMA_ALERTAS)
 
 
 def _limpar(linha: str) -> str:
