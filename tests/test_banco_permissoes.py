@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -11,30 +10,6 @@ import pytest
 from src.db.uso_llm import falhar_uso_llm, finalizar_uso_llm, reservar_uso_llm
 from src.llm.orcamento import OrcamentoEsgotado, SaldoInsuficienteTierForte
 from viabilidade.config import carregar
-
-
-@pytest.fixture
-def banco():
-    if os.getenv("PLEITO_TEST_DATABASE") != "1":
-        pytest.skip("testes de banco nao solicitados")
-    host = os.getenv("POSTGRES_HOST")
-    port = int(os.getenv("POSTGRES_PORT", "0"))
-    dbname = os.getenv("POSTGRES_DB")
-    if host not in {"127.0.0.1", "localhost"} or port != 55432:
-        pytest.fail(
-            "testes de banco so podem conectar ao Postgres isolado do pleito na porta 55432"
-        )
-    if dbname != "pleito":
-        pytest.fail("testes de banco so podem conectar ao banco pleito")
-    psycopg = pytest.importorskip("psycopg")
-    with psycopg.connect(
-        host=host,
-        port=port,
-        dbname=dbname,
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-    ) as conexao:
-        yield conexao
 
 
 def _pode(banco, papel: str, tabela: str, privilegio: str, coluna: str | None = None) -> bool:

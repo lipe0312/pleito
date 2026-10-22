@@ -30,3 +30,4 @@ rede:
   rps_por_dominio: 0.5
   timeout_s: 20
   tentativas: 3
+  redirecionamentos_max: 3

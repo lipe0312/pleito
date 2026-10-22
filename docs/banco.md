@@ -205,7 +205,14 @@ qualquer destino diferente de `127.0.0.1:55432/pleito`. Grants especificam colun
 nao ha permissao de delete para esses papeis e auditoria e append-only. O painel nao altera o
 estado da vaga nem a prova de candidatura; a aplicacao nao altera flags nem cria aprovacoes.
 
-`make testes-banco` roda testes de permissao negativos contra esse banco depois de `make migrar`.
+A aplicacao grava vagas em `vaga` e cria empresas em `empresa` (so a coluna `nome`) pelo
+repositorio de `src/coletor/repositorio.py`. A migracao `0003_vagas.sql` cria o indice unico
+`vaga_unica_por_conteudo` (fonte, empresa e hash do conteudo) e as linhas de `fonte` dos
+agregadores; `db/policies/0004_coletor.sql` concede o insert em `empresa`. A aplicacao continua
+sem delete.
+
+`make testes-banco` roda testes de permissao negativos e a gravacao de vagas contra esse banco
+depois de `make migrar`.
 O alvo recusa conexao a qualquer porta que nao seja 55432, e os testes normais offline nao
 conectam ao banco.
 
@@ -216,6 +223,8 @@ Todas verificadas contra um Postgres 16 real:
 
 - versao de curriculo com mais de uma pagina nao entra (`versao_uma_pagina`)
 - uma candidatura por vaga (`candidatura_unica`)
+- a mesma vaga da mesma fonte e empresa nao entra duas vezes, nem com outro `id_externo`
+  (`vaga_unica_por_fonte` e `vaga_unica_por_conteudo`)
 - nota fora de 0 a 100 e confianca fora de 0 a 1 nao entram
 - evento de email com confianca 1.0 e remetente nao autenticado e recusado pela RLS
 - linha de auditoria aceita insert e recusa update, inclusive para o papel de aplicacao
