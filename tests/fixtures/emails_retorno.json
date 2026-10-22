@@ -1,0 +1,120 @@
+[
+  {
+    "nome": "gupy_confirma_candidatura",
+    "remetente": "Gupy <no-reply@gupy.com.br>",
+    "assunto": "Confirmação de Candidatura - Estágio em Dados",
+    "corpo": "Olá! Sua candidatura foi recebida pela Empresa Ficticia.",
+    "etapa": "aplicada",
+    "gatilho_manual": true,
+    "plataforma": "gupy",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "solides_candidatura_efetuada",
+    "remetente": "system@solides.com",
+    "assunto": "Candidatura efetuada em Analista de Dados Jr",
+    "corpo": "Sua candidatura para Analista de Dados Jr na Empresa Ficticia foi registrada.",
+    "etapa": "aplicada",
+    "gatilho_manual": true,
+    "plataforma": "solides",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "inhire_recebemos_candidatura",
+    "remetente": "0102abc-def@ses-mail.inhire.app",
+    "assunto": "Recebemos sua candidatura",
+    "corpo": "A Empresa Ficticia recebeu sua candidatura.",
+    "etapa": "aplicada",
+    "gatilho_manual": true,
+    "plataforma": "inhire",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "gupy_teste_tecnico",
+    "remetente": "no-reply@gupy.com.br",
+    "assunto": "Conclua o Teste Técnico - Empresa Ficticia",
+    "corpo": "Você tem até sexta-feira para concluir o teste.",
+    "etapa": "teste",
+    "gatilho_manual": false,
+    "plataforma": "gupy",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "gupy_convite_entrevista",
+    "remetente": "no-reply@gupy.com.br",
+    "assunto": "Convite para entrevista - Empresa Ficticia",
+    "corpo": "Gostaríamos de agendar uma entrevista. Escolha um horário no link.",
+    "etapa": "entrevista",
+    "gatilho_manual": false,
+    "plataforma": "gupy",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "solides_oferta",
+    "remetente": "system@solides.com",
+    "assunto": "Proposta de estágio - Empresa Ficticia",
+    "corpo": "Temos o prazer de oferecer a vaga. Você foi aprovado no processo.",
+    "etapa": "oferta",
+    "gatilho_manual": false,
+    "plataforma": "solides",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "gupy_encerramento",
+    "remetente": "no-reply@gupy.com.br",
+    "assunto": "Encerramento do processo - Empresa Ficticia",
+    "corpo": "Optamos por seguir com outro perfil neste momento.",
+    "etapa": "encerrada",
+    "gatilho_manual": false,
+    "plataforma": "gupy",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "empresa_desconhecida_convite",
+    "remetente": "Fulana RH <rh@empresa-ficticia.example>",
+    "assunto": "Convite para entrevista",
+    "corpo": "Gostaríamos de agendar uma entrevista. Escolha um horário.",
+    "etapa": "classificar",
+    "gatilho_manual": false,
+    "plataforma": null
+  },
+  {
+    "nome": "gupy_sem_padrao_conhecido",
+    "remetente": "no-reply@gupy.com.br",
+    "assunto": "Novidades da plataforma",
+    "corpo": "Veja as novas funcionalidades.",
+    "etapa": "classificar",
+    "gatilho_manual": false,
+    "plataforma": "gupy",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "gupy_assunto_ambiguo",
+    "remetente": "no-reply@gupy.com.br",
+    "assunto": "Convite para entrevista e teste técnico",
+    "corpo": "Detalhes no link.",
+    "etapa": "classificar",
+    "gatilho_manual": false,
+    "plataforma": "gupy",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "linkedin_alerta_de_vagas",
+    "remetente": "LinkedIn <jobs-noreply@linkedin.com>",
+    "assunto": "Novas vagas para Analista de Dados",
+    "corpo": "Vagas semelhantes na Empresa Ficticia.",
+    "etapa": "classificar",
+    "gatilho_manual": false,
+    "plataforma": "linkedin",
+    "autenticacao": "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
+  },
+  {
+    "nome": "gupy_sem_cabecalho_de_autenticacao",
+    "remetente": "no-reply@gupy.com.br",
+    "assunto": "Recebemos sua candidatura",
+    "corpo": "Obrigado.",
+    "etapa": "classificar",
+    "gatilho_manual": false,
+    "plataforma": null
+  }
+]

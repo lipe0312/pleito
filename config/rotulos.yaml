@@ -1,0 +1,12 @@
+etapas:
+  aplicada: Candidaturas/Aplicadas
+  teste: Candidaturas/Teste
+  entrevista: Candidaturas/Entrevista
+  oferta: Candidaturas/Oferta
+  encerrada: Candidaturas/Encerradas
+  classificar: Candidaturas/Classificar
+  suspeito: Candidaturas/Suspeitos
+
+outros:
+  prontas: Candidaturas/Prontas
+  em_andamento: Candidaturas/Em andamento

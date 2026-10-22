@@ -5,32 +5,17 @@ from datetime import date
 
 from src.coletor.base import inferir_modelo, inferir_pais, inferir_senioridade
 from src.coletor.contratos import ResultadoColeta, VagaBruta
+from src.email.regras import regras
+from src.email.remetente import remetente_confiavel as remetente_confiavel_src
 from src.triagem.regra import extrair_anos_experiencia, inferir_funcao
 
-CAIXAS_LINKEDIN = frozenset(
-    {"jobs-noreply", "jobalerts-noreply", "jobs-listings", "jobs-noreply-comm"}
-)
-DOMINIO_LINKEDIN = "linkedin.com"
-ENDERECO = re.compile(r"<([^>]+)>\s*$")
 LINK_VAGA = re.compile(r"https://www\.linkedin\.com/comm/jobs/view/(\d+)")
 ROTULOS_LINK = ("visualizar vaga", "view job", "ver vaga", "see job")
 RUIDO = ("ver todas as vagas", "pesquisar", "cancelar inscricao", "ajuda", "search-results")
 
 
-def endereco_de(remetente: str) -> str:
-    bruto = (remetente or "").strip().lower()
-    achado = ENDERECO.search(bruto)
-    return (achado.group(1) if achado else bruto).strip()
-
-
 def remetente_confiavel(remetente: str) -> bool:
-    endereco = endereco_de(remetente)
-    if endereco.count("@") != 1:
-        return False
-    caixa, _, dominio = endereco.partition("@")
-    if dominio != DOMINIO_LINKEDIN:
-        return False
-    return caixa in CAIXAS_LINKEDIN
+    return remetente_confiavel_src(remetente, regras().plataforma_alertas)
 
 
 def _limpar(linha: str) -> str:

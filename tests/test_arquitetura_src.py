@@ -29,6 +29,8 @@ def test_modulos_definitivos_nao_sao_apenas_reexportadores():
         Path("src/coletor/contratos.py"),
         Path("src/coletor/conformidade.py"),
         Path("src/triagem/regra.py"),
+        Path("src/email/remetente.py"),
+        Path("src/email/classificador.py"),
     )
     for caminho in caminhos:
         arvore = ast.parse(caminho.read_text(encoding="utf-8"))
@@ -76,3 +78,14 @@ def test_coletores_do_spike_sao_os_mesmos_objetos_de_src():
     assert GreenhouseSrc is GreenhouseSpike
     assert registro_src() == registro_spike()
     assert "greenhouse" in registro_spike()
+
+
+def test_spike_de_alertas_usa_o_verificador_de_remetente_de_src():
+    from src.coletor import email_alertas as definitivo_alertas
+    from src.email.remetente import remetente_confiavel as definitivo
+    from viabilidade.ingest import email_alertas
+
+    assert definitivo_alertas.remetente_confiavel_src is definitivo
+    assert email_alertas.remetente_confiavel is definitivo_alertas.remetente_confiavel
+    assert email_alertas.remetente_confiavel("jobs-noreply@linkedin.com")
+    assert not email_alertas.remetente_confiavel("no-reply@gupy.com.br")
