@@ -13,7 +13,7 @@ from src.coletor.contratos import (
     Senioridade,
     VagaBruta,
 )
-from src.config import ambiente
+from src.config import ambiente, carregar
 from src.triagem.regra import extrair_anos_experiencia, inferir_funcao
 
 _REGISTRO: dict[str, type[Fonte]] = {}
@@ -27,8 +27,20 @@ PALAVRAS_HIBRIDO = ("hybrid", "hibrido")
 PALAVRAS_PRESENCIAL = ("on-site", "onsite", "presencial")
 
 PAISES = {
-    "BR": ("brazil", "brasil", "sao paulo", "rio de janeiro", "belo horizonte", "salvador",
-           "curitiba", "porto alegre", "recife", "florianopolis", "campinas", "bahia"),
+    "BR": (
+        "brazil",
+        "brasil",
+        "sao paulo",
+        "rio de janeiro",
+        "belo horizonte",
+        "salvador",
+        "curitiba",
+        "porto alegre",
+        "recife",
+        "florianopolis",
+        "campinas",
+        "bahia",
+    ),
     "US": ("united states", "usa", "u.s.", "new york", "san francisco", "austin", "seattle"),
     "PT": ("portugal", "lisbon", "lisboa", "porto"),
     "ES": ("spain", "espanha", "madrid", "barcelona"),
@@ -106,7 +118,7 @@ class ColetorHttp:
         self._client = client or httpx.Client(
             timeout=env.timeout,
             headers={"User-Agent": env.user_agent, "Accept": "application/json"},
-            follow_redirects=True,
+            follow_redirects=False,
         )
         self._limitador = Limitador(env.rate_limit_rps)
 
@@ -115,9 +127,22 @@ class ColetorHttp:
             self._client.close()
 
     def _buscar(self, url: str) -> httpx.Response:
-        exigir_dominio_permitido(url)
-        self._limitador.esperar()
-        return self._client.get(url)
+        limite = int(carregar("limites")["rede"]["redirecionamentos_max"])
+        atual = url
+        for salto in range(limite + 1):
+            exigir_dominio_permitido(atual)
+            if salto > 0:
+                if not atual.startswith("https://"):
+                    raise ValueError(f"redirect para destino sem https: {atual}")
+                if not consultar_robots(atual, self._client).permitido:
+                    raise ValueError(f"robots.txt proibe o destino do redirect: {atual}")
+            self._limitador.esperar()
+            resposta = self._client.get(atual, follow_redirects=False)
+            destino = resposta.headers.get("location")
+            if not resposta.is_redirect or not destino:
+                return resposta
+            atual = str(resposta.url.join(destino))
+        raise ValueError(f"redirecionamentos acima do limite de {limite}")
 
     def _preparar(self, resultado: ResultadoColeta, url: str) -> bool:
         if not self.verificar_robots:

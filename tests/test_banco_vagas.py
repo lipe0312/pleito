@@ -100,3 +100,57 @@ def test_papel_da_aplicacao_nao_apaga_vaga(banco, rotulo):
     with conectar("app") as conexao, conexao.cursor() as cursor:
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             cursor.execute("DELETE FROM vaga WHERE id_externo LIKE %s", (f"teste-{rotulo}%",))
+
+
+def _privilegio(banco, consulta: str, *parametros) -> bool:
+    with banco.cursor() as cursor:
+        cursor.execute(consulta, parametros)
+        return cursor.fetchone()[0]
+
+
+def test_aplicacao_so_insere_o_nome_da_empresa(banco):
+    for privilegio in ("UPDATE", "DELETE", "TRUNCATE"):
+        assert not _privilegio(
+            banco, "SELECT has_table_privilege('pleito_app', 'pleito.empresa', %s)", privilegio
+        )
+    for coluna in ("alvo", "dominio", "porte", "setor", "pais"):
+        assert not _privilegio(
+            banco,
+            "SELECT has_column_privilege('pleito_app', 'pleito.empresa', %s, 'INSERT')",
+            coluna,
+        )
+        assert not _privilegio(
+            banco,
+            "SELECT has_column_privilege('pleito_app', 'pleito.empresa', %s, 'UPDATE')",
+            coluna,
+        )
+    assert _privilegio(
+        banco,
+        "SELECT has_column_privilege('pleito_app', 'pleito.empresa', 'nome', 'INSERT')",
+    )
+
+
+def test_sequencia_da_empresa_so_concede_uso_a_aplicacao(banco):
+    assert _privilegio(
+        banco,
+        "SELECT has_sequence_privilege('pleito_app', 'pleito.empresa_id_seq', 'USAGE')",
+    )
+    for privilegio in ("SELECT", "UPDATE"):
+        assert not _privilegio(
+            banco,
+            "SELECT has_sequence_privilege('pleito_app', 'pleito.empresa_id_seq', %s)",
+            privilegio,
+        )
+
+
+def test_aplicacao_nao_atualiza_nem_apaga_empresa(banco, rotulo):
+    psycopg = pytest.importorskip("psycopg")
+    _gravar([_vaga(rotulo)])
+    for comando in (
+        "UPDATE empresa SET alvo = true WHERE nome_norm LIKE %s",
+        "UPDATE empresa SET nome = 'x' WHERE nome_norm LIKE %s",
+        "DELETE FROM empresa WHERE nome_norm LIKE %s",
+    ):
+        with conectar("app") as conexao, conexao.cursor() as cursor:
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                cursor.execute(comando, (f"%{rotulo}%",))

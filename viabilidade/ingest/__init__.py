@@ -10,7 +10,6 @@ from src.coletor.ashby import FonteAshby
 from src.coletor.base import Fonte, registrar, registro
 from src.coletor.email_alertas import coletar_de_emails, extrair_alerta_linkedin
 from src.coletor.greenhouse import FonteGreenhouse
-from src.coletor.gupy import FonteGupy
 from src.coletor.hackernews import FonteHackerNews
 from src.coletor.lever import FonteLever
 from src.coletor.rss import FonteJobspresso, FonteWeWorkRemotely
@@ -21,7 +20,6 @@ __all__ = [
     "FonteArbeitnow",
     "FonteAshby",
     "FonteGreenhouse",
-    "FonteGupy",
     "FonteHackerNews",
     "FonteHimalayas",
     "FonteJobicy",

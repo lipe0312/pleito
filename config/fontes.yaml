@@ -59,11 +59,6 @@ fontes:
     dominios: [hn.algolia.com]
     verificar_robots: true
     observacao: thread mensal Who is hiring, comentario sem campo estruturado
-  gupy:
-    tipo: portal_investigacao
-    dominios: [employability-portal.gupy.io, portal.api.gupy.io, portal.gupy.io, www.gupy.io, gupy.io]
-    verificar_robots: true
-    tos: https://www.gupy.io/termos-de-uso
   solides:
     tipo: portal_investigacao
     dominios: [vagas.solides.com.br, solides.com.br]
