@@ -17,6 +17,9 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] ADRs 0001 a 0019 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
   interativa e o push no iPhone
+- [x] F4.1, coletor em `src/coletor/` gravando vagas no Postgres sem duplicar (migration
+  `0003_vagas.sql` e `db/policies/0004_coletor.sql` a aplicar com `make migrar`); funil e
+  pontuação (F4.2) pendentes
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
