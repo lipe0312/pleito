@@ -14,14 +14,16 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   painel vazio (commits 4588e24, de48423, 3af8c71, e7eaa7f)
 - [x] Etapa 0.5, ajustes da revisão (commits bbbfb7b, b75f05b, a4d6496, 4efa4f6)
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
-- [x] ADRs 0001 a 0019 versionadas
+- [x] ADRs 0001 a 0020 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
   interativa e o push no iPhone
 - [x] F4.1, coletor em `src/coletor/` gravando vagas no Postgres sem duplicar (migration
-  `0003_vagas.sql` e `db/policies/0004_coletor.sql` a aplicar com `make migrar`); funil e
-  pontuação (F4.2) pendentes
+  `0003_vagas.sql` e policies `0004_coletor.sql` e `0005_coletor_sequencia_minima.sql`);
+  Gupy fora da coleta; funil e pontuação (F4.2) pendentes
+- [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
+  refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
-  `src/email/` (sem Gmail e sem banco; F1.1 e F1.3 pendentes)
+  `src/email/` (sem Gmail e sem banco; F1.3 pendente)
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
