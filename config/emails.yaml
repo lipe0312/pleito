@@ -1,0 +1,19 @@
+gmail:
+  cliente: segredos/gmail_cliente.json
+  escopos:
+    - https://www.googleapis.com/auth/gmail.modify
+  url_autorizacao: https://accounts.google.com/o/oauth2/v2/auth
+  url_token: https://oauth2.googleapis.com/token
+  url_api: https://gmail.googleapis.com/gmail/v1/users/me
+  rotulo_caixa_entrada: INBOX
+  timeout_s: 20
+  keychain:
+    binario: /usr/bin/security
+    servico: pleito-gmail
+    conta: refresh-token
+  loopback:
+    host: 127.0.0.1
+    porta: 0
+    espera_s: 300
+    mensagem: "Autorizacao recebida. Pode fechar esta aba."
+  modulo_resumo: src.email.resumo
