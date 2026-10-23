@@ -211,6 +211,15 @@ repositorio de `src/coletor/repositorio.py`. A migracao `0003_vagas.sql` cria o 
 agregadores; `db/policies/0004_coletor.sql` concede o insert em `empresa`. A aplicacao continua
 sem delete.
 
+O modulo de email grava cada retorno em `evento_email` por `src/email/repositorio.py`, uma vez
+por id de mensagem. A migracao `0004_evento_email_fila.sql` cria a coluna `fila` (`classificar`
+ou `suspeito`; nula quando o evento foi aplicado) e o estado `oferta` em `estado_vaga`.
+`db/policies/0006_evento_email.sql` concede o insert de `fila` a aplicacao e troca as policies
+do evento: so a aplicacao marca `aplicado`, e so em evento autenticado e fora de fila. Cada
+escrita (evento, mudanca de estado da vaga, evento aplicado) gera uma linha em `auditoria` com o
+ator de `config/eventos_email.yaml`, que tambem define o estado de destino de cada etapa e de
+quais estados a vaga pode sair.
+
 `make testes-banco` roda testes de permissao negativos e a gravacao de vagas contra esse banco
 depois de `make migrar`.
 O alvo recusa conexao a qualquer porta que nao seja 55432, e os testes normais offline nao
@@ -226,7 +235,10 @@ Todas verificadas contra um Postgres 16 real:
 - a mesma vaga da mesma fonte e empresa nao entra duas vezes, nem com outro `id_externo`
   (`vaga_unica_por_fonte` e `vaga_unica_por_conteudo`)
 - nota fora de 0 a 100 e confianca fora de 0 a 1 nao entram
-- evento de email com confianca 1.0 e remetente nao autenticado e recusado pela RLS
+- evento de email com confianca 1.0 e remetente nao autenticado e recusado pela RLS, salvo na
+  fila `suspeito`
+- evento nao autenticado ou em fila nunca e marcado como aplicado, e evento aplicado nao fica
+  em fila (`evento_aplica` e `evento_aplicado_fora_da_fila`)
 - linha de auditoria aceita insert e recusa update, inclusive para o papel de aplicacao
 - token de aprovacao expirado ou ja consumido nao pode ser consumido de novo
 
