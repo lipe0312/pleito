@@ -28,6 +28,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   cada escrita; a vaga muda de estado sozinha so com remetente autenticado, confianca no limiar
   e transicao permitida em `config/eventos_email.yaml`; o resto vai para a fila `classificar`
   ou `suspeito` (migration `0004_evento_email_fila.sql`, policies `0006_evento_email.sql`)
+- [x] F1.4, organizador em `src/email/organizador.py`: rótulos resolvidos pelo nome de
+  `config/rotulos.yaml`, leitura incremental por `historyId` com cursor em `dados/estado/`,
+  intervalo de `email_intervalo_min`, golpe em `Candidaturas/Suspeitos`, email pessoal e alerta
+  do LinkedIn intocados; só rotula e arquiva (`make gmail-organizar`); agendamento fica no F1.7
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar

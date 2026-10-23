@@ -17,6 +17,16 @@ def _pontos(
     return 1 - falta_assunto * falta_corpo
 
 
+def tem_padrao_de_etapa(email: Email, configuradas: Regras | None = None) -> bool:
+    configuradas = configuradas or regras()
+    assunto = normalizar(email.assunto)
+    corpo = normalizar((email.corpo or "")[: configuradas.corpo_max_chars])
+    return any(
+        _pontos(padroes, assunto, corpo, configuradas) > 0
+        for padroes in configuradas.etapas.values()
+    )
+
+
 def classificar(email: Email, configuradas: Regras | None = None) -> Classificacao:
     configuradas = configuradas or regras()
     motivo = motivo_forjado(email, configuradas)
