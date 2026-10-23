@@ -54,11 +54,11 @@ def _acesso(valor: str = "acesso-1", rotacionado: str | None = None) -> httpx.Re
     return httpx.Response(200, json=corpo)
 
 
-def test_cliente_expoe_so_listar_ler_rotular_e_arquivar():
+def test_cliente_expoe_so_leitura_rotular_e_arquivar():
     publicos = {
         nome for nome, _ in inspect.getmembers(ClienteGmail) if not nome.startswith("_")
     }
-    assert publicos == {"listar", "ler", "rotular", "arquivar"}
+    assert publicos == {"listar", "ler", "rotulos", "perfil", "historico", "rotular", "arquivar"}
 
 
 def test_nenhum_atributo_do_cliente_tem_nome_destrutivo_ou_de_envio():

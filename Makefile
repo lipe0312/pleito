@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco painel lint viabilidade limpar gmail-autorizar conteudo
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco painel lint viabilidade limpar gmail-autorizar conteudo gmail-organizar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -53,7 +53,7 @@ testes:
 	$(PY) -m pytest -m "not rede and not navegador and not latex"
 
 testes-banco:
-	PLEITO_TEST_DATABASE=1 $(PY) -m pytest tests/test_banco_permissoes.py tests/test_banco_vagas.py
+	PLEITO_TEST_DATABASE=1 $(PY) -m pytest tests/test_banco_permissoes.py tests/test_banco_vagas.py tests/test_banco_eventos_email.py
 
 testes-todos:
 	$(PY) -m pytest
@@ -69,6 +69,9 @@ gmail-autorizar:
 
 conteudo:
 	$(PY) -m src.conteudo
+
+gmail-organizar:
+	$(PY) scripts/organizar_gmail.py $(ARGS)
 
 viabilidade:
 	$(PY) -m viabilidade.cli veredito

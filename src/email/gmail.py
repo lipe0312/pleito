@@ -8,6 +8,7 @@ from src.email.configuracao import ConfiguracaoGmail, exigir_rotulos_permitidos
 from src.email.oauth import ClienteOAuth, ler_cliente, renovar
 
 PADRAO_IDENTIFICADOR = re.compile(r"[A-Za-z0-9_-]+")
+PADRAO_HISTORY = re.compile(r"[0-9]+")
 
 
 class IdentificadorInvalido(ValueError):
@@ -18,6 +19,12 @@ def _exigir_identificador(identificador: str) -> str:
     if not PADRAO_IDENTIFICADOR.fullmatch(identificador):
         raise IdentificadorInvalido("identificador de mensagem invalido")
     return identificador
+
+
+def _exigir_history(inicio: str) -> str:
+    if not PADRAO_HISTORY.fullmatch(inicio):
+        raise IdentificadorInvalido("historyId invalido")
+    return inicio
 
 
 class ClienteGmail:
@@ -44,6 +51,22 @@ class ClienteGmail:
 
     def ler(self, identificador: str) -> dict:
         return self._requisitar("GET", f"messages/{_exigir_identificador(identificador)}")
+
+    def rotulos(self) -> list[dict]:
+        return self._requisitar("GET", "labels").get("labels", [])
+
+    def perfil(self) -> dict:
+        return self._requisitar("GET", "profile")
+
+    def historico(self, inicio: str, rotulo: str, pagina: str | None = None) -> dict:
+        parametros = {
+            "startHistoryId": _exigir_history(inicio),
+            "historyTypes": "messageAdded",
+            "labelId": rotulo,
+        }
+        if pagina:
+            parametros["pageToken"] = pagina
+        return self._requisitar("GET", "history", params=parametros)
 
     def rotular(self, identificador: str, adicionar: list[str], remover: list[str]) -> dict:
         exigir_rotulos_permitidos(
