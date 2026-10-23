@@ -23,7 +23,11 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
-  `src/email/` (sem Gmail e sem banco; F1.3 pendente)
+  `src/email/` (sem Gmail e sem banco)
+- [x] F1.3, eventos de email gravados uma vez por mensagem em `evento_email`, com auditoria de
+  cada escrita; a vaga muda de estado sozinha so com remetente autenticado, confianca no limiar
+  e transicao permitida em `config/eventos_email.yaml`; o resto vai para a fila `classificar`
+  ou `suspeito` (migration `0004_evento_email_fila.sql`, policies `0006_evento_email.sql`)
 - [x] F1.4, organizador em `src/email/organizador.py`: rótulos resolvidos pelo nome de
   `config/rotulos.yaml`, leitura incremental por `historyId` com cursor em `dados/estado/`,
   intervalo de `email_intervalo_min`, golpe em `Candidaturas/Suspeitos`, email pessoal e alerta

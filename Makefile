@@ -53,7 +53,7 @@ testes:
 	$(PY) -m pytest -m "not rede and not navegador and not latex"
 
 testes-banco:
-	PLEITO_TEST_DATABASE=1 $(PY) -m pytest tests/test_banco_permissoes.py tests/test_banco_vagas.py
+	PLEITO_TEST_DATABASE=1 $(PY) -m pytest tests/test_banco_permissoes.py tests/test_banco_vagas.py tests/test_banco_eventos_email.py
 
 testes-todos:
 	$(PY) -m pytest

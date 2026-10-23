@@ -1,0 +1,40 @@
+ator: email
+
+estado_por_etapa:
+  aplicada: aplicada_confirmada
+  teste: teste
+  entrevista: entrevista
+  oferta: oferta
+  encerrada: encerrada
+
+origens_permitidas:
+  aplicada_confirmada:
+    - aplicada_aguardando_confirmacao
+    - aplicada_nao_confirmada
+    - pendente
+  teste:
+    - aplicada_aguardando_confirmacao
+    - aplicada_confirmada
+    - aplicada_nao_confirmada
+    - pendente
+  entrevista:
+    - aplicada_aguardando_confirmacao
+    - aplicada_confirmada
+    - aplicada_nao_confirmada
+    - pendente
+    - teste
+  oferta:
+    - aplicada_aguardando_confirmacao
+    - aplicada_confirmada
+    - aplicada_nao_confirmada
+    - pendente
+    - teste
+    - entrevista
+  encerrada:
+    - aplicada_aguardando_confirmacao
+    - aplicada_confirmada
+    - aplicada_nao_confirmada
+    - pendente
+    - teste
+    - entrevista
+    - oferta
