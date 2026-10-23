@@ -21,6 +21,8 @@ class ConfiguracaoConteudo:
     prefixos_id: dict[str, str]
     palavras_id_max: int
     fonte_ancora: str
+    latex_comandos_permitidos: frozenset[str]
+    latex_ambientes_permitidos: frozenset[str]
 
 
 def configuracao_conteudo(dados: dict | None = None) -> ConfiguracaoConteudo:
@@ -44,4 +46,6 @@ def configuracao_conteudo(dados: dict | None = None) -> ConfiguracaoConteudo:
         prefixos_id=dict(guia["prefixos_id"]),
         palavras_id_max=int(guia["palavras_id_max"]),
         fonte_ancora=str(guia["fonte_ancora"]),
+        latex_comandos_permitidos=frozenset(guia["latex_comandos_permitidos"]),
+        latex_ambientes_permitidos=frozenset(guia["latex_ambientes_permitidos"]),
     )

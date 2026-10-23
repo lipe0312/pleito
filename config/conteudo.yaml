@@ -24,4 +24,6 @@ guia:
     experiencia: exp
     projeto: proj
   palavras_id_max: 3
+  latex_comandos_permitidos: [tech, href, textbf, textit, emph, item, hfill, vspace, begin, end]
+  latex_ambientes_permitidos: [itemize]
   fonte_ancora: guia, currículo base

@@ -29,10 +29,18 @@ BABEL = re.compile(r"\\usepackage\[([^\]]*)\]\{babel\}")
 INICIO_DOCUMENTO = re.compile(r"^[ \t]*\\documentclass", re.M)
 DOCUMENTO = re.compile(r"\\begin\{document\}(.*?)\\end\{document\}", re.S)
 ESCAPE = re.compile(r"\\([_&%#$])")
+COMENTARIO = re.compile(r"(?<!\\)%.*$", re.M)
+COMANDO = re.compile(r"\\([A-Za-z]+)")
+AMBIENTE = re.compile(r"\\(?:begin|end)\{([^{}]*)\}")
+CARACTERE_POR_CODIGO = "^^"
 TIPOS_COM_BULLETS = ("experiencia", "projeto")
 
 
 class GuiaInvalido(ValueError):
+    pass
+
+
+class LatexProibido(GuiaInvalido):
     pass
 
 
@@ -84,11 +92,22 @@ def _trecho(texto: str, titulo: str, ate_proxima_secao: bool) -> str | None:
     return None
 
 
+def _exigir_latex_permitido(trecho: str, config: ConfiguracaoConteudo) -> None:
+    proibidos = sorted(set(COMANDO.findall(trecho)) - config.latex_comandos_permitidos)
+    proibidos += sorted(set(AMBIENTE.findall(trecho)) - config.latex_ambientes_permitidos)
+    if CARACTERE_POR_CODIGO in trecho:
+        proibidos.append(CARACTERE_POR_CODIGO)
+    if proibidos:
+        raise LatexProibido(f"latex fora da allowlist: {proibidos}")
+
+
 def _versao(corpo: str, config: ConfiguracaoConteudo) -> _Versao:
     versao = _Versao()
-    partes = SECAO.split(corpo)
+    partes = SECAO.split(COMENTARIO.sub("", corpo))
     for titulo, conteudo in zip(partes[1::2], partes[2::2], strict=True):
         tipo = config.secoes.get(titulo.strip())
+        if tipo is not None:
+            _exigir_latex_permitido(conteudo, config)
         if tipo == "sobre":
             versao.sobre = _linha(conteudo)
         elif tipo in TIPOS_COM_BULLETS:

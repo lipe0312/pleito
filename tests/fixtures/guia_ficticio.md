@@ -24,8 +24,9 @@ Toda tecnologia citada precisa estar presa a uma âncora.
 \end{center}
 
 \section{Sobre}
-Estudante de exemplo com \tech{Python} e \tech{PostgreSQL}.
+Estudante de exemplo com \tech{Python} e \tech{PostgreSQL}, 100\% fictícia.
 
+% --- FORMAÇÃO ---
 \section{Formação}
 \textbf{Universidade Exemplo} \hfill 2020 -- 2024 \\
 Disciplinas: Algoritmos, Banco de Dados

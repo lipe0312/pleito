@@ -11,6 +11,7 @@ from src.conteudo.modelo import Blocos, Inventario
 
 PERMISSAO_ARQUIVO = 0o600
 PERMISSAO_PASTA = 0o700
+ABERTURA_EXCLUSIVA = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
 
 
 class DestinoForaDeDados(ValueError):
@@ -34,11 +35,16 @@ def _escrever(caminho: Path, modelo: BaseModel) -> None:
         modelo.model_dump(mode="json"), allow_unicode=True, sort_keys=False, width=1000
     )
     temporario = caminho.with_name(f".{caminho.name}.tmp")
-    descritor = os.open(temporario, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, PERMISSAO_ARQUIVO)
-    with os.fdopen(descritor, "w", encoding="utf-8") as arquivo:
-        arquivo.write(texto)
-    os.chmod(temporario, PERMISSAO_ARQUIVO)
-    os.replace(temporario, caminho)
+    temporario.unlink(missing_ok=True)
+    descritor = os.open(temporario, ABERTURA_EXCLUSIVA, PERMISSAO_ARQUIVO)
+    try:
+        with os.fdopen(descritor, "w", encoding="utf-8") as arquivo:
+            arquivo.write(texto)
+        os.chmod(temporario, PERMISSAO_ARQUIVO)
+        os.replace(temporario, caminho)
+    except BaseException:
+        temporario.unlink(missing_ok=True)
+        raise
 
 
 def gravar(
@@ -46,6 +52,7 @@ def gravar(
 ) -> tuple[Path, Path]:
     destino = destino_conteudo(pasta_dados, config)
     destino.mkdir(parents=True, exist_ok=True, mode=PERMISSAO_PASTA)
+    os.chmod(destino, PERMISSAO_PASTA)
     caminho_blocos = destino / config.arquivo_blocos
     caminho_inventario = destino / config.arquivo_inventario
     _escrever(caminho_blocos, blocos)

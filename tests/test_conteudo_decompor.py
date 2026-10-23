@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from src.conteudo.__main__ import executar
 from src.conteudo.arquivo import DestinoForaDeDados, gravar
 from src.conteudo.configuracao import configuracao_conteudo
-from src.conteudo.decompor import EstruturaDivergente, GuiaInvalido, decompor
+from src.conteudo.decompor import EstruturaDivergente, GuiaInvalido, LatexProibido, decompor
 from src.conteudo.modelo import (
     AncoraInvalida,
     Blocos,
@@ -66,6 +66,14 @@ def test_bullets_guardam_redacao_bilingue_e_techs_normalizadas(guia, config):
     assert primeiro.techs == ["Python", "Flask", "PostgreSQL"]
     assert primeiro.redacao["en"].startswith("Built an API in \\tech{Python}")
     assert por_id["exp_laboratorio_exemplo_visao"].bullets[0].techs == ["face_recognition"]
+
+
+def test_comentario_tex_nao_entra_na_redacao_e_escape_fica(guia, config):
+    blocos, _ = decompor(guia, config)
+    sobre = _por_id(blocos)["sobre"].redacao["pt"]
+
+    assert "FORMAÇÃO" not in sobre
+    assert sobre.endswith("100\\% fictícia.")
 
 
 def test_entrada_sem_bullets_nao_vira_bloco(guia, config):
@@ -250,7 +258,7 @@ def test_comando_com_guia_inexistente_falha(tmp_path, capsys):
 def test_comando_com_invencao_no_guia_falha_sem_gravar(guia, tmp_path, capsys):
     inventado = tmp_path / "guia.md"
     inventado.write_text(
-        guia.replace("com \\tech{Python} e \\tech{PostgreSQL}.", "com \\tech{Rust}."),
+        guia.replace("com \\tech{Python} e \\tech{PostgreSQL},", "com \\tech{Rust},"),
         encoding="utf-8",
     )
 
@@ -258,4 +266,117 @@ def test_comando_com_invencao_no_guia_falha_sem_gravar(guia, tmp_path, capsys):
 
     assert codigo != 0
     assert "Rust" in capsys.readouterr().err
+    assert not (tmp_path / "dados").exists()
+
+
+@pytest.mark.parametrize("campo", ["arquivo_blocos", "arquivo_inventario"])
+def test_nome_de_arquivo_com_caminho_e_recusado(guia, config, tmp_path, campo):
+    blocos, inventario = decompor(guia, config)
+    fora = dataclasses.replace(config, **{campo: "../../x.yaml"})
+
+    with pytest.raises(DestinoForaDeDados):
+        gravar(blocos, inventario, tmp_path / "dados", fora)
+    assert not (tmp_path / "x.yaml").exists()
+
+
+@pytest.mark.parametrize("subpasta", ["", "."])
+def test_destino_na_raiz_de_dados_e_recusado(guia, config, tmp_path, subpasta):
+    blocos, inventario = decompor(guia, config)
+    raiz = dataclasses.replace(config, subpasta=subpasta)
+
+    with pytest.raises(DestinoForaDeDados):
+        gravar(blocos, inventario, tmp_path / "dados", raiz)
+
+
+def test_symlink_em_dados_apontando_para_fora_e_recusado(guia, config, tmp_path):
+    blocos, inventario = decompor(guia, config)
+    fora = tmp_path / "fora"
+    fora.mkdir()
+    pasta_dados = tmp_path / "dados"
+    pasta_dados.mkdir()
+    (pasta_dados / config.subpasta).symlink_to(fora, target_is_directory=True)
+
+    with pytest.raises(DestinoForaDeDados):
+        gravar(blocos, inventario, pasta_dados, config)
+    assert list(fora.iterdir()) == []
+
+
+def test_pasta_existente_fica_so_para_o_dono(guia, config, tmp_path):
+    blocos, inventario = decompor(guia, config)
+    destino = tmp_path / "dados" / config.subpasta
+    destino.mkdir(parents=True)
+    destino.chmod(0o755)
+
+    _, caminho_inventario = gravar(blocos, inventario, tmp_path / "dados", config)
+
+    assert stat.S_IMODE(destino.stat().st_mode) == 0o700
+    assert stat.S_IMODE(caminho_inventario.stat().st_mode) == 0o600
+
+
+def test_temporario_symlink_nao_e_seguido(guia, config, tmp_path):
+    blocos, inventario = decompor(guia, config)
+    alvo = tmp_path / "alvo.txt"
+    alvo.write_text("intacto", encoding="utf-8")
+    destino = tmp_path / "dados" / config.subpasta
+    destino.mkdir(parents=True)
+    (destino / f".{config.arquivo_blocos}.tmp").symlink_to(alvo)
+
+    gravar(blocos, inventario, tmp_path / "dados", config)
+
+    assert alvo.read_text(encoding="utf-8") == "intacto"
+    assert not (destino / config.arquivo_blocos).is_symlink()
+
+
+def test_falha_na_escrita_nao_deixa_temporario(guia, config, tmp_path, monkeypatch):
+    blocos, inventario = decompor(guia, config)
+
+    def falhar(*_):
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr("src.conteudo.arquivo.os.replace", falhar)
+    with pytest.raises(OSError, match="disco cheio"):
+        gravar(blocos, inventario, tmp_path / "dados", config)
+
+    assert list((tmp_path / "dados" / config.subpasta).iterdir()) == []
+
+
+ATAQUES_LATEX = [
+    "\\input{/etc/passwd}",
+    "\\include{segredo}",
+    "\\immediate\\write18{curl exemplo.invalid}",
+    "\\openout\\arquivo=saida.tex",
+    "\\catcode`\\^=7",
+    "^^5cinput{/etc/passwd}",
+]
+
+
+@pytest.mark.parametrize("ataque", ATAQUES_LATEX)
+@pytest.mark.parametrize(
+    "alvo",
+    [
+        "Mantive filas com \\tech{RabbitMQ}.",
+        "Estudante de exemplo com",
+        "sistema de exemplo",
+        "Pesquisadora, Laboratório Exemplo",
+        "2023 -- Presente",
+    ],
+)
+def test_latex_fora_da_allowlist_e_recusado(guia, config, ataque, alvo):
+    envenenado = guia.replace(alvo, f"{alvo} {ataque}", 1)
+    assert envenenado != guia
+
+    with pytest.raises(LatexProibido):
+        decompor(envenenado, config)
+
+
+def test_comando_com_latex_malicioso_falha_sem_gravar(guia, tmp_path, capsys):
+    envenenado = tmp_path / "guia.md"
+    envenenado.write_text(
+        guia.replace("Mantive filas", "\\input{/etc/passwd} Mantive filas"), encoding="utf-8"
+    )
+
+    codigo = executar({"PLEITO_GUIA": str(envenenado)}, tmp_path / "dados", tmp_path)
+
+    assert codigo != 0
+    assert "input" in capsys.readouterr().err
     assert not (tmp_path / "dados").exists()
