@@ -16,8 +16,15 @@ class Cursor:
 def ler_cursor(caminho: Path) -> Cursor | None:
     if not caminho.exists():
         return None
-    bruto = json.loads(caminho.read_text(encoding="utf-8"))
-    return Cursor(str(bruto["history_id"]), datetime.fromisoformat(bruto["ultima_leitura"]))
+    try:
+        bruto = json.loads(caminho.read_text(encoding="utf-8"))
+        history_id = str(bruto["history_id"])
+        ultima_leitura = datetime.fromisoformat(bruto["ultima_leitura"])
+    except (ValueError, TypeError, KeyError):
+        return None
+    if not history_id.isdigit() or ultima_leitura.utcoffset() is None:
+        return None
+    return Cursor(history_id, ultima_leitura)
 
 
 def gravar_cursor(caminho: Path, cursor: Cursor) -> None:

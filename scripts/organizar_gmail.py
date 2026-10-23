@@ -33,7 +33,10 @@ def main() -> None:
         return
     for etapa, total in sorted(resumo.por_etapa.items()):
         print(f"{etapa.value}: {total}")
-    print(f"ignoradas: {resumo.ignoradas} · ja fora da caixa: {resumo.fora_da_caixa}")
+    print(
+        f"ignoradas: {resumo.ignoradas} · ja fora da caixa: {resumo.fora_da_caixa}"
+        f" · sumidas antes da leitura: {resumo.sumidas}"
+    )
 
 
 if __name__ == "__main__":

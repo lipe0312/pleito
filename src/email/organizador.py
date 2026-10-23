@@ -27,6 +27,10 @@ MOTIVOS_DE_IMITACAO = frozenset(
 )
 
 
+class CursorForaDeDados(ValueError):
+    pass
+
+
 class Caixa(Protocol):
     def rotulos(self) -> list[dict]: ...
     def perfil(self) -> dict: ...
@@ -53,6 +57,15 @@ class Resumo:
     por_etapa: dict[Etapa, int] = field(default_factory=dict)
     ignoradas: int = 0
     fora_da_caixa: int = 0
+    sumidas: int = 0
+
+
+def caminho_do_cursor(dados: Path, relativo: str) -> Path:
+    base = dados.resolve()
+    caminho = (base / relativo).resolve()
+    if not caminho.is_relative_to(base) or caminho == base:
+        raise CursorForaDeDados(f"cursor fora de {base}: {relativo!r}")
+    return caminho
 
 
 def configuracao_organizacao(
@@ -62,7 +75,7 @@ def configuracao_organizacao(
     bruto = emails["organizacao"]
     minutos = carregar("limites")["horarios"]["email_intervalo_min"]
     return ConfiguracaoOrganizacao(
-        caminho_cursor=caminho_cursor or ambiente().dados / bruto["cursor"],
+        caminho_cursor=caminho_cursor or caminho_do_cursor(ambiente().dados, bruto["cursor"]),
         consulta_inicial=bruto["consulta_inicial"],
         lote_inicial=int(bruto["lote_inicial"]),
         intervalo=timedelta(minutes=float(minutos)),
@@ -98,7 +111,7 @@ def relevante(email: Email, classificacao: Classificacao, configuradas: Regras) 
     return _de_plataforma_de_vagas(email, configuradas)
 
 
-def _historico_expirado(erro: httpx.HTTPStatusError) -> bool:
+def _nao_encontrado(erro: httpx.HTTPStatusError) -> bool:
     return erro.response.status_code == httpx.codes.NOT_FOUND
 
 
@@ -133,7 +146,7 @@ def ids_novos(
     try:
         return _ids_do_historico(caixa, cursor, cfg)
     except httpx.HTTPStatusError as erro:
-        if not _historico_expirado(erro):
+        if not _nao_encontrado(erro):
             raise
         return _ids_do_inicio(caixa, cfg)
 
@@ -178,7 +191,13 @@ def rodada(
     contagem: Counter[Etapa] = Counter()
     resumo = Resumo()
     for identificador in ids:
-        mensagem = caixa.ler(identificador)
+        try:
+            mensagem = caixa.ler(identificador)
+        except httpx.HTTPStatusError as erro:
+            if not _nao_encontrado(erro):
+                raise
+            resumo.sumidas += 1
+            continue
         if cfg.rotulo_caixa_entrada not in mensagem.get("labelIds", []):
             resumo.fora_da_caixa += 1
             continue

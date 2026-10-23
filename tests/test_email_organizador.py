@@ -8,10 +8,15 @@ from pathlib import Path
 import httpx
 import pytest
 
-from src.config import RAIZ, carregar
+from src.config import RAIZ, ambiente, carregar
 from src.email.cursor import Cursor, gravar_cursor, ler_cursor
 from src.email.modelo import Etapa
-from src.email.organizador import configuracao_organizacao, rodada
+from src.email.organizador import (
+    CursorForaDeDados,
+    caminho_do_cursor,
+    configuracao_organizacao,
+    rodada,
+)
 from src.email.rotulos import RotuloAusente, resolver_rotulos
 
 AGORA = datetime(2026, 10, 23, 12, 0, tzinfo=UTC)
@@ -67,6 +72,14 @@ def mensagem(
     }
 
 
+def _erro_http(status: int) -> httpx.HTTPStatusError:
+    return httpx.HTTPStatusError(
+        str(status),
+        request=httpx.Request("GET", "https://gmail.falso/"),
+        response=httpx.Response(status),
+    )
+
+
 class GmailFalso:
     def __init__(self, mensagens: list[dict], historico: list[list[str]] | None = None) -> None:
         self.mensagens = {m["id"]: m for m in mensagens}
@@ -75,7 +88,8 @@ class GmailFalso:
         self.perfil_history = "500"
         self.contas_rotulos = _rotulos_da_conta()
         self.chamadas: list[tuple] = []
-        self.historico_expirado = False
+        self.status_historico: int | None = None
+        self.sumidas: set[str] = set()
 
     def rotulos(self) -> list[dict]:
         self.chamadas.append(("rotulos",))
@@ -91,12 +105,8 @@ class GmailFalso:
 
     def historico(self, inicio: str, rotulo: str, pagina: str | None = None) -> dict:
         self.chamadas.append(("historico", inicio, rotulo, pagina))
-        if self.historico_expirado:
-            raise httpx.HTTPStatusError(
-                "expirado",
-                request=httpx.Request("GET", "https://gmail.falso/history"),
-                response=httpx.Response(404),
-            )
+        if self.status_historico:
+            raise _erro_http(self.status_historico)
         indice = int(pagina or 0)
         ids = self.paginas[indice]
         resposta = {
@@ -109,6 +119,8 @@ class GmailFalso:
 
     def ler(self, identificador: str) -> dict:
         self.chamadas.append(("ler", identificador))
+        if identificador in self.sumidas:
+            raise _erro_http(404)
         return self.mensagens[identificador]
 
     def rotular(self, identificador: str, adicionar: list[str], remover: list[str]) -> dict:
@@ -311,7 +323,7 @@ def test_intervalo_vem_do_config_de_limites(cfg):
 def test_historico_expirado_recomeca_pela_consulta_inicial(cfg):
     gravar_cursor(cfg.caminho_cursor, Cursor("1", AGORA - cfg.intervalo))
     gmail = GmailFalso([mensagem("m1", GUPY, "Convite para entrevista")], historico=[[]])
-    gmail.historico_expirado = True
+    gmail.status_historico = 404
     rodada(gmail, cfg, AGORA)
     assert ("listar", cfg.consulta_inicial, cfg.lote_inicial) in gmail.chamadas
     assert ler_cursor(cfg.caminho_cursor) == Cursor("500", AGORA)
@@ -341,3 +353,79 @@ def test_rodada_so_rotula_e_arquiva_nunca_outra_escrita(cfg):
     rodada(gmail, cfg, AGORA)
     usadas = {c[0] for c in gmail.chamadas}
     assert usadas <= {"rotulos", "perfil", "listar", "historico", "ler", "rotular", "arquivar"}
+
+
+def test_mensagem_apagada_antes_da_leitura_e_contada_e_o_cursor_avanca(cfg):
+    gravar_cursor(cfg.caminho_cursor, Cursor("700", AGORA - cfg.intervalo))
+    gmail = GmailFalso(
+        [
+            mensagem("m1", GUPY, "Convite para entrevista"),
+            mensagem("m2", GUPY, "Proposta de emprego"),
+        ],
+        historico=[["m1", "m2"]],
+    )
+    gmail.sumidas = {"m1"}
+    resumo = rodada(gmail, cfg, AGORA)
+    assert resumo.sumidas == 1
+    assert gmail.rotuladas() == {"m2": (_id_da_etapa(Etapa.OFERTA),)}
+    assert ler_cursor(cfg.caminho_cursor) == Cursor("900", AGORA)
+
+
+@pytest.mark.parametrize("status", [403, 500])
+def test_erro_do_historico_que_nao_e_404_e_relancado_sem_varredura_inicial(cfg, status):
+    gravar_cursor(cfg.caminho_cursor, Cursor("700", AGORA - cfg.intervalo))
+    gmail = GmailFalso([mensagem("m1", GUPY, "Convite para entrevista")], historico=[[]])
+    gmail.status_historico = status
+    with pytest.raises(httpx.HTTPStatusError):
+        rodada(gmail, cfg, AGORA)
+    escritas_ou_varredura = {"listar", "perfil", "rotular", "arquivar"}
+    assert not [c for c in gmail.chamadas if c[0] in escritas_ou_varredura]
+    assert ler_cursor(cfg.caminho_cursor) == Cursor("700", AGORA - cfg.intervalo)
+
+
+@pytest.mark.parametrize("status", [403, 500])
+def test_erro_ao_ler_mensagem_que_nao_e_404_e_relancado_sem_avancar_cursor(cfg, status):
+    gravar_cursor(cfg.caminho_cursor, Cursor("700", AGORA - cfg.intervalo))
+    gmail = GmailFalso([mensagem("m1", GUPY, "Convite para entrevista")], historico=[["m1"]])
+
+    def falhar(_identificador):
+        raise _erro_http(status)
+
+    gmail.ler = falhar
+    with pytest.raises(httpx.HTTPStatusError):
+        rodada(gmail, cfg, AGORA)
+    assert ler_cursor(cfg.caminho_cursor) == Cursor("700", AGORA - cfg.intervalo)
+
+
+def test_caminho_padrao_do_cursor_fica_dentro_de_dados():
+    caminho = configuracao_organizacao().caminho_cursor
+    assert caminho.is_relative_to(ambiente().dados.resolve())
+    assert caminho.name == Path(carregar("emails")["organizacao"]["cursor"]).name
+
+
+@pytest.mark.parametrize(
+    "relativo", ["../fora.json", "estado/../../fora.json", "/var/fora.json", "."]
+)
+def test_cursor_fora_de_dados_e_recusado(tmp_path, relativo):
+    with pytest.raises(CursorForaDeDados):
+        caminho_do_cursor(tmp_path / "dados", relativo)
+
+
+@pytest.mark.parametrize(
+    "conteudo",
+    [
+        "{nao e json",
+        "[]",
+        '{"history_id": "700"}',
+        '{"history_id": "700", "ultima_leitura": "ontem"}',
+        '{"history_id": "700", "ultima_leitura": "2026-10-23T11:00:00"}',
+        '{"history_id": "7&x", "ultima_leitura": "2026-10-23T11:00:00+00:00"}',
+    ],
+)
+def test_cursor_corrompido_ou_sem_fuso_recomeca_pela_consulta_inicial(cfg, conteudo):
+    cfg.caminho_cursor.parent.mkdir(parents=True, exist_ok=True)
+    cfg.caminho_cursor.write_text(conteudo, encoding="utf-8")
+    gmail = GmailFalso([mensagem("m1", GUPY, "Convite para entrevista")])
+    rodada(gmail, cfg, AGORA)
+    assert ("listar", cfg.consulta_inicial, cfg.lote_inicial) in gmail.chamadas
+    assert ler_cursor(cfg.caminho_cursor) == Cursor("500", AGORA)
