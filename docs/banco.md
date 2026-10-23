@@ -235,8 +235,10 @@ Todas verificadas contra um Postgres 16 real:
 - a mesma vaga da mesma fonte e empresa nao entra duas vezes, nem com outro `id_externo`
   (`vaga_unica_por_fonte` e `vaga_unica_por_conteudo`)
 - nota fora de 0 a 100 e confianca fora de 0 a 1 nao entram
-- evento de email com confianca 1.0 e remetente nao autenticado e recusado pela RLS, salvo na
-  fila `suspeito`
+- evento de email com confianca 1.0 e remetente nao autenticado so entra em fila, e a fila
+  `suspeito` so aceita evento do tipo `suspeito`, e vice-versa
+  (`db/policies/0007_evento_email_fila_nao_autenticada.sql`)
+- fila fora de `classificar` e `suspeito` nao entra (`evento_fila_valida`)
 - evento nao autenticado ou em fila nunca e marcado como aplicado, e evento aplicado nao fica
   em fila (`evento_aplica` e `evento_aplicado_fora_da_fila`)
 - linha de auditoria aceita insert e recusa update, inclusive para o papel de aplicacao

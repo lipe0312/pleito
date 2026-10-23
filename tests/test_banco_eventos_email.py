@@ -259,26 +259,84 @@ def test_estados_de_destino_do_config_existem_no_enum_do_banco(banco):
     assert destinos | origens <= existentes
 
 
-def _inserir_como_app(id_mensagem: str, autenticado: bool, confianca: str, fila: str | None):
+def _inserir_como_app(
+    id_mensagem: str,
+    autenticado: bool,
+    confianca: str,
+    fila: str | None,
+    tipo: str = "oferta",
+):
     with conectar("app") as conexao, conexao.cursor() as cursor:
         cursor.execute(
             """
             INSERT INTO evento_email (
                 id_mensagem, remetente, autenticado, tipo, confianca, recebido_em, fila
             )
-            VALUES (%s, 'x@exemplo.invalid', %s, 'oferta', %s, now(), %s)
+            VALUES (%s, 'x@exemplo.invalid', %s, %s, %s, now(), %s)
             RETURNING id
             """,
-            (id_mensagem, autenticado, confianca, fila),
+            (id_mensagem, autenticado, tipo, confianca, fila),
         )
         return cursor.fetchone()[0]
 
 
-def test_rls_recusa_evento_nao_autenticado_com_confianca_maxima_fora_dos_suspeitos(sufixo):
+def test_rls_recusa_evento_nao_autenticado_com_confianca_maxima_fora_de_fila(sufixo):
     psycopg = pytest.importorskip("psycopg")
     with pytest.raises(psycopg.errors.InsufficientPrivilege):
         _inserir_como_app(f"teste-{sufixo}-rls", False, "1.00", None)
-    assert _inserir_como_app(f"teste-{sufixo}-suspeito", False, "1.00", "suspeito")
+    assert _inserir_como_app(f"teste-{sufixo}-suspeito", False, "1.00", "suspeito", "suspeito")
+    assert _inserir_como_app(f"teste-{sufixo}-classificar", False, "1.00", "classificar")
+
+
+def test_nao_autenticado_com_confianca_maxima_e_gravado_na_fila_classificar(banco, sufixo):
+    vaga_id = _vaga(banco, sufixo, "aplicada_confirmada")
+    email = Email("Gupy <no-reply@gupy.com.br>", "Convite para entrevista", "Ola.")
+    recebido = _recebido(sufixo, email)
+    resultado = _gravar(
+        recebido, Classificacao(Etapa.ENTREVISTA, 1.0, Motivo.RECONHECIDO, "gupy"), vaga_id
+    )
+    assert resultado.decisao.fila is Etapa.CLASSIFICAR
+    assert _estado(banco, vaga_id) == "aplicada_confirmada"
+    _, _, aplicado, fila, autenticado, _ = _evento(banco, recebido.id_mensagem)
+    assert (aplicado, fila, autenticado) == (False, "classificar", False)
+
+
+@pytest.mark.parametrize(
+    ("tipo", "fila"),
+    [("oferta", "suspeito"), ("suspeito", None), ("suspeito", "classificar")],
+)
+def test_rls_exige_que_fila_suspeito_e_tipo_suspeito_andem_juntos(sufixo, tipo, fila):
+    psycopg = pytest.importorskip("psycopg")
+    with pytest.raises(psycopg.errors.InsufficientPrivilege):
+        _inserir_como_app(f"teste-{sufixo}-par", True, "0.50", fila, tipo)
+
+
+def test_check_recusa_fila_fora_da_lista(banco, sufixo):
+    psycopg = pytest.importorskip("psycopg")
+    with pytest.raises(psycopg.errors.CheckViolation):
+        with banco.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO pleito.evento_email (
+                    id_mensagem, remetente, autenticado, tipo, confianca, recebido_em, fila
+                )
+                VALUES (%s, 'x@exemplo.invalid', true, 'oferta', 0.95, now(), 'qualquer')
+                """,
+                (f"teste-{sufixo}-fila-invalida",),
+            )
+    banco.rollback()
+
+
+def test_painel_nao_aplica_evento(banco, sufixo):
+    psycopg = pytest.importorskip("psycopg")
+    evento_id = _inserir_como_app(f"teste-{sufixo}-painel", True, "0.95", None)
+    with pytest.raises(psycopg.errors.InsufficientPrivilege):
+        with banco.transaction(), banco.cursor() as cursor:
+            cursor.execute("SET LOCAL ROLE pleito_painel")
+            cursor.execute(
+                "UPDATE pleito.evento_email SET aplicado = true WHERE id = %s", (evento_id,)
+            )
+    assert _evento(banco, f"teste-{sufixo}-painel")[2] is False
 
 
 def test_rls_recusa_aplicar_evento_nao_autenticado(sufixo):
