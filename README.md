@@ -51,6 +51,7 @@ make migrar
 make testes
 make testes-banco
 make painel
+make conteudo   # blocos e inventario do curriculo em dados/conteudo, a partir de PLEITO_GUIA
 ```
 
 ## Comandos do spike

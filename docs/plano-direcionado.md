@@ -14,7 +14,7 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   painel vazio (commits 4588e24, de48423, 3af8c71, e7eaa7f)
 - [x] Etapa 0.5, ajustes da revisão (commits bbbfb7b, b75f05b, a4d6496, 4efa4f6)
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
-- [x] ADRs 0001 a 0020 versionadas
+- [x] ADRs 0001 a 0021 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
   interativa e o push no iPhone
 - [x] F4.1, coletor em `src/coletor/` gravando vagas no Postgres sem duplicar (migration
@@ -24,6 +24,9 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
   `src/email/` (sem Gmail e sem banco; F1.3 pendente)
+- [x] F2.1, currículo base decomposto em blocos e inventário por `make conteudo`, lendo o guia
+  de `PLEITO_GUIA` e gravando em `dados/conteudo/` (fora do git, ADR 0021); template (F2.2)
+  pendente
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
@@ -57,6 +60,7 @@ Ordem de leitura. Quem começa uma fase relê o que ela toca; nada aqui é opcio
 - [x] `limites.yaml` (horários, orçamento, limites), `modelos.yaml` (tiers, preços, habilitação),
   `triagem.yaml`, `filtros.yaml`, `fontes.yaml`, `painel.yaml`
 - [x] `emails.yaml`, `rotulos.yaml` (Fase 1, item F1.2)
+- [x] `conteudo.yaml` (Fase 2, item F2.1)
 
 **Código e banco**
 - [x] `src/config.py`, `src/llm/roteador.py`, `src/llm/orcamento.py`, `src/db/`, `src/painel/`
