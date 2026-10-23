@@ -117,3 +117,9 @@ gmail:
     espera_s: 300
     mensagem: "Autorizacao recebida. Pode fechar esta aba."
   modulo_resumo: src.email.resumo
+
+organizacao:
+  cursor: estado/gmail_cursor.json
+  consulta_inicial: in:inbox newer_than:7d
+  lote_inicial: 100
+  manter_na_caixa: []

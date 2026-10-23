@@ -24,6 +24,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
   `src/email/` (sem Gmail e sem banco; F1.3 pendente)
+- [x] F1.4, organizador em `src/email/organizador.py`: rótulos resolvidos pelo nome de
+  `config/rotulos.yaml`, leitura incremental por `historyId` com cursor em `dados/estado/`,
+  intervalo de `email_intervalo_min`, golpe em `Candidaturas/Suspeitos`, email pessoal e alerta
+  do LinkedIn intocados; só rotula e arquiva (`make gmail-organizar`); agendamento fica no F1.7
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
