@@ -1,0 +1,27 @@
+destino:
+  subpasta: conteudo
+  blocos: blocos.yaml
+  inventario: inventario.yaml
+
+guia:
+  variavel_ambiente: PLEITO_GUIA
+  secao_base: Currículo base
+  secao_tecnologias: Cobertura de tecnologias
+  padrao_equivalencia: '^- A vaga pede (?P<pedido>.+?), o candidato tem (?P<tem>.+?) → (?P<citar>.+?)\.?$'
+  idioma_principal: pt
+  idiomas_babel:
+    brazil: pt
+    english: en
+  secoes:
+    Sobre: sobre
+    About: sobre
+    Experiência: experiencia
+    Experience: experiencia
+    Projetos: projeto
+    Projects: projeto
+  prefixos_id:
+    sobre: sobre
+    experiencia: exp
+    projeto: proj
+  palavras_id_max: 3
+  fonte_ancora: guia, currículo base
