@@ -11,6 +11,7 @@ from src.config import carregar
 from src.repositorio_guarda.guarda import (
     caminho_proibido,
     compilar,
+    normalizar,
     procurar_atribuicao,
     procurar_segredos,
 )
@@ -100,6 +101,12 @@ def regras() -> dict:
         "segredos/perfil_navegador/Default/Cookies",
         "perfil_navegador/Default/Cookies",
         "x/gupy_perfil_navegador/Default/Cookies",
+        "src/dados/x.yaml",
+        "docs/segredos/x.md",
+        "a/b/c/Dados/x",
+        "a/SEGREDOS",
+        "\u017fegredos/x",
+        "src/da\u017fdos/../dados/x",
     ],
 )
 def test_caminho_proibido_recusa(regras, caminho):
@@ -108,7 +115,15 @@ def test_caminho_proibido_recusa(regras, caminho):
 
 @pytest.mark.parametrize(
     "caminho",
-    [".env.example", "src/painel/app.py", "docs/dados.md", "tests/fixtures/guia_ficticio.md"],
+    [
+        ".env.example",
+        "src/painel/app.py",
+        "docs/dados.md",
+        "tests/fixtures/guia_ficticio.md",
+        "src/dados_x/a.py",
+        "segredos_x/a",
+        "src/meus_dados/a.py",
+    ],
 )
 def test_caminho_proibido_aceita(regras, caminho):
     assert not caminho_proibido(caminho, regras["caminhos"])
@@ -309,6 +324,135 @@ def test_commit_msg_aceita_mensagem_tecnica_pela_cli(repo):
     mensagem = repo / "COMMIT_EDITMSG"
     mensagem.write_text("Corrigir parser\n\nPorque o robots falhava.\n", encoding="utf-8")
     assert guarda(repo, "mensagem", str(mensagem)).returncode == 0
+
+
+def test_normalizar_une_composto_e_decomposto():
+    assert normalizar("cafe\u0301/x") == normalizar("caf\u00e9/x")
+
+
+def test_normalizar_aplica_casefold():
+    assert normalizar("\u017fegredos/X") == "segredos/x"
+
+
+def test_submodulo_staged_e_recusado(repo):
+    git(
+        repo,
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "160000,1111111111111111111111111111111111111111,vendor/sub",
+    )
+    resultado = guarda(repo, "arquivos")
+    assert resultado.returncode == 1
+    assert "vendor/sub" in resultado.stderr
+    assert "submodulo" in resultado.stderr
+
+
+def test_linha_adicionada_que_imita_cabecalho_de_diff_e_varrida(repo):
+    escrever(repo, "src/a.py", f"x = 1\n++ {chave_openai()}\n")
+    preparar(repo, "src/a.py")
+    resultado = guarda(repo, "diff")
+    assert resultado.returncode == 1
+    assert "src/a.py:2" in resultado.stderr
+
+
+def test_linha_adicionada_que_imita_cabecalho_de_arquivo_novo_e_varrida(repo):
+    escrever(repo, "src/a.py", f"++ b/src/outro.py\n{chave_openai()}\n")
+    preparar(repo, "src/a.py")
+    resultado = guarda(repo, "diff")
+    assert resultado.returncode == 1
+    assert "src/a.py:2" in resultado.stderr
+
+
+@pytest.mark.parametrize(
+    "separador",
+    ["\u2028", "\u2029", "\u0085", "\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\r"],
+)
+def test_segredo_depois_de_separador_unicode_e_varrido(repo, separador):
+    escrever(repo, "src/a.py", f"x = 1{separador}CHAVE = '{chave_openai()}'\n")
+    preparar(repo, "src/a.py")
+    assert guarda(repo, "diff").returncode == 1
+
+
+def test_arquivo_com_fim_de_linha_windows_e_varrido(repo):
+    destino = repo / "src/a.py"
+    destino.parent.mkdir()
+    destino.write_bytes(f"x = 1\r\nCHAVE = '{chave_openai()}'\r\n".encode())
+    preparar(repo, "src/a.py")
+    resultado = guarda(repo, "diff")
+    assert resultado.returncode == 1
+    assert "src/a.py:2" in resultado.stderr
+
+
+def test_segredo_em_arquivo_binario_e_varrido(repo):
+    destino = repo / "src/blob.bin"
+    destino.parent.mkdir()
+    destino.write_bytes(b"\x00\x01\x02\n" + f"CHAVE = '{chave_openai()}'\n".encode() + b"\x00")
+    preparar(repo, "src/blob.bin")
+    assert guarda(repo, "diff").returncode == 1
+
+
+def test_segredo_em_arquivo_com_diff_desligado_no_gitattributes_e_varrido(repo):
+    escrever(repo, ".gitattributes", "*.txt -diff\n")
+    escrever(repo, "docs/nota.txt", f"CHAVE = '{chave_openai()}'\n")
+    preparar(repo, ".gitattributes", "docs/nota.txt")
+    assert guarda(repo, "diff").returncode == 1
+
+
+def test_segredo_em_arquivo_com_driver_de_diff_externo_e_varrido(repo):
+    escrever(repo, ".gitattributes", "*.txt diff=falso\n")
+    escrever(repo, "docs/nota.txt", f"CHAVE = '{chave_openai()}'\n")
+    git(repo, "config", "diff.falso.textconv", "false")
+    preparar(repo, ".gitattributes", "docs/nota.txt")
+    assert guarda(repo, "diff").returncode == 1
+
+
+def test_atribuicao_depois_de_separador_unicode_na_mensagem(repo):
+    mensagem = repo / "COMMIT_EDITMSG"
+    mensagem.write_text("Corrigir parser\u2028Co-Authored-By: X <a@b.c>\n", encoding="utf-8")
+    assert guarda(repo, "mensagem", str(mensagem)).returncode == 1
+
+
+def test_atribuicao_com_fim_de_linha_windows_na_mensagem(repo):
+    mensagem = repo / "COMMIT_EDITMSG"
+    mensagem.write_bytes(b"Corrigir parser\r\n\r\nCo-Authored-By: X <a@b.c>\r\n")
+    assert guarda(repo, "mensagem", str(mensagem)).returncode == 1
+
+
+@pytest.mark.parametrize(
+    "linha",
+    [
+        lambda: montar("AK", "IA", "IOSFODNN7EXAMPLE"),
+        lambda: montar("GOC", "SPX", "-abcdefghijklmnopqrstuvwx"),
+        lambda: montar("ya", "29.", "a0AbCdEfGhIjKlMnOpQrStUv"),
+        lambda: montar(
+            "ey", "JhbGciOiJIUzI1NiJ9", ".", "ey", "JzdWIiOiIxMjM0NTY3ODkw", ".", "abcDEF123_-xyz"
+        ),
+    ],
+)
+def test_procurar_segredos_acha_credenciais_de_nuvem_e_jwt(regras, linha):
+    assert procurar_segredos([linha()], regras["segredos"])
+
+
+def hook_sem_venv(tmp_path: Path, nome: str, *argumentos: str) -> subprocess.CompletedProcess:
+    origem = (RAIZ / ".githooks" / nome).read_text(encoding="utf-8")
+    destino = tmp_path / nome
+    destino.write_text(origem, encoding="utf-8")
+    destino.chmod(0o755)
+    return subprocess.run(
+        [str(destino), *argumentos],
+        cwd=tmp_path,
+        env=ambiente_sem_git(),
+        capture_output=True,
+        text=True,
+    )
+
+
+@pytest.mark.parametrize("nome", ["pre-commit", "commit-msg"])
+def test_hook_sem_venv_falha_com_mensagem_util(tmp_path, nome):
+    resultado = hook_sem_venv(tmp_path, nome, str(tmp_path / "msg"))
+    assert resultado.returncode != 0
+    assert "falta .venv: rode make setup" in resultado.stderr
 
 
 def test_expressoes_do_yaml_compilam(regras):

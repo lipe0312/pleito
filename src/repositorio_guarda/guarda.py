@@ -3,11 +3,13 @@ from __future__ import annotations
 import posixpath
 import re
 import subprocess
+import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 
 MODO_SYMLINK = "120000"
+MODO_SUBMODULO = "160000"
 PREFIXO_COMENTARIO = "#"
 
 
@@ -18,7 +20,8 @@ class Achado:
 
 
 def normalizar(caminho: str) -> str:
-    return posixpath.normpath(caminho.replace("\\", "/")).lower()
+    unificado = unicodedata.normalize("NFC", caminho).replace("\\", "/").casefold()
+    return posixpath.normpath(unificado)
 
 
 def fora_da_raiz(normalizado: str) -> bool:
@@ -31,7 +34,10 @@ def caminho_proibido(caminho: str, regras: dict) -> bool:
         return True
     if normalizado in {normalizar(excecao) for excecao in regras.get("excecoes", [])}:
         return False
-    return any(fnmatchcase(normalizado, padrao.lower()) for padrao in regras["proibidos"])
+    segmentos = set(normalizado.split("/"))
+    if segmentos & {normalizar(nome) for nome in regras.get("segmentos_proibidos", [])}:
+        return True
+    return any(fnmatchcase(normalizado, normalizar(padrao)) for padrao in regras["proibidos"])
 
 
 def compilar(regras: Iterable[dict]) -> list[tuple[str, re.Pattern[str]]]:
@@ -88,6 +94,8 @@ def verificar_arquivos(regras: dict) -> list[Achado]:
     for caminho, modo in arquivos_staged():
         if regras.get("recusar_symlink") and modo == MODO_SYMLINK:
             achados.append(Achado(onde=caminho, regra="symlink"))
+        elif regras.get("recusar_submodulo") and modo == MODO_SUBMODULO:
+            achados.append(Achado(onde=caminho, regra="submodulo"))
         elif caminho_proibido(caminho, regras):
             achados.append(Achado(onde=caminho, regra="caminho_proibido"))
     return achados
@@ -96,10 +104,14 @@ def verificar_arquivos(regras: dict) -> list[Achado]:
 def linhas_adicionadas() -> Iterable[tuple[str, int, str]]:
     saida = executar_git(
         [
+            "-c",
+            "core.quotepath=false",
             "diff",
             "--cached",
             "-U0",
             "--no-color",
+            "--text",
+            "--no-textconv",
             "--no-ext-diff",
             "--no-renames",
             "--diff-filter=ACMRT",
@@ -107,15 +119,21 @@ def linhas_adicionadas() -> Iterable[tuple[str, int, str]]:
     ).decode("utf-8", errors="replace")
     arquivo = ""
     numero = 0
-    for linha in saida.splitlines():
-        if linha.startswith("+++ "):
-            arquivo = linha[4:].removeprefix("b/") if linha != "+++ /dev/null" else ""
+    em_trecho = False
+    for linha in saida.split("\n"):
+        if linha.startswith("diff --git "):
+            em_trecho = False
+            arquivo = ""
+        elif em_trecho:
+            if linha.startswith("+"):
+                yield arquivo, numero, linha[1:].removesuffix("\r")
+                numero += 1
+        elif linha.startswith("+++ "):
+            arquivo = linha[4:].removeprefix("b/")
         elif linha.startswith("@@"):
             correspondencia = re.search(r"\+(\d+)", linha)
             numero = int(correspondencia.group(1)) if correspondencia else 0
-        elif linha.startswith("+") and arquivo:
-            yield arquivo, numero, linha[1:]
-            numero += 1
+            em_trecho = True
 
 
 def verificar_diff(regras: Iterable[dict]) -> list[Achado]:

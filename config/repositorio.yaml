@@ -1,9 +1,8 @@
 caminhos:
-  proibidos:
+  segmentos_proibidos:
     - "dados"
-    - "dados/*"
     - "segredos"
-    - "segredos/*"
+  proibidos:
     - ".env"
     - ".env.*"
     - "*/.env"
@@ -17,6 +16,7 @@ caminhos:
   excecoes:
     - ".env.example"
   recusar_symlink: true
+  recusar_submodulo: true
 segredos:
   - nome: chave_openai
     expressao: "sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}"
@@ -34,6 +34,14 @@ segredos:
     expressao: "(?i)refresh_token[\"']?\\s*[:=]\\s*[\"'][^\"'\\s]{16,}[\"']"
   - nome: refresh_token_sem_aspas
     expressao: "(?i)^\\s*refresh_token\\s*[:=]\\s*[A-Za-z0-9_./-]{16,}\\s*$"
+  - nome: chave_aws
+    expressao: "\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b"
+  - nome: segredo_cliente_google
+    expressao: "GOCSPX-[A-Za-z0-9_-]{20,}"
+  - nome: token_acesso_google
+    expressao: "ya29\\.[A-Za-z0-9_-]{20,}"
+  - nome: jwt
+    expressao: "eyJ[A-Za-z0-9_-]{8,}\\.eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}"
 atribuicao:
   - nome: co_authored_by
     expressao: "(?i)^\\s*co-authored-by\\s*:"
