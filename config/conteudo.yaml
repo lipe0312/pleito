@@ -2,6 +2,7 @@ destino:
   subpasta: conteudo
   blocos: blocos.yaml
   inventario: inventario.yaml
+  sugestoes: sugestoes.yaml
 
 guia:
   variavel_ambiente: PLEITO_GUIA
@@ -27,3 +28,62 @@ guia:
   latex_comandos_permitidos: [tech, href, textbf, textit, emph, item, hfill, vspace, begin, end]
   latex_ambientes_permitidos: [itemize]
   fonte_ancora: guia, currículo base
+
+sincronizacao:
+  prefixo_id_projeto: proj
+  descricao_max_chars: 160
+  requisicoes_max: 40
+  resposta_max_bytes: 1000000
+  tipos_conteudo_aceitos: [text/html, text/plain, text/markdown, application/xhtml+xml]
+  github:
+    usuario: lipe0312
+    api: https://api.github.com
+    url_publica: https://github.com
+    dominios: [api.github.com]
+    respeitar_robots: false
+    ignorar_fork: true
+    ignorar_arquivado: true
+    por_pagina: 100
+    paginas_max: 3
+    readme_max_chars: 4000
+  portfolio:
+    dominios: []
+    respeitar_robots: true
+    pagina_max_chars: 20000
+    paginas: []
+  padroes_instrucao:
+    - '\bignor(e|ar|em)\b'
+    - '\b(disregard|forget|override)\b'
+    - '\b(adicione|adicionar|inclua|incluir|acrescente|add|include|insert)\b'
+    - '\b(invent[aá]rio|inventory)\b'
+    - '\b(instru[cç][oõ]es|instructions?|prompt|system)\b'
+    - '\b(execute|executar|rode|run|curl|wget|sudo|cat)\b'
+    - '\b(senha|password|token|segredo|secret|\.env|credencia(l|is)|api[ _-]?key)\b'
+    - '\b(voc[eê] deve|you must|you should|you are now)\b'
+  dicionario:
+    - {tech: Java, linguagens: [Java], topics: [java], termos: [], requer: []}
+    - {tech: Spring, linguagens: [], topics: [spring, spring-boot, springboot], termos: [Spring Boot, Spring Framework], requer: [Java]}
+    - {tech: Maven, linguagens: [], topics: [maven], termos: [Maven], requer: [Java]}
+    - {tech: Python, linguagens: [Python], topics: [python], termos: [], requer: []}
+    - {tech: Flask, linguagens: [], topics: [flask], termos: [Flask], requer: [Python]}
+    - {tech: FastAPI, linguagens: [], topics: [fastapi], termos: [FastAPI], requer: [Python]}
+    - {tech: Django, linguagens: [], topics: [django], termos: [Django], requer: [Python]}
+    - {tech: PHP, linguagens: [PHP], topics: [php], termos: [], requer: []}
+    - {tech: Laravel, linguagens: [], topics: [laravel], termos: [Laravel], requer: [PHP]}
+    - {tech: JavaScript, linguagens: [JavaScript], topics: [javascript], termos: [], requer: []}
+    - {tech: TypeScript, linguagens: [TypeScript], topics: [typescript], termos: [], requer: []}
+    - {tech: React, linguagens: [], topics: [react, reactjs], termos: [React], requer: [JavaScript, TypeScript]}
+    - {tech: Node.js, linguagens: [], topics: [nodejs, node], termos: [Node.js], requer: [JavaScript, TypeScript]}
+    - {tech: C, linguagens: [C], topics: [], termos: [], requer: []}
+    - {tech: C++, linguagens: [C++], topics: [cpp], termos: [], requer: []}
+    - {tech: C#, linguagens: [C#], topics: [csharp, dotnet], termos: [], requer: []}
+    - {tech: Go, linguagens: [Go], topics: [golang], termos: [], requer: []}
+    - {tech: Kotlin, linguagens: [Kotlin], topics: [kotlin], termos: [], requer: []}
+    - {tech: SQL, linguagens: [PLpgSQL, TSQL, PLSQL], topics: [sql], termos: [], requer: []}
+    - {tech: PostgreSQL, linguagens: [PLpgSQL], topics: [postgres, postgresql], termos: [PostgreSQL, Postgres], requer: [SQL]}
+    - {tech: MySQL, linguagens: [], topics: [mysql], termos: [MySQL], requer: [SQL]}
+    - {tech: Docker, linguagens: [Dockerfile], topics: [docker, docker-compose], termos: [Docker Compose], requer: []}
+    - {tech: Kubernetes, linguagens: [], topics: [kubernetes, k8s, helm], termos: [Kubernetes], requer: []}
+    - {tech: RabbitMQ, linguagens: [], topics: [rabbitmq], termos: [RabbitMQ], requer: [Docker, Java, Python, PHP, JavaScript, TypeScript, Go]}
+    - {tech: NGINX, linguagens: [], topics: [nginx], termos: [NGINX], requer: [Docker]}
+    - {tech: Redis, linguagens: [], topics: [redis], termos: [Redis], requer: [Docker, Java, Python, PHP, JavaScript, TypeScript, Go]}

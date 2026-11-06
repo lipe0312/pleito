@@ -2,6 +2,7 @@ horarios:
   descoberta: "06:30"
   resumo_diario: "07:45"
   email_intervalo_min: 30
+  conteudo_sincronizar_intervalo_min: 10080
   retry_ao_acordar: true
 
 diarios:
@@ -47,3 +48,6 @@ agendamento:
     resumo:
       comando: ["/usr/bin/make", "resumo"]
       horario: resumo_diario
+    conteudo_sincronizar:
+      comando: ["/usr/bin/make", "conteudo-sincronizar"]
+      intervalo: conteudo_sincronizar_intervalo_min
