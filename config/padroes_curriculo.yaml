@@ -1,0 +1,108 @@
+idiomas: [pt, en]
+
+prompt:
+  arquivo: prompts/gerar_slots.md
+
+marcacao:
+  abre: "<<<TEXTO_NAO_CONFIAVEL"
+  fecha: "FIM_TEXTO_NAO_CONFIAVEL>>>"
+  neutro: "[marcacao removida]"
+  vaga_max_chars: 6000
+
+nao_invencao:
+  - "Nunca invente experiência, empresa, cargo, data, métrica ou resultado."
+  - "Cite só tecnologia que está no inventário aprovado."
+  - "Nunca infle senioridade: o que os blocos não sustentam não entra."
+  - "Nunca crie número: métrica que não está nos blocos não existe."
+  - "Nunca altere nome, contato, links, universidade, empresas ou períodos."
+  - "Se a vaga pede o que o candidato não tem, deixe de fora e não force."
+
+verbos_abertura_aceitos:
+  pt: [Construí, Implementei, Desenvolvi, Projetei, Modelei, Integrei, Automatizei, Otimizei, Estruturei, Validei]
+  en: [Built, Implemented, Developed, Designed, Modeled, Integrated, Automated, Optimized, Structured, Validated]
+
+aberturas_vagas:
+  pt: [Responsável por, Participei de, Auxiliei, Ajudei em, Atuei em]
+  en: [Responsible for, Participated in, Helped with, Assisted with, Worked on]
+
+termos_vagos:
+  pt: [diversas, vários, etc, entre outros, tarefas, atividades]
+  en: [various, several, etc, among others, tasks, activities]
+
+senioridade_inflada:
+  verbos:
+    pt: [liderei, gerenciei, chefiei, arquitetei, coordenei, dirigi, mentorei]
+    en: [led, managed, headed, architected, directed, mentored, spearheaded]
+  expressoes:
+    pt: [do zero, liderança técnica, líder técnico, tech lead, head of]
+    en: [from scratch, technical lead, tech lead, team lead, head of, single-handedly]
+
+bullet:
+  formula: "verbo de ação, o que foi feito, com qual tecnologia do inventário e, só se estiver nos blocos, o resultado medido"
+  chars: {minimo: 60, maximo: 220}
+  techs: {minimo: 1, maximo: 5}
+
+sobre:
+  chars: {minimo: 250, maximo: 450}
+  techs_minimo: 2
+  frases_vazias:
+    pt: [apaixonado por tecnologia, proativo, dinâmico, em busca de novos desafios, trabalho em equipe]
+    en: [passionate about technology, proactive, dynamic, seeking new challenges, team player]
+
+termos_em_ingles_na_versao_pt: [Machine Learning, deep learning, full stack, backend, frontend, pipeline, embeddings]
+
+pontuacao:
+  terminador_bullet: "."
+  separador_interno: ";"
+  proibidos: ["—", "–", "―"]
+
+foco_sobre:
+  backend_arquitetura:
+    pt: [APIs, dados relacionais, microsserviços]
+    en: [APIs, relational data, microservices]
+  dados_ml_ia:
+    pt: [pipeline de dados, modelagem, interpretabilidade de modelos]
+    en: [data pipelines, modeling, model interpretability]
+  fullstack_frontend:
+    pt: [React, TypeScript, APIs]
+    en: [React, TypeScript, APIs]
+  iot_embarcados_visao:
+    pt: [dispositivos de borda, mensageria, visão computacional]
+    en: [edge devices, messaging, computer vision]
+
+ordem_secoes: [Sobre, Formação, Experiência, Projetos]
+
+secoes_proibidas: [Skills, Habilidades, Competências]
+
+ordem_de_corte:
+  - remover o quarto projeto
+  - encurtar bullets longos sem perder tecnologia citada
+  - reduzir o espaço vertical entre entradas
+  - remover um bullet da experiência menos aderente, nunca o único
+  - reduzir o espaçamento entre linhas até o mínimo permitido
+  - reduzir as margens verticais
+
+nunca_no_corte:
+  - fonte abaixo de 10pt
+  - remover experiência
+  - alterar o preâmbulo além dos parâmetros da ordem de corte
+
+rubrica:
+  nota_minima: 0.8
+  aderencia_termos_alvo: 2
+  criterios:
+    cobertura_techs:
+      peso: 0.30
+      descricao: "Cobertura das tecnologias pedidas pela vaga que o inventário sustenta"
+    aderencia_familia:
+      peso: 0.20
+      descricao: "Aderência do Sobre ao foco da família escolhida"
+    verbo_repetido:
+      peso: 0.15
+      descricao: "Bullets da mesma entrada com aberturas diferentes"
+    bullet_vago:
+      peso: 0.20
+      descricao: "Bullets concretos: tecnologia, tamanho, verbo de ação, sem senioridade inflada"
+    sobre_generico:
+      peso: 0.15
+      descricao: "Sobre específico: tamanho, tecnologia citada e nenhuma frase vazia"

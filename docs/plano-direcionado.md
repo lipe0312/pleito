@@ -66,6 +66,11 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   caractere invisível e LaTeX fora da allowlist (comando, símbolo, ambiente, pacote, classe,
   endereço de `\href`, `^^`, também com espaço, quebra ou comentário no meio); o conjunto de
   avaliação (F2.4) e a ligação ao gerador (F3.1) ficam para os itens seguintes
+- [x] F3.0, padrões escritos do currículo em `config/padroes_curriculo.yaml` (validado por pydantic,
+  `src/padroes/`) e `docs/curriculo-padroes.md`; `prompts/gerar_slots.md` versionado, montado a
+  partir do yaml (versão e hash graváveis por tentativa, vaga só dentro da marcação de dado não
+  confiável) e rubrica de qualidade com pesos que somam 1 (`avaliar`); pontuação dos bullets (Q5)
+  mantém a do currículo base; aplicar a rubrica no laço fica para o F3.3
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)
