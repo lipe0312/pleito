@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import plistlib
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from src.agendamento import executor as modulo_executor
 from src.agendamento.configuracao import Agendamento, Rotina, agendamento_do_config
-from src.agendamento.executor import executar
+from src.agendamento.executor import EstouroDeTempo, executar
 from src.agendamento.plist import gerar_plist
 from src.config import carregar
 
@@ -16,6 +18,8 @@ def agendamento(retry: bool = True) -> Agendamento:
     return Agendamento(
         rotulo="teste.rotinas",
         tolerancia_min=10,
+        timeout_min=20,
+        interpretador="venv/py",
         retry_ao_acordar=retry,
         rotinas=(
             Rotina("resumo", ("make", "resumo"), horario="07:45"),
@@ -116,3 +120,53 @@ def test_falha_da_rotina_fica_registrada(tmp_path):
     registro = tmp_path / "e.json"
     executar(agendamento(), registro, dia(7, 46), Corredor(codigo=2))
     assert "falha" in registro.read_text(encoding="utf-8")
+
+
+def test_plist_usa_o_interpretador_do_config():
+    dados = plistlib.loads(gerar_plist(agendamento(), RAIZ_FALSA, RAIZ_FALSA / "log"))
+    assert dados["ProgramArguments"][0] == str(RAIZ_FALSA / "venv/py")
+
+
+def test_estouro_de_tempo_registra_timeout_e_segue_para_a_proxima_rotina(tmp_path):
+    chamadas = []
+
+    def corredor(rotina):
+        chamadas.append(rotina.nome)
+        if rotina.nome == "descoberta":
+            raise EstouroDeTempo
+        return 0
+
+    registro = tmp_path / "e.json"
+    executar(agendamento(), registro, dia(7, 46), corredor)
+    texto = registro.read_text(encoding="utf-8")
+    assert "timeout" in texto
+    assert "resumo" in chamadas and "email" in chamadas
+
+
+def test_correr_comando_converte_timeout_do_subprocess(monkeypatch):
+    def falso(*args, **kwargs):
+        assert kwargs["timeout"] == 120
+        raise subprocess.TimeoutExpired("x", 120)
+
+    monkeypatch.setattr(modulo_executor.subprocess, "run", falso)
+    try:
+        modulo_executor.correr_comando(Rotina("r", ("x",)), 2)
+    except EstouroDeTempo:
+        return
+    raise AssertionError
+
+
+def test_excecao_na_segunda_rotina_nao_perde_o_registro_da_primeira(tmp_path):
+    registro = tmp_path / "e.json"
+
+    def corredor(rotina):
+        if rotina.nome == "descoberta":
+            raise RuntimeError
+        return 0
+
+    try:
+        executar(agendamento(), registro, dia(7, 46), corredor)
+    except RuntimeError:
+        pass
+    assert '"resumo"' in registro.read_text(encoding="utf-8")
+    assert not list(tmp_path.glob("*.tmp"))

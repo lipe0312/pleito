@@ -22,6 +22,8 @@ class Rotina:
 class Agendamento:
     rotulo: str
     tolerancia_min: int
+    timeout_min: int
+    interpretador: str
     retry_ao_acordar: bool
     rotinas: tuple[Rotina, ...]
 
@@ -38,6 +40,8 @@ def agendamento_do_config() -> Agendamento:
     return Agendamento(
         rotulo=bloco["rotulo"],
         tolerancia_min=int(bloco["tolerancia_min"]),
+        timeout_min=int(bloco["timeout_min"]),
+        interpretador=str(bloco["interpretador"]),
         retry_ao_acordar=bool(horarios["retry_ao_acordar"]),
         rotinas=tuple(rotinas),
     )

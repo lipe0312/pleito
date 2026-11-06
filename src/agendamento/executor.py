@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -12,6 +13,10 @@ from src.config import RAIZ, carregar
 Corredor = Callable[[Rotina], int]
 
 
+class EstouroDeTempo(Exception):
+    pass
+
+
 def ler_registro(caminho: Path) -> list[dict]:
     if not caminho.is_file():
         return []
@@ -20,7 +25,9 @@ def ler_registro(caminho: Path) -> list[dict]:
 
 def gravar_registro(caminho: Path, entradas: list[dict]) -> None:
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    caminho.write_text(json.dumps(entradas, indent=1), encoding="utf-8")
+    temporario = caminho.with_name(caminho.name + ".tmp")
+    temporario.write_text(json.dumps(entradas, indent=1), encoding="utf-8")
+    os.replace(temporario, caminho)
 
 
 def janela_mais_recente(rotina: Rotina, agora: datetime) -> datetime:
@@ -60,6 +67,7 @@ def executar(cfg: Agendamento, registro: Path, agora: datetime, corredor: Corred
             recuperada = agora - janela > tolerancia
             if recuperada and not cfg.retry_ao_acordar:
                 entradas.append(entrada(rotina, identificador, agora, "perdida", False))
+                gravar_registro(registro, entradas)
                 continue
         else:
             ultima = ultima_execucao(entradas, rotina.nome)
@@ -67,18 +75,32 @@ def executar(cfg: Agendamento, registro: Path, agora: datetime, corredor: Corred
                 continue
             identificador = None
             recuperada = False
-        status = "ok" if corredor(rotina) == 0 else "falha"
+        try:
+            status = "ok" if corredor(rotina) == 0 else "falha"
+        except EstouroDeTempo:
+            status = "timeout"
         entradas.append(entrada(rotina, identificador, agora, status, recuperada))
-    gravar_registro(registro, entradas)
+        gravar_registro(registro, entradas)
 
 
-def correr_comando(rotina: Rotina) -> int:
-    return subprocess.run(rotina.comando, cwd=RAIZ, check=False).returncode
+def correr_comando(rotina: Rotina, timeout_min: int) -> int:
+    try:
+        return subprocess.run(
+            rotina.comando, cwd=RAIZ, check=False, timeout=timeout_min * 60
+        ).returncode
+    except subprocess.TimeoutExpired as erro:
+        raise EstouroDeTempo from erro
 
 
 def main() -> None:
     bloco = carregar("limites")["agendamento"]
-    executar(agendamento_do_config(), RAIZ / bloco["registro"], datetime.now(), correr_comando)
+    cfg = agendamento_do_config()
+    executar(
+        cfg,
+        RAIZ / bloco["registro"],
+        datetime.now(),
+        lambda rotina: correr_comando(rotina, cfg.timeout_min),
+    )
 
 
 if __name__ == "__main__":

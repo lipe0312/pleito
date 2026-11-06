@@ -35,6 +35,8 @@ rede:
 agendamento:
   rotulo: br.pleito.rotinas
   tolerancia_min: 10
+  timeout_min: 20
+  interpretador: .venv/bin/python
   saida_plist: dados/agendamento/br.pleito.rotinas.plist
   registro: dados/agendamento/execucoes.json
   log: dados/agendamento/launchd.log

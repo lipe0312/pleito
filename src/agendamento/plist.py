@@ -16,7 +16,7 @@ def gerar_plist(cfg: Agendamento, raiz: Path, log: Path) -> bytes:
     intervalos = [r.intervalo_min for r in cfg.rotinas if r.intervalo_min]
     conteudo: dict = {
         "Label": cfg.rotulo,
-        "ProgramArguments": [str(raiz / ".venv/bin/python"), "-m", "src.agendamento.executor"],
+        "ProgramArguments": [str(raiz / cfg.interpretador), "-m", "src.agendamento.executor"],
         "WorkingDirectory": str(raiz),
         "RunAtLoad": True,
         "StandardOutPath": str(log),
