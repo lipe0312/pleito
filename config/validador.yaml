@@ -1,0 +1,103 @@
+paginas_max: 1
+
+latex:
+  comentario: "%"
+  ambiente_do_corpo: document
+  sequencias_proibidas: ["^^"]
+  links:
+    esquema_seguro: https
+    dominios: [github.com, linkedin.com, example.invalid]
+    esquemas_sem_dominio: ["mailto:"]
+  medidas:
+    comandos: {vspace: 1, setlength: 2, titlespacing: 4}
+    minimo_mm: 0
+    maximo_mm: 30
+    unidades_mm: {pt: 0.3515, bp: 0.3528, mm: 1.0, cm: 10.0, pc: 4.2175, in: 25.4}
+  corpo:
+    comandos:
+      - tech
+      - href
+      - textbf
+      - large
+      - section
+      - hfill
+      - vspace
+      - item
+      - begin
+      - end
+      - textbackslash
+      - textasciicircum
+      - textasciitilde
+      - textquotedbl
+      - textless
+      - textgreater
+      - textbar
+      - textasciigrave
+    ambientes: [document, center, itemize]
+    simbolos: ["\\", "{", "}", "%", "&", "_", "$", "#"]
+  preambulo:
+    comandos:
+      - tech
+      - documentclass
+      - usepackage
+      - definecolor
+      - newcommand
+      - setlist
+      - titleformat
+      - section
+      - titlespacing
+      - pagestyle
+      - setlength
+      - parindent
+      - textcolor
+      - textbf
+      - large
+      - bfseries
+      - titlerule
+    classes:
+      article: ['a4paper', '10pt']
+    pacotes:
+      fontenc: ['T1']
+      inputenc: ['utf8']
+      lmodern: []
+      babel: ['brazil', 'english']
+      geometry: ['a4paper', 'margin=[0-9]+(\.[0-9]+)?cm']
+      xcolor: []
+      enumitem: []
+      titlesec: []
+      hyperref: ['hidelinks']
+    definiveis: [tech]
+    simbolos: ["\\", "{", "}"]
+
+caracteres:
+  proibidos: ["—", "―", "⸺", "⸻", "﹘"]
+  sequencias_proibidas: ["---"]
+  categorias_unicode_proibidas: [Cc, Cf, Cn, Co, Cs, Zl, Zp]
+  controles_permitidos: ["\n", "\r", "\t"]
+  alfabeto:
+    scripts: [LATIN]
+    scripts_com_base_ascii: [LATIN]
+    extras: ["\u00aa", "\u00ba"]
+
+tecnologias_conhecidas:
+  - Kubernetes
+  - Kafka
+  - Terraform
+  - Ansible
+  - Jenkins
+  - AWS
+  - Azure
+  - Hadoop
+  - Spark
+  - Airflow
+  - Snowflake
+  - TensorFlow
+  - PyTorch
+  - Django
+  - Angular
+  - Redis
+  - MongoDB
+  - Elasticsearch
+  - GraphQL
+  - Kotlin
+  - Scala

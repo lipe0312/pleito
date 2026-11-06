@@ -57,6 +57,12 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   formação vêm de `dados/conteudo/cabecalho.yaml`), slots declarados em `config/gerador.yaml`,
   Jinja2 em sandbox que escapa toda saída contra LaTeX (PLANO 10.4), `\tech{}` só do inventário
   e compilação sem shell escape em uma página (marcador `latex`, fora do `make testes`)
+- [x] F2.3, `src/validador/` sem IA (`validar_curriculo`, `exigir_valido`), regras em
+  `config/validador.yaml`: PDF com mais de uma página, `\tech{}` ou menção a tecnologia fora do
+  inventário (sem distinguir caixa), travessão (`—`, `---` e afins; `--` de faixa continua),
+  caractere invisível e LaTeX fora da allowlist (comando, símbolo, ambiente, pacote, classe,
+  endereço de `\href`, `^^`, também com espaço, quebra ou comentário no meio); o conjunto de
+  avaliação (F2.4) e a ligação ao gerador (F3.1) ficam para os itens seguintes
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)
