@@ -63,6 +63,12 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   caractere invisível e LaTeX fora da allowlist (comando, símbolo, ambiente, pacote, classe,
   endereço de `\href`, `^^`, também com espaço, quebra ou comentário no meio); o conjunto de
   avaliação (F2.4) e a ligação ao gerador (F3.1) ficam para os itens seguintes
+- [x] F2.7, `make conteudo-sincronizar` lê os repositórios públicos do usuário de
+  `config/conteudo.yaml` pela API do GitHub e as páginas do portfólio (lista vazia até o Filipe
+  preencher a URL), extrai tecnologias por dicionário e grava `dados/conteudo/sugestoes.yaml`
+  sem tocar blocos nem inventário; `make conteudo-aprovar` grava o bloco ou a âncora com quem e
+  quando (`docs/inventario-projetos.md`); entrada semanal em `config/limites.yaml`, sem instalar o
+  plist; tela de aprovação fica no F3.4
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)
