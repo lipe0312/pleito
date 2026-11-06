@@ -1,0 +1,7 @@
+variavel_destino: PLEITO_EMAIL_DESTINO
+rotulo: prontas
+assunto: "pleito: resumo do dia"
+corpo:
+  nenhuma: "Nenhuma vaga boa hoje. Nada para revisar no painel."
+  uma: "1 vaga pronta para revisar no painel."
+  varias: "{total} vagas prontas para revisar no painel."

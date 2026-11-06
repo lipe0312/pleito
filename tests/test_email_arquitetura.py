@@ -79,3 +79,26 @@ def test_envio_dentro_do_modulo_de_resumo_do_config_e_permitido(tmp_path):
 def test_o_mesmo_envio_fora_do_modulo_de_resumo_e_acusado(tmp_path):
     _plantar(tmp_path, "src/email/outro.py", "cliente.send(resumo)\n")
     assert varrer(tmp_path, _modulo_resumo()) != []
+
+
+def test_modulo_de_resumo_do_config_existe_e_e_uma_unica_excecao():
+    modulo = _modulo_resumo()
+    assert isinstance(modulo, str)
+    assert _arquivo_do_modulo(RAIZ, modulo).is_file()
+
+
+def test_unico_arquivo_de_src_que_envia_e_o_modulo_de_resumo():
+    liberado = _arquivo_do_modulo(RAIZ, _modulo_resumo()).resolve()
+    com_envio = {
+        caminho.resolve()
+        for caminho in sorted((RAIZ / "src").rglob("*.py"))
+        if _violacoes_no_arquivo(caminho)
+    }
+    assert com_envio == {liberado}
+
+
+def test_modulo_de_resumo_nao_exclui_nem_encaminha():
+    caminho = _arquivo_do_modulo(RAIZ, _modulo_resumo())
+    violacoes = _violacoes_no_arquivo(caminho)
+    assert violacoes
+    assert all("/send" in violacao for violacao in violacoes)
