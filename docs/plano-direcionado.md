@@ -17,6 +17,7 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `segredos/`, `.env`, perfil de navegador, symlink e submódulo staged em qualquer nível, e
   padrão de segredo no diff staged; o commit-msg recusa linha de atribuição; regras em
   `config/repositorio.yaml`
+- [x] F0.2, `make auditoria` roda o pip-audit (dependência dev) sobre as dependências instaladas; fica fora de `make testes` e do pre-commit; quando rodar em `docs/seguranca.md`
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
 - [x] ADRs 0001 a 0022 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização

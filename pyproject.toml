@@ -23,6 +23,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "respx>=0.21",
     "ruff>=0.4",
+    "pip-audit>=2.7",
 ]
 
 [project.scripts]
