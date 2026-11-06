@@ -23,7 +23,7 @@ IA no desenvolvimento). Fluxos de requisição com os controles no caminho em `d
 | --- | --- | --- | --- |
 | Segredo ou dado pessoal no git | `.gitignore` de `.env`, `dados/`, `segredos/`; push protection e secret scanning do GitHub ligados; hook que recusa caminho e padrão de segredo | repositório | parcial: hook é F0.1 (#13) |
 | Commit com atribuição de ferramenta | regra do `CLAUDE.md`, `deny` no `settings.json`, hook `commit-msg` | repositório | parcial: hook é F0.1 |
-| Push direto ou force push na `main` | `deny` no `settings.json` e proteção de branch | GitHub | F0.4 (#42) |
+| Push direto ou force push na `main` | `deny` no `settings.json` e proteção de branch | GitHub | ✅ branch `main` protegida no GitHub (F0.4, #42; `docs/protecao-main.json`, ver "Proteção da main (F0.4)") |
 | Dependência vulnerável | versões no `pyproject.toml`; alertas e correções automáticas do Dependabot (`.github/dependabot.yml`, pip semanal); `make auditoria` | repositório | ✅ alertas e correções ligados em 2026-11-06 (F0.3, #43; `gh api repos/lipe0312/pleito --jq .security_and_analysis` mostrou `dependabot_security_updates: enabled`); pypdf, certifi e setuptools com vulnerabilidade na primeira rodada do `make auditoria` (2026-11), item novo; `make auditoria` é F0.2 (#14) |
 | Email enviado a terceiro ou apagado | cliente só lista, lê, rotula e arquiva; envio só no módulo de resumo e só para `PLEITO_EMAIL_DESTINO`; teste de arquitetura | Gmail | ✅ leitura; envio é F1.5 (#15) |
 | Token do Gmail roubado do disco | refresh token só no Keychain pelo `/usr/bin/security`; nunca em arquivo nem log | Mac | ✅ |
@@ -111,6 +111,20 @@ instrução para o agente. Ele passa pelo fluxo normal: `make testes && make lin
 do `guarda-seguranca` quando o PR toca `pyproject.toml`, e merge só com "aprovado merge" do
 Filipe na sessão dele. Atualização de versão que quebre o gate vira item do backlog, não
 remendo no PR do bot.
+
+## Proteção da main (F0.4)
+
+A branch `main` do GitHub está protegida: sem force push, sem exclusão, histórico linear e
+regra valendo também para o dono (`enforce_admins`). Exige PR, mas zero aprovações, para o
+squash do fluxo continuar funcionando sem segunda pessoa. A configuração versionada está em
+`docs/protecao-main.json`; o teste `tests/test_protecao_main.py` confere esses campos.
+
+Aplicar (o orquestrador roda, uma vez, a partir do checkout principal):
+`gh api -X PUT repos/lipe0312/pleito/branches/main/protection --input docs/protecao-main.json`
+
+Conferir (checklist do `sec-predeploy`, nível 2): `gh api repos/lipe0312/pleito/branches/main/protection`
+deve mostrar `allow_force_pushes` false, `allow_deletions` false, `required_linear_history` true
+e `required_approving_review_count` 0.
 
 ## Quando rodar o quê
 
