@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from pydantic import Field, model_validator
 
 from src.config import carregar
-from src.conteudo.modelo import Estrito, Identificador, TipoBloco
+from src.conteudo.modelo import Estrito, Identificador, TipoAncora, TipoBloco
 
 
 class Templates(Estrito):
@@ -44,11 +44,13 @@ class ConfiguracaoTravado(Estrito):
 
 class SlotTexto(Estrito):
     tipo: Literal["texto"]
+    tipo_bloco: TipoBloco
     max_chars: int = Field(gt=0)
 
 
 class SlotListaTexto(Estrito):
     tipo: Literal["lista_texto"]
+    tipo_ancora: TipoAncora
     max_itens: int = Field(gt=0)
     max_chars: int = Field(gt=0)
 

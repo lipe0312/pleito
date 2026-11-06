@@ -8,6 +8,7 @@ from src.gerador.configuracao import configuracao_gerador
 from src.gerador.gerar import ModoGeracao, gerar_curriculo, gerar_sem_ia
 from src.padroes.configuracao import configuracao_padroes
 from src.padroes.erros import FamiliaDesconhecida, IdiomaDesconhecido
+from src.validador.resultado import CurriculoInvalido, Regra
 from src.validador.validar import validar_fonte
 
 BLOCOS, INVENTARIO = conteudo_ampliado()
@@ -105,6 +106,30 @@ def test_sem_blocos_o_bastante_usa_o_que_existe():
 
     assert _ids(resultado, "projetos") == ["proj_projeto_alfa_beta"]
     assert validar_fonte(resultado.tex, inventario).aprovado
+
+
+def test_blocos_que_geram_fonte_invalida_nao_viram_tex_no_modo_sem_ia():
+    redacao_invalida = {i: "Orquestrei com Kubernetes." for i in IDIOMAS}
+    invalidos = BLOCOS.model_copy(
+        update={
+            "blocos": [
+                bloco.model_copy(
+                    update={
+                        "bullets": [
+                            b.model_copy(update={"redacao": redacao_invalida})
+                            for b in bloco.bullets
+                        ]
+                    }
+                )
+                for bloco in BLOCOS.blocos
+            ]
+        }
+    )
+
+    with pytest.raises(CurriculoInvalido) as erro:
+        _gerar(blocos=invalidos)
+
+    assert Regra.TECNOLOGIA in erro.value.resultado.regras
 
 
 def test_nao_ha_chamada_nem_prompt_no_modo_sem_ia():

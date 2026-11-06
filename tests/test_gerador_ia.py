@@ -21,7 +21,7 @@ from src.gerador.erros import RespostaDescartada
 from src.gerador.gerar import ModoGeracao, MotivoSemIa, gerar_curriculo
 from src.llm.orcamento import OrcamentoEsgotado, SaldoInsuficienteTierForte
 from src.padroes.configuracao import configuracao_padroes
-from src.validador.resultado import CurriculoInvalido
+from src.validador.resultado import CurriculoInvalido, Regra
 from src.validador.validar import validar_fonte
 
 BLOCOS, INVENTARIO = conteudo_ampliado()
@@ -249,6 +249,8 @@ def test_texto_que_o_validador_recusa_nao_vira_tex():
         _gerar(roteador)
 
     assert "Kubernetes" in str(erro.value)
+    assert not isinstance(erro.value, RespostaDescartada)
+    assert Regra.TECNOLOGIA in erro.value.resultado.regras
 
 
 def test_tier_desligado_gera_sem_ia_e_o_uso_llm_fica_vazio():

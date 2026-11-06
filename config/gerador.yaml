@@ -21,9 +21,11 @@ travado:
 slots:
   sobre:
     tipo: texto
+    tipo_bloco: sobre
     max_chars: 700
   disciplinas:
     tipo: lista_texto
+    tipo_ancora: disciplina
     max_itens: 12
     max_chars: 60
   experiencias:

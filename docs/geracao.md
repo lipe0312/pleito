@@ -1,6 +1,6 @@
 # Geração do currículo: slots, com e sem IA
 
-Como `src/gerador/` transforma blocos, inventário e uma vaga em um `.tex` que o validador aceita. A IA nunca escreve o `.tex` (ADR 0007): ela devolve um JSON de slots, o código confere cada id contra os blocos, escapa todo texto livre e preenche o template travado (F2.2). Sem IA, o mesmo caminho roda com uma regra determinística. Os limites vivem em `config/gerador.yaml`, nada fixo no código.
+Como `src/gerador/` transforma blocos, inventário e uma vaga em um `.tex` que o validador aceita. A IA nunca escreve o `.tex` (ADR 0007): ela devolve um JSON de slots, o código confere cada id contra os blocos, escapa todo texto livre e preenche o template travado (F2.2). Sem IA, a mesma validação e o mesmo escape rodam sobre uma seleção determinística. Os limites vivem em `config/gerador.yaml`, nada fixo no código.
 
 Entrada única: `gerar_curriculo(familia, idioma, vaga, blocos, inventario, travado, roteador)` em `src/gerador/gerar.py`. Para o modo sem IA direto, `gerar_sem_ia`. Os dois devolvem um `ResultadoGeracao` (`tex`, `slots`, `enfase`, `modo`, `motivo`, versão e hash do prompt) e só devolvem depois de `validar_fonte` aprovar.
 
@@ -14,6 +14,8 @@ O esquema pydantic é montado em `src/gerador/esquema.py` a partir de `config/ge
 | `disciplinas` | lista de texto | `slots.disciplinas.max_itens` e `max_chars` |
 | `experiencias` | lista de `{bloco, bullets: [{id, texto, techs}]}` | `slots.experiencias.max_entradas`, `max_bullets`, `max_chars`, `ia.bullets_min` |
 | `projetos` | lista de `{bloco, enfase, bullets: [{id, texto, techs}]}` | `slots.projetos.*`, `ia.entradas_min.projeto` (3 a 4 projetos), `ia.enfase_max` |
+
+`slots.sobre.tipo_bloco` diz de qual bloco vem o Sobre e `slots.disciplinas.tipo_ancora` diz de qual âncora do inventário vêm as disciplinas aceitas.
 
 `techs` são as tecnologias que levam `\tech{}` dentro do texto; `enfase` são as tecnologias que o projeto destaca nesta versão. O `\tech` é montado pelo código, nunca vem no texto da IA.
 
@@ -34,7 +36,7 @@ O roteador já grava `invalida` em `uso_llm` quando o JSON ou o schema falham. N
 1. `montar_prompt` (F3.0) com o modelo versionado de `prompts/gerar_slots.md`: regras de `config/padroes_curriculo.yaml`, blocos e inventário do idioma, e a vaga entre as marcas de dado não confiável. Telefone e email nunca entram: o cabeçalho é travado no template e não passa pelo prompt.
 2. `roteador.chamar(ia.tarefa, ia.tier, ...)`: tier forte, reserva de orçamento antes do envio, saída estruturada estrita, sem ferramenta. A versão gravada em `uso_llm.prompt_versao` leva a versão do modelo e os 12 primeiros caracteres do hash do texto.
 3. Conferência dos ids e dos limites (`src/gerador/resposta.py`) e renderização (`escapar_latex`, `compor_texto`).
-4. `exigir_fonte_valida`: se o validador recusar, levanta `CurriculoInvalido` e o `.tex` não é devolvido.
+4. `exigir_fonte_valida`: se o validador recusar, levanta `CurriculoInvalido` e o `.tex` não é devolvido. Esse erro não vira `RespostaDescartada`: ele carrega a lista de violações (`erro.resultado`), que o F3.3 devolve à IA na nova tentativa. O caminho sem IA levanta o mesmo erro.
 
 `sistema_ativo` desligado levanta `SistemaDesativado` e nada cai para o modo sem IA. Falha de rede propaga para quem decide a tentativa.
 
@@ -59,7 +61,7 @@ O texto da vaga só serve para achar tecnologias do inventário e nunca entra no
 - todo texto livre passa por `escapar_latex` e o Jinja só imprime `LatexSeguro` (F2.2)
 - o único comando que a IA influencia é `\tech{}`, com nome do inventário
 - a saída passa por `validar_fonte` antes de ser devolvida; quem a compila (`compilar`) recebe o `.tex` já aprovado
-- compilação sem shell escape, uma página (F2.2)
+- a compilação roda sem shell escape e `compilar` recusa PDF acima de `compilacao.paginas_max` (F2.2); isso fica fora de `gerar_curriculo`, que só entrega a fonte aprovada
 
 ## Como conferir
 

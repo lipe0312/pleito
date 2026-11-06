@@ -12,13 +12,13 @@ from src.gerador.erros import SlotInvalido
 Enfase = dict[str, tuple[str, ...]]
 
 
-def disciplinas_do_inventario(inventario: Inventario) -> list[str]:
+def itens_do_inventario(inventario: Inventario, tipo_ancora: str) -> list[str]:
     return list(
         dict.fromkeys(
             ancora.ref
             for item in inventario.techs
             for ancora in item.ancoras
-            if ancora.tipo == "disciplina"
+            if ancora.tipo == tipo_ancora
         )
     )
 
@@ -27,8 +27,10 @@ def techs_do_bloco(bloco: Bloco) -> frozenset[str]:
     return frozenset(bloco.techs) | {tech for bullet in bloco.bullets for tech in bullet.techs}
 
 
-def _lista_de_disciplinas(valor: list[str], inventario: Inventario, nome: str) -> list[str]:
-    conhecidas = set(disciplinas_do_inventario(inventario))
+def _lista_do_inventario(
+    valor: list[str], inventario: Inventario, declaracao: SlotListaTexto, nome: str
+) -> list[str]:
+    conhecidas = set(itens_do_inventario(inventario, declaracao.tipo_ancora))
     desconhecidas = sorted(set(valor) - conhecidas)
     if desconhecidas:
         raise SlotInvalido(f"{nome}: item fora do inventario: {desconhecidas}")
@@ -95,7 +97,7 @@ def slots_da_resposta(
         if isinstance(declaracao, SlotTexto):
             slots[nome] = dados[nome]
         elif isinstance(declaracao, SlotListaTexto):
-            slots[nome] = _lista_de_disciplinas(dados[nome], inventario, nome)
+            slots[nome] = _lista_do_inventario(dados[nome], inventario, declaracao, nome)
         else:
             slots[nome], parcial = _entradas(
                 nome, dados[nome], declaracao, blocos, inventario, config

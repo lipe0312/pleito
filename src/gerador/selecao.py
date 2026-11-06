@@ -10,7 +10,7 @@ from src.gerador.configuracao import (
     SlotTexto,
 )
 from src.gerador.erros import IdiomaNaoSuportado, SlotAusente
-from src.gerador.resposta import Enfase, disciplinas_do_inventario, techs_do_bloco
+from src.gerador.resposta import Enfase, itens_do_inventario, techs_do_bloco
 from src.gerador.slots import redacao_para_slot
 from src.padroes.configuracao import ConfiguracaoPadroes
 
@@ -91,9 +91,10 @@ def _disciplinas(
         for item in inventario.techs
         if item.tech in techs_vaga
         for ancora in item.ancoras
-        if ancora.tipo == "disciplina"
+        if ancora.tipo == declaracao.tipo_ancora
     ]
-    todas = list(dict.fromkeys([*puxadas, *disciplinas_do_inventario(inventario)]))
+    todas_do_tipo = itens_do_inventario(inventario, declaracao.tipo_ancora)
+    todas = list(dict.fromkeys([*puxadas, *todas_do_tipo]))
     return [nome for nome in todas if len(nome) <= declaracao.max_chars][: declaracao.max_itens]
 
 
@@ -115,9 +116,11 @@ def slots_sem_ia(
     enfase: Enfase = {}
     for nome, declaracao in config.slots.items():
         if isinstance(declaracao, SlotTexto):
-            fonte = next((b for b in blocos.blocos if b.tipo == nome and b.redacao), None)
+            fonte = next(
+                (b for b in blocos.blocos if b.tipo == declaracao.tipo_bloco and b.redacao), None
+            )
             if fonte is None:
-                raise SlotAusente(f"sem bloco de {nome} com redacao")
+                raise SlotAusente(f"sem bloco de {declaracao.tipo_bloco} com redacao para {nome}")
             slots[nome] = redacao_para_slot(fonte.redacao[idioma])
         elif isinstance(declaracao, SlotListaTexto):
             slots[nome] = _disciplinas(declaracao, inventario, techs_vaga)
