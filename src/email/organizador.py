@@ -11,10 +11,11 @@ import httpx
 from src.config import ambiente, carregar
 from src.email.classificador import classificar, tem_padrao_de_etapa
 from src.email.cursor import Cursor, gravar_cursor, ler_cursor
-from src.email.mensagem import email_de_mensagem
+from src.email.mensagem import email_de_mensagem, recebido_em_de
 from src.email.modelo import Classificacao, Email, Etapa, Motivo
 from src.email.regras import Regras, normalizar, regras
 from src.email.remetente import plataforma_de
+from src.email.repositorio import EmailRecebido, ResultadoEvento
 from src.email.rotulos import resolver_rotulos
 
 MOTIVOS_DE_IMITACAO = frozenset(
@@ -41,6 +42,14 @@ class Caixa(Protocol):
     def arquivar(self, identificador: str) -> dict: ...
 
 
+class Registro(Protocol):
+    def gravar(
+        self, recebido: EmailRecebido, classificacao: Classificacao
+    ) -> ResultadoEvento: ...
+    def confirmar(self) -> None: ...
+    def desfazer(self) -> None: ...
+
+
 @dataclass(frozen=True, slots=True)
 class ConfiguracaoOrganizacao:
     caminho_cursor: Path
@@ -58,6 +67,8 @@ class Resumo:
     ignoradas: int = 0
     fora_da_caixa: int = 0
     sumidas: int = 0
+    eventos_gravados: int = 0
+    eventos_repetidos: int = 0
 
 
 def caminho_do_cursor(dados: Path, relativo: str) -> Path:
@@ -151,17 +162,13 @@ def ids_novos(
         return _ids_do_inicio(caixa, cfg)
 
 
-def organizar_mensagem(
+def aplicar_rotulo(
     caixa: Caixa,
     mensagem: dict,
+    classificacao: Classificacao,
     rotulos: dict[Etapa, str],
     cfg: ConfiguracaoOrganizacao,
-    configuradas: Regras,
-) -> Etapa | None:
-    email = email_de_mensagem(mensagem)
-    classificacao = classificar(email, configuradas)
-    if not relevante(email, classificacao, configuradas):
-        return None
+) -> None:
     destino = rotulos[classificacao.etapa]
     das_etapas = set(rotulos.values())
     anteriores = [
@@ -172,7 +179,49 @@ def organizar_mensagem(
     caixa.rotular(mensagem["id"], [destino], anteriores)
     if classificacao.etapa not in cfg.manter_na_caixa:
         caixa.arquivar(mensagem["id"])
-    return classificacao.etapa
+
+
+def _ler_da_caixa(caixa: Caixa, identificador: str, cfg: ConfiguracaoOrganizacao, resumo: Resumo):
+    try:
+        mensagem = caixa.ler(identificador)
+    except httpx.HTTPStatusError as erro:
+        if not _nao_encontrado(erro):
+            raise
+        resumo.sumidas += 1
+        return None
+    if cfg.rotulo_caixa_entrada not in mensagem.get("labelIds", []):
+        resumo.fora_da_caixa += 1
+        return None
+    return mensagem
+
+
+def _registrar(
+    registro: Registro | None,
+    mensagem: dict,
+    email: Email,
+    classificacao: Classificacao,
+    agora: datetime,
+    resumo: Resumo,
+) -> None:
+    if registro is None:
+        return
+    recebido = EmailRecebido(mensagem["id"], email, recebido_em_de(mensagem, agora))
+    if registro.gravar(recebido, classificacao).duplicado:
+        resumo.eventos_repetidos += 1
+    else:
+        resumo.eventos_gravados += 1
+
+
+def _em_transacao(registro: Registro | None, gravar_tudo) -> None:
+    if registro is None:
+        gravar_tudo()
+        return
+    try:
+        gravar_tudo()
+        registro.confirmar()
+    except BaseException:
+        registro.desfazer()
+        raise
 
 
 def rodada(
@@ -181,6 +230,7 @@ def rodada(
     agora: datetime,
     forcar: bool = False,
     configuradas: Regras | None = None,
+    registro: Registro | None = None,
 ) -> Resumo:
     cursor = ler_cursor(cfg.caminho_cursor)
     if not forcar and cursor is not None and agora - cursor.ultima_leitura < cfg.intervalo:
@@ -188,24 +238,27 @@ def rodada(
     configuradas = configuradas or regras()
     rotulos = resolver_rotulos(caixa)
     ids, novo = ids_novos(caixa, cursor, cfg)
-    contagem: Counter[Etapa] = Counter()
     resumo = Resumo()
-    for identificador in ids:
-        try:
-            mensagem = caixa.ler(identificador)
-        except httpx.HTTPStatusError as erro:
-            if not _nao_encontrado(erro):
-                raise
-            resumo.sumidas += 1
-            continue
-        if cfg.rotulo_caixa_entrada not in mensagem.get("labelIds", []):
-            resumo.fora_da_caixa += 1
-            continue
-        etapa = organizar_mensagem(caixa, mensagem, rotulos, cfg, configuradas)
-        if etapa is None:
-            resumo.ignoradas += 1
-        else:
-            contagem[etapa] += 1
+    relevantes: list[tuple[dict, Classificacao]] = []
+
+    def gravar_tudo() -> None:
+        for identificador in ids:
+            mensagem = _ler_da_caixa(caixa, identificador, cfg, resumo)
+            if mensagem is None:
+                continue
+            email = email_de_mensagem(mensagem)
+            classificacao = classificar(email, configuradas)
+            if not relevante(email, classificacao, configuradas):
+                resumo.ignoradas += 1
+                continue
+            _registrar(registro, mensagem, email, classificacao, agora, resumo)
+            relevantes.append((mensagem, classificacao))
+
+    _em_transacao(registro, gravar_tudo)
+    contagem: Counter[Etapa] = Counter()
+    for mensagem, classificacao in relevantes:
+        aplicar_rotulo(caixa, mensagem, classificacao, rotulos, cfg)
+        contagem[classificacao.etapa] += 1
     resumo.por_etapa = dict(contagem)
     gravar_cursor(cfg.caminho_cursor, Cursor(novo, agora))
     return resumo

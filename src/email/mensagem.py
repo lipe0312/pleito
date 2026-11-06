@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+from datetime import UTC, datetime
 
 from src.email.modelo import Email
 
@@ -44,3 +45,13 @@ def email_de_mensagem(mensagem: dict) -> Email:
         reply_to=_primeiro_cabecalho(cabecalhos, "Reply-To"),
         autenticacao=_primeiro_cabecalho(cabecalhos, "Authentication-Results"),
     )
+
+
+def recebido_em_de(mensagem: dict, padrao: datetime) -> datetime:
+    bruto = mensagem.get("internalDate")
+    if not isinstance(bruto, str) or not bruto.isascii() or not bruto.isdigit():
+        return padrao
+    try:
+        return datetime.fromtimestamp(int(bruto) / 1000, tz=UTC)
+    except (OverflowError, OSError, ValueError):
+        return padrao

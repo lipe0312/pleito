@@ -46,6 +46,12 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)
+- [x] F1.9, `make gmail-organizar` grava um `evento_email` por mensagem relevante antes de
+  rotular e arquivar (`src/email/registro.py`, `vinculo.py`): transação única por rodada, cursor só
+  avança depois do commit, banco fora do ar falha a rodada sem perder mensagem e a seguinte
+  reprocessa sem duplicar (idempotente por `id_mensagem`); vínculo com a vaga por domínio exato
+  da empresa ou por plataforma mais nome da empresa citado, regras em `config/eventos_email.yaml`
+  (`vinculo`); sem vínculo único o evento fica sem vaga na fila `classificar`
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
