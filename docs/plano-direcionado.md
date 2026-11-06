@@ -40,6 +40,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `PLEITO_EMAIL_DESTINO`, mensagem conferida antes de sair (um To, sem cópia), rótulo
   `Candidaturas/Prontas`, dry-run por padrão (`make resumo`, `--enviar` explícito) e textos em
   `config/resumo.yaml` (ADR 0024); contagem real de vagas fica para a fase 4
+- [x] F1.6, telas Hoje e Candidaturas no painel (`/hoje`, `/candidaturas`): emails e pendências do
+  dia, vagas por etapa com o último email; leitura só `SELECT` pelo papel do painel
+  (`src/painel/repositorio.py`); `make painel-ficticio` sobe o painel com fixture fictícia, sem
+  banco (padrões em `docs/painel-design.md`)
 - [x] F2.1, currículo base decomposto em blocos e inventário por `make conteudo`, lendo o guia
   de `PLEITO_GUIA` e gravando em `dados/conteudo/` (fora do git, ADR 0021); template (F2.2)
   pendente

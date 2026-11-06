@@ -1,0 +1,74 @@
+eventos:
+  - id: 1
+    hora: "09:12"
+    vaga: "Estagio em Engenharia de Software"
+    empresa: "Empresa Exemplo"
+    tipo: entrevista
+    remetente: "rh@empresa-exemplo.example"
+    autenticado: true
+    fila: null
+  - id: 2
+    hora: "08:40"
+    vaga: "Desenvolvedor Backend Junior"
+    empresa: "Oficina de Codigo"
+    tipo: aplicada
+    remetente: "vagas@oficina-codigo.example"
+    autenticado: true
+    fila: null
+  - id: 3
+    hora: "07:55"
+    vaga: null
+    empresa: null
+    tipo: suspeito
+    remetente: "<img src=x onerror=alert(1)>@recrutamento-falso.example"
+    autenticado: false
+    fila: suspeito
+  - id: 4
+    hora: "07:10"
+    vaga: "<script>alert('vaga')</script>"
+    empresa: "<script>alert('empresa')</script>"
+    tipo: classificar
+    remetente: "contato@talentos-exemplo.example"
+    autenticado: false
+    fila: classificar
+pendencias:
+  - id: 1
+    categoria: "pergunta_nova"
+    detalhe: "Formulario pede pretensao salarial: responda no painel antes de enviar."
+    vaga: "Dados Junior"
+    empresa: "Empresa Exemplo"
+    dias_atras: 1
+    hora: "16:20"
+  - id: 2
+    categoria: "<b>captcha</b>"
+    detalhe: "<script>alert('pendencia')</script>"
+    vaga: "Desenvolvedor Backend Junior"
+    empresa: "Oficina de Codigo"
+    dias_atras: 0
+    hora: "08:30"
+candidaturas:
+  - id: 10
+    titulo: "Estagio em Engenharia de Software"
+    empresa: "Empresa Exemplo"
+    estado: entrevista
+    ultimo_evento: {tipo: entrevista, remetente: "rh@empresa-exemplo.example", dias_atras: 0, hora: "09:12"}
+  - id: 11
+    titulo: "Desenvolvedor Backend Junior"
+    empresa: "Oficina de Codigo"
+    estado: aplicada_confirmada
+    ultimo_evento: {tipo: aplicada, remetente: "vagas@oficina-codigo.example", dias_atras: 0, hora: "08:40"}
+  - id: 12
+    titulo: "Dados Junior"
+    empresa: "Empresa Exemplo"
+    estado: aplicada_aguardando_confirmacao
+    ultimo_evento: null
+  - id: 13
+    titulo: "<script>alert('vaga')</script>"
+    empresa: "<script>alert('empresa')</script>"
+    estado: teste
+    ultimo_evento: {tipo: teste, remetente: "<img src=x onerror=alert(1)>@talentos-exemplo.example", dias_atras: 2, hora: "16:30"}
+  - id: 14
+    titulo: "Analista de Dados Estagio"
+    empresa: "Casa de Dados"
+    estado: encerrada
+    ultimo_evento: {tipo: encerrada, remetente: "selecao@casa-de-dados.example", dias_atras: 6, hora: "11:05"}
