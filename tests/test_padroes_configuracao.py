@@ -88,3 +88,23 @@ def test_tamanhos_do_padrao_cabem_nos_slots_do_gerador():
 def test_yaml_nao_carrega_dado_pessoal():
     texto = repr(carregar("padroes_curriculo"))
     assert not re.search(r"@|https?://|www\.|\d{8,}", texto)
+
+
+def test_pontuacao_proibe_travessao_longo_curto_e_barra_horizontal():
+    proibidos = configuracao_padroes().pontuacao.proibidos
+    assert {"—", "–", "―"} <= set(proibidos)
+
+
+@pytest.mark.parametrize(
+    "arquivo",
+    ["../.env", "prompts/../config/gerador.yaml", "/etc/passwd", "gerar_slots.md", "dados/x.md"],
+)
+def test_arquivo_do_prompt_fora_de_prompts_e_recusado(arquivo):
+    bruto = _bruto()
+    bruto["prompt"]["arquivo"] = arquivo
+    with pytest.raises(ValidationError, match="prompts"):
+        configuracao_padroes(bruto)
+
+
+def test_formula_do_bullet_vem_do_yaml():
+    assert configuracao_padroes().bullet.formula

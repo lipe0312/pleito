@@ -7,10 +7,12 @@ import pytest
 from src.config import carregar
 from src.gerador.slots import TextoComTechs
 from src.padroes.configuracao import configuracao_padroes
+from src.padroes.erros import FamiliaDesconhecida, IdiomaDesconhecido
 from src.padroes.rubrica import CurriculoAvaliado, avaliar
 
 FAMILIA = "backend_arquitetura"
 TECHS_PEDIDAS = ["Python", "PostgreSQL", "Docker"]
+INVENTARIO = ["Python", "PostgreSQL", "Docker"]
 
 
 def _item(texto: str, *techs: str) -> TextoComTechs:
@@ -78,8 +80,10 @@ def _config():
     return configuracao_padroes()
 
 
-def _nota(curriculo, techs=TECHS_PEDIDAS, familia=FAMILIA, idioma="pt", config=None):
-    return avaliar(config or _config(), curriculo, idioma, familia, techs)
+def _nota(
+    curriculo, techs=TECHS_PEDIDAS, familia=FAMILIA, idioma="pt", config=None, inventario=INVENTARIO
+):
+    return avaliar(config or _config(), curriculo, idioma, familia, techs, inventario)
 
 
 def test_curriculo_ficticio_bom_passa_da_nota_minima():
@@ -125,7 +129,10 @@ def test_sem_a_regra_de_senioridade_o_bullet_so_com_verbo_proibido_passaria():
 
 
 def test_cobertura_conta_so_as_techs_pedidas_citadas():
-    cobertura = _nota(CURRICULO_BOM, techs=["Python", "Kubernetes"]).notas["cobertura_techs"]
+    inventario = [*INVENTARIO, "Kubernetes"]
+    cobertura = _nota(
+        CURRICULO_BOM, techs=["Python", "Kubernetes"], inventario=inventario
+    ).notas["cobertura_techs"]
     assert cobertura == 0.5
 
 
@@ -193,9 +200,9 @@ def test_curriculo_sem_bullets_nao_aprova():
 
 
 def test_familia_ou_idioma_desconhecido_e_recusado():
-    with pytest.raises(KeyError):
+    with pytest.raises(FamiliaDesconhecida, match="inexistente"):
         _nota(CURRICULO_BOM, familia="inexistente")
-    with pytest.raises(KeyError):
+    with pytest.raises(IdiomaDesconhecido, match="fr"):
         _nota(CURRICULO_BOM, idioma="fr")
 
 
@@ -235,3 +242,27 @@ def test_listas_em_ingles_valem_para_o_idioma_en():
     inflado = ok.replace("Built", "Led")
     assert _nota_do_bullet_unico(inflado, "Python", "PostgreSQL", idioma="en") == 0
     assert _nota_do_bullet_unico(inflado, "Python", "PostgreSQL", idioma="pt") == 1
+
+
+def test_tech_pedida_e_citada_mas_fora_do_inventario_nao_sobe_a_cobertura():
+    curriculo = CurriculoAvaliado(
+        sobre=_item("x", "Kubernetes"),
+        bullets_por_entrada=[[_item("Construí algo com Kubernetes.", "Kubernetes")]],
+    )
+    pedidas = ["Python", "Kubernetes"]
+    sem_inventario = _nota(curriculo, techs=pedidas).notas["cobertura_techs"]
+    com_inventario = _nota(
+        curriculo, techs=pedidas, inventario=[*INVENTARIO, "Kubernetes"]
+    ).notas["cobertura_techs"]
+    assert sem_inventario == 0
+    assert com_inventario == 0.5
+
+
+def test_pedida_fora_do_inventario_sai_do_calculo_em_vez_de_penalizar():
+    curriculo = CurriculoAvaliado(sobre=_item("x", "Python"), bullets_por_entrada=[])
+    nota = _nota(curriculo, techs=["Python", "Kubernetes"])
+    assert nota.notas["cobertura_techs"] == 1
+
+
+def test_vaga_so_com_techs_fora_do_inventario_nao_penaliza_cobertura():
+    assert _nota(CURRICULO_BOM, techs=["Kubernetes"]).notas["cobertura_techs"] == 1

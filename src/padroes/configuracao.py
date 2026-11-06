@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints, model_validator
 
 from src.config import carregar
 from src.conteudo.modelo import Estrito, Identificador
+from src.padroes.erros import FamiliaDesconhecida, IdiomaDesconhecido
 
 Fragmento = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
 Lista = Annotated[list[Fragmento], Field(min_length=1)]
@@ -18,6 +20,7 @@ NomeCriterio = Literal[
     "sobre_generico",
 ]
 TOLERANCIA_DOS_PESOS = 6
+PASTA_DOS_PROMPTS = "prompts"
 
 
 class Faixa(Estrito):
@@ -33,6 +36,13 @@ class Faixa(Estrito):
 
 class ConfiguracaoPrompt(Estrito):
     arquivo: Fragmento
+
+    @model_validator(mode="after")
+    def _arquivo_fica_na_pasta_dos_prompts(self) -> ConfiguracaoPrompt:
+        partes = PurePosixPath(self.arquivo).parts
+        if len(partes) != 2 or partes[0] != PASTA_DOS_PROMPTS or partes[1] in {"..", "."}:
+            raise ValueError(f"arquivo do prompt precisa estar direto em {PASTA_DOS_PROMPTS}/")
+        return self
 
 
 class Marcacao(Estrito):
@@ -54,6 +64,7 @@ class SenioridadeInflada(Estrito):
 
 
 class ConfiguracaoBullet(Estrito):
+    formula: Fragmento
     chars: Faixa
     techs: Faixa
 
@@ -126,6 +137,12 @@ class ConfiguracaoPadroes(Estrito):
         if any(set(lista) != esperado for lista in por_idioma):
             raise ValueError(f"toda lista por idioma precisa dos idiomas {sorted(esperado)}")
         return self
+
+    def exigir(self, idioma: str, familia: str) -> None:
+        if idioma not in self.idiomas:
+            raise IdiomaDesconhecido(f"idioma fora de {self.idiomas}: {idioma!r}")
+        if familia not in self.foco_sobre:
+            raise FamiliaDesconhecida(f"familia fora de {sorted(self.foco_sobre)}: {familia!r}")
 
 
 def configuracao_padroes(dados: dict | None = None) -> ConfiguracaoPadroes:

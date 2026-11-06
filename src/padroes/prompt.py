@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
 
 from src.config import RAIZ
-from src.padroes.configuracao import ConfiguracaoPadroes
+from src.conteudo.modelo import Blocos, Inventario
+from src.gerador.slots import redacao_para_slot
+from src.padroes.configuracao import PASTA_DOS_PROMPTS, ConfiguracaoPadroes
 
 CABECALHO = re.compile(r"\A---\nversao: (?P<versao>[1-9][0-9]*)\n---\n")
 MARCADOR = re.compile(r"\{\{(?P<nome>[a-z0-9_]+)\}\}")
@@ -40,14 +43,42 @@ def _neutralizar(vaga: str, config: ConfiguracaoPadroes) -> str:
     while anterior != texto:
         anterior = texto
         texto = marcas.sub(config.marcacao.neutro, texto)
-    return texto
+    return texto[: config.marcacao.vaga_max_chars]
+
+
+def _sem_marcas(texto: str, config: ConfiguracaoPadroes) -> str:
+    return texto.replace(config.marcacao.abre, config.marcacao.neutro).replace(
+        config.marcacao.fecha, config.marcacao.neutro
+    )
+
+
+def _blocos_do_idioma(blocos: Blocos, idioma: str, config: ConfiguracaoPadroes) -> str:
+    itens = [
+        {
+            "id": bloco.id,
+            "tipo": bloco.tipo,
+            "fatos": {campo: textos[idioma] for campo, textos in bloco.imutavel.items()},
+            "redacao": redacao_para_slot(bloco.redacao[idioma]) if bloco.redacao else None,
+            "techs": bloco.techs,
+            "bullets": [
+                {"id": bullet.id, "redacao": redacao_para_slot(bullet.redacao[idioma])}
+                for bullet in bloco.bullets
+            ],
+        }
+        for bloco in blocos.blocos
+    ]
+    return _sem_marcas(json.dumps(itens, ensure_ascii=False, indent=1), config)
 
 
 def _valores(
-    config: ConfiguracaoPadroes, idioma: str, familia: str, vaga: str
+    config: ConfiguracaoPadroes,
+    idioma: str,
+    familia: str,
+    vaga: str,
+    blocos: Blocos,
+    inventario: Inventario,
 ) -> dict[str, str]:
-    if idioma not in config.idiomas:
-        raise KeyError(idioma)
+    config.exigir(idioma, familia)
     foco = config.foco_sobre[familia][idioma]
     criterios = config.rubrica.criterios.values()
     return {
@@ -59,6 +90,7 @@ def _valores(
         "verbos_aceitos": _lista(config.verbos_abertura_aceitos[idioma]),
         "aberturas_vagas": _lista(config.aberturas_vagas[idioma]),
         "termos_vagos": _lista(config.termos_vagos[idioma]),
+        "bullet_formula": config.bullet.formula,
         "bullet_chars_min": str(config.bullet.chars.minimo),
         "bullet_chars_max": str(config.bullet.chars.maximo),
         "bullet_techs_min": str(config.bullet.techs.minimo),
@@ -82,6 +114,8 @@ def _valores(
         "rubrica": _linhas(
             [f"{criterio.descricao} (peso {criterio.peso})" for criterio in criterios]
         ),
+        "blocos": _blocos_do_idioma(blocos, idioma, config),
+        "inventario": _sem_marcas(_lista([item.tech for item in inventario.techs]), config),
         "vaga": _neutralizar(vaga, config),
     }
 
@@ -97,15 +131,25 @@ def _renderizar(corpo: str, valores: dict[str, str]) -> str:
     return MARCADOR.sub(lambda achado: valores[achado.group("nome")], corpo)
 
 
+def _ler_modelo(config: ConfiguracaoPadroes) -> str:
+    pasta = (RAIZ / PASTA_DOS_PROMPTS).resolve()
+    caminho = (RAIZ / config.prompt.arquivo).resolve()
+    if caminho.parent != pasta:
+        raise ModeloDePromptInvalido(f"modelo precisa estar em {PASTA_DOS_PROMPTS}/")
+    return caminho.read_text(encoding="utf-8")
+
+
 def montar_prompt(
     config: ConfiguracaoPadroes,
     idioma: str,
     familia: str,
     vaga: str,
+    blocos: Blocos,
+    inventario: Inventario,
     modelo: str | None = None,
 ) -> PromptMontado:
-    valores = _valores(config, idioma, familia, vaga)
-    bruto = modelo if modelo is not None else (RAIZ / config.prompt.arquivo).read_text("utf-8")
+    valores = _valores(config, idioma, familia, vaga, blocos, inventario)
+    bruto = modelo if modelo is not None else _ler_modelo(config)
     cabecalho = CABECALHO.match(bruto)
     if cabecalho is None:
         raise ModeloDePromptInvalido("modelo sem versao no cabecalho")

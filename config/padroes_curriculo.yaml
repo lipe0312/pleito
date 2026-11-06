@@ -38,36 +38,37 @@ senioridade_inflada:
     en: [from scratch, technical lead, tech lead, team lead, head of, single-handedly]
 
 bullet:
+  formula: "verbo de ação, o que foi feito, com qual tecnologia do inventário e, só se estiver nos blocos, o resultado medido"
   chars: {minimo: 60, maximo: 220}
   techs: {minimo: 1, maximo: 5}
 
 sobre:
-  chars: {minimo: 250, maximo: 700}
+  chars: {minimo: 250, maximo: 450}
   techs_minimo: 2
   frases_vazias:
     pt: [apaixonado por tecnologia, proativo, dinâmico, em busca de novos desafios, trabalho em equipe]
     en: [passionate about technology, proactive, dynamic, seeking new challenges, team player]
 
-termos_em_ingles_na_versao_pt: [Machine Learning, deep learning, federated learning, full stack, backend, frontend, pipeline, embeddings]
+termos_em_ingles_na_versao_pt: [Machine Learning, deep learning, full stack, backend, frontend, pipeline, embeddings]
 
 pontuacao:
   terminador_bullet: "."
   separador_interno: ";"
-  proibidos: ["—", "―"]
+  proibidos: ["—", "–", "―"]
 
 foco_sobre:
   backend_arquitetura:
     pt: [APIs, dados relacionais, microsserviços]
     en: [APIs, relational data, microservices]
   dados_ml_ia:
-    pt: [pipeline de dados, modelagem, XAI]
-    en: [data pipelines, modeling, XAI]
+    pt: [pipeline de dados, modelagem, interpretabilidade de modelos]
+    en: [data pipelines, modeling, model interpretability]
   fullstack_frontend:
     pt: [React, TypeScript, APIs]
     en: [React, TypeScript, APIs]
   iot_embarcados_visao:
-    pt: [edge, MQTT, visão computacional]
-    en: [edge, MQTT, computer vision]
+    pt: [dispositivos de borda, mensageria, visão computacional]
+    en: [edge devices, messaging, computer vision]
 
 ordem_secoes: [Sobre, Formação, Experiência, Projetos]
 

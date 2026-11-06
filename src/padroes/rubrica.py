@@ -55,8 +55,10 @@ def _bullet_vago(
     )
 
 
-def _cobertura(curriculo: CurriculoAvaliado, techs_pedidas: list[str]) -> float:
-    pedidas = {tech.casefold() for tech in techs_pedidas}
+def _cobertura(
+    curriculo: CurriculoAvaliado, techs_pedidas: list[str], inventario: list[str]
+) -> float:
+    pedidas = {tech.casefold() for tech in techs_pedidas} & {tech.casefold() for tech in inventario}
     if not pedidas:
         return 1.0
     citadas = {tech.casefold() for tech in curriculo.sobre.techs}
@@ -113,12 +115,11 @@ def avaliar(
     idioma: str,
     familia: str,
     techs_pedidas: list[str],
+    inventario: list[str],
 ) -> Nota:
-    if idioma not in config.idiomas:
-        raise KeyError(idioma)
-    config.foco_sobre[familia]
+    config.exigir(idioma, familia)
     notas = {
-        "cobertura_techs": _cobertura(curriculo, techs_pedidas),
+        "cobertura_techs": _cobertura(curriculo, techs_pedidas, inventario),
         "aderencia_familia": _aderencia(curriculo, config, idioma, familia),
         "verbo_repetido": _verbo_repetido(curriculo),
         "bullet_vago": _bullet_vago_nota(curriculo, config, idioma),
