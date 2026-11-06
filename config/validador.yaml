@@ -1,0 +1,81 @@
+paginas_max: 1
+
+latex:
+  comentario: "%"
+  ambiente_do_corpo: document
+  sequencias_proibidas: ["^^"]
+  esquemas_url: ["https://", "mailto:"]
+  corpo:
+    comandos:
+      - tech
+      - href
+      - textbf
+      - large
+      - section
+      - hfill
+      - vspace
+      - item
+      - begin
+      - end
+      - textbackslash
+      - textasciicircum
+      - textasciitilde
+      - textquotedbl
+      - textless
+      - textgreater
+      - textbar
+      - textasciigrave
+    ambientes: [document, center, itemize]
+    simbolos: ["\\", "{", "}", "%", "&", "_", "$", "#"]
+  preambulo:
+    comandos:
+      - tech
+      - documentclass
+      - usepackage
+      - definecolor
+      - newcommand
+      - setlist
+      - titleformat
+      - section
+      - titlespacing
+      - pagestyle
+      - setlength
+      - parindent
+      - textcolor
+      - textbf
+      - large
+      - bfseries
+      - titlerule
+    classes: [article]
+    pacotes: [fontenc, inputenc, lmodern, babel, geometry, xcolor, enumitem, titlesec, hyperref]
+    definiveis: [tech]
+    simbolos: ["\\", "{", "}"]
+
+caracteres:
+  proibidos: ["—", "―", "⸺", "⸻", "﹘"]
+  sequencias_proibidas: ["---"]
+  categorias_unicode_proibidas: [Cc, Cf, Cn, Co, Cs, Zl, Zp]
+  controles_permitidos: ["\n", "\r", "\t"]
+
+tecnologias_conhecidas:
+  - Kubernetes
+  - Kafka
+  - Terraform
+  - Ansible
+  - Jenkins
+  - AWS
+  - Azure
+  - Hadoop
+  - Spark
+  - Airflow
+  - Snowflake
+  - TensorFlow
+  - PyTorch
+  - Django
+  - Angular
+  - Redis
+  - MongoDB
+  - Elasticsearch
+  - GraphQL
+  - Kotlin
+  - Scala
