@@ -89,11 +89,87 @@ class ConfiguracaoCaracteres(Estrito):
     alfabeto: Alfabeto
 
 
+def _regexes_compilam(padroes: list[str]) -> list[str]:
+    for padrao in padroes:
+        try:
+            re.compile(padrao)
+        except re.error as erro:
+            raise ValueError(f"regex invalida: {padrao!r}") from erro
+    return padroes
+
+
+PorIdioma = dict[Identificador, list[Fragmento]]
+
+
+class PreambuloDoConteudo(Estrito):
+    parametros_livres: Annotated[list[Fragmento], AfterValidator(_regexes_compilam)]
+
+
+class ProjetosDoConteudo(Estrito):
+    minimo: int = Field(ge=1)
+    maximo: int = Field(ge=1)
+    rotulo_final: dict[Identificador, Fragmento] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _minimo_nao_passa_do_maximo(self) -> ProjetosDoConteudo:
+        if self.minimo > self.maximo:
+            raise ValueError("minimo de projetos maior que o maximo")
+        return self
+
+
+class CopiaDaVaga(Estrito):
+    palavras: int = Field(ge=2)
+
+
+class EmpresaDaVaga(Estrito):
+    tamanho_minimo: int = Field(ge=1)
+    sufixos: list[Fragmento]
+
+
+class Negrito(Estrito):
+    comandos: list[Identificador] = Field(min_length=1)
+
+
+class Escapes(Estrito):
+    simbolos: list[Simbolo] = Field(min_length=1)
+
+
+class IdiomaDoConteudo(Estrito):
+    marcadores: PorIdioma = Field(min_length=2)
+
+
+class SecoesDoIdioma(Estrito):
+    sobre: Fragmento
+    formacao: Fragmento
+    experiencia: Fragmento
+    projetos: Fragmento
+
+
+class ConfiguracaoDoConteudo(Estrito):
+    trecho_max_chars: int = Field(gt=0)
+    secoes: dict[Identificador, SecoesDoIdioma] = Field(min_length=1)
+    preambulo: PreambuloDoConteudo
+    projetos: ProjetosDoConteudo
+    copia_da_vaga: CopiaDaVaga
+    empresa_da_vaga: EmpresaDaVaga
+    negrito: Negrito
+    escapes: Escapes
+    idioma: IdiomaDoConteudo
+
+    @model_validator(mode="after")
+    def _mesmos_idiomas_em_tudo(self) -> ConfiguracaoDoConteudo:
+        idiomas = set(self.secoes)
+        if set(self.projetos.rotulo_final) != idiomas or set(self.idioma.marcadores) != idiomas:
+            raise ValueError("secoes, rotulo_final e marcadores precisam dos mesmos idiomas")
+        return self
+
+
 class ConfiguracaoValidador(Estrito):
     paginas_max: int = Field(gt=0)
     latex: ConfiguracaoLatex
     caracteres: ConfiguracaoCaracteres
     tecnologias_conhecidas: list[Fragmento]
+    conteudo: ConfiguracaoDoConteudo
 
 
 def configuracao_validador(dados: dict | None = None) -> ConfiguracaoValidador:

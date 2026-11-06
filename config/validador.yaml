@@ -101,3 +101,30 @@ tecnologias_conhecidas:
   - GraphQL
   - Kotlin
   - Scala
+
+conteudo:
+  trecho_max_chars: 120
+  secoes:
+    pt: {sobre: Sobre, formacao: Formação, experiencia: Experiência, projetos: Projetos}
+    en: {sobre: About, formacao: Education, experiencia: Experience, projetos: Projects}
+  preambulo:
+    parametros_livres:
+      - '\\linespread\{[0-9]+(?:\.[0-9]+)?\}'
+      - ',?(?:margin|top|bottom)=[0-9]+(?:\.[0-9]+)?cm'
+  projetos:
+    minimo: 3
+    maximo: 4
+    rotulo_final: {pt: Mais projetos, en: More projects}
+  copia_da_vaga:
+    palavras: 8
+  empresa_da_vaga:
+    tamanho_minimo: 3
+    sufixos: [ltda, s.a., sa, eireli, me, inc, llc, ltd, gmbh, corp, co]
+  negrito:
+    comandos: [textbf, bfseries, bf, mathbf]
+  escapes:
+    simbolos: ["&", "_", "#", "$"]
+  idioma:
+    marcadores:
+      pt: [com, em, uma, para, sobre, de, do, da, e, os, as, "no", na, que]
+      en: [with, the, for, and, of, in, "on", over, an, to, that, is]
