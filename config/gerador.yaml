@@ -1,0 +1,53 @@
+templates:
+  pasta: templates
+  arquivos:
+    pt: cv_pt.tex.j2
+    en: cv_en.tex.j2
+
+jinja:
+  bloco: ["<%", "%>"]
+  variavel: ["<<", ">>"]
+  comentario: ["<#", "#>"]
+
+travado:
+  arquivo: cabecalho.yaml
+  nomes: [cabecalho, formacao]
+  texto_max_chars: 200
+  padrao_email: '^[A-Za-z0-9._+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$'
+  padrao_url: '^(https://|mailto:)[A-Za-z0-9@._:/+\-]+$'
+  prefixo_url_oculto: 'https://'
+  campos_url: [link]
+
+slots:
+  sobre:
+    tipo: texto
+    max_chars: 700
+  disciplinas:
+    tipo: lista_texto
+    max_itens: 12
+    max_chars: 60
+  experiencias:
+    tipo: entradas
+    tipo_bloco: experiencia
+    max_entradas: 6
+    max_bullets: 6
+    max_chars: 300
+  projetos:
+    tipo: entradas
+    tipo_bloco: projeto
+    max_entradas: 4
+    max_bullets: 4
+    max_chars: 300
+
+compilacao:
+  motor: pdflatex
+  nome_arquivo: cv
+  argumentos: [-no-shell-escape, -interaction=nonstopmode, -halt-on-error]
+  ambiente:
+    openin_any: p
+    openout_any: p
+    shell_escape: f
+  variaveis_herdadas: [PATH, HOME]
+  linhas_do_erro: 15
+  timeout_s: 90
+  paginas_max: 1

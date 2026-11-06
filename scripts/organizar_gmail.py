@@ -8,13 +8,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import httpx
-from src.email.registro import RegistroNoBanco
 
 from src.db.conexao import conectar
 from src.email.configuracao import configuracao_gmail
 from src.email.gmail import ClienteGmail
 from src.email.keychain import Keychain
 from src.email.organizador import configuracao_organizacao, rodada
+from src.email.registro import RegistroNoBanco
 
 
 def main() -> None:
