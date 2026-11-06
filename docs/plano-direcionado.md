@@ -77,6 +77,14 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   partir do yaml (versão e hash graváveis por tentativa, vaga só dentro da marcação de dado não
   confiável) e rubrica de qualidade com pesos que somam 1 (`avaliar`); pontuação dos bullets (Q5)
   mantém a do currículo base; aplicar a rubrica no laço fica para o F3.3
+- [x] F3.1, `src/gerador/gerar.py`: `gerar_curriculo` pede ao roteador (tarefa `escrita_slots`, tier
+  forte, orçamento reservado, sem ferramenta) um JSON de slots validado por schema estrito montado de
+  `config/gerador.yaml` (`esquema.py`), confere ids de bloco e de bullet, ordem das experiências,
+  techs e ênfase contra os blocos e o inventário (`resposta.py`) e descarta a resposta inteira se
+  algo falhar (`RespostaDescartada`); com o tier desligado, sem orçamento ou sem roteador cai no
+  modo sem IA (`selecao.py`, família mais techs da vaga, determinístico, `uso_llm` fica vazio); em
+  ambos o `.tex` só é devolvido depois de `validar_fonte`; contrato em `docs/geracao.md`; tentativas,
+  corte de página e retry ficam no F3.3 e a versão por vaga no F5.1
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)

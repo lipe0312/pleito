@@ -11,7 +11,7 @@ Legenda: ✅ implementado · ⏳ item pendente (issue) · 👤 manual do Filipe.
 
 ### U1. Dia típico
 
-✅ coleta (F4.1) · ⏳ funil F4.2 (#24), gerador F3.1 (#22), resumo F1.5 (#15), agendamento
+✅ coleta (F4.1), gerador com e sem IA (F3.1) · ⏳ funil F4.2 (#24), resumo F1.5 (#15), agendamento
 F1.7 (#18), painel F1.6 (#17) e F5.2 (#27), aplicador F6.2 (#30) · 👤 launchd M3 (#40), push M2
 (#39), submit real M4 (#41).
 
@@ -232,7 +232,7 @@ sequenceDiagram
   end
 ```
 
-### R5. Chamada ao roteador de LLM ✅ roteador, ⏳ uso em F4.2 (#24) e F3.1 (#22), 👤 M7 e M8
+### R5. Chamada ao roteador de LLM ✅ roteador e uso em F3.1, ⏳ uso em F4.2 (#24), 👤 M7 e M8
 
 ```mermaid
 sequenceDiagram
@@ -342,7 +342,7 @@ sequenceDiagram
   Note over A,V: CAPTCHA nunca é resolvido, vira pendência
 ```
 
-### R9. Gerar currículo por vaga ⏳ F2.2 (#19), F2.3 (#20), F3.1 (#22), F5.1 (#26)
+### R9. Gerar currículo por vaga ✅ F2.2, F2.3 e F3.1, ⏳ F3.3 e F5.1 (#26)
 
 ```mermaid
 sequenceDiagram
@@ -354,20 +354,21 @@ sequenceDiagram
   participant V as src/validador
   participant DB as versao_curriculo
   G->>C: blocos e inventário da família
-  alt tier desligado
-    G->>G: usa os blocos base, sem IA
+  alt tier desligado, sem orçamento ou sem roteador
+    G->>G: escolhe blocos pela família e pelas techs da vaga, sem IA e sem uso_llm
   else habilitado
-    G->>R: escrita_slots com a vaga como dado
-    R-->>G: JSON de slots validado
+    G->>R: escrita_slots, tier forte, vaga como dado, sem telefone nem email
+    R-->>G: JSON de slots validado em modo estrito
+    G->>G: id de bloco ou bullet inexistente, campo extra ou tamanho acima: descarta
   end
-  G->>T: escapa cada slot e preenche
-  T->>T: compila com -no-shell-escape
-  T->>V: PDF e fonte
-  V->>V: uma página, só inventário, sem travessão, comandos na allowlist
+  G->>T: escapa cada slot e preenche, \tech montado pelo código
+  T->>V: fonte
+  V->>V: validar_fonte: inventário, sem travessão, comandos na allowlist
   alt recusa
-    V-->>G: motivo, versão descartada
+    V-->>G: motivo, nada é devolvido
   else aprova
-    V->>DB: INSERT versão com hash e nível
+    G->>T: compila com -no-shell-escape, uma página
+    T->>DB: INSERT versão com hash e nível (F5.1)
   end
   Note over T,DB: contato vem do cabeçalho travado e nunca entra em prompt
 ```
