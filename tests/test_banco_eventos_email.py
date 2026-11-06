@@ -4,13 +4,18 @@ import hashlib
 import uuid
 from datetime import UTC, datetime
 
+import psycopg
 import pytest
 
 from src.db.conexao import conectar
 from src.email.classificador import classificar
+from src.email.cursor import Cursor, gravar_cursor, ler_cursor
 from src.email.eventos import politica
 from src.email.modelo import Classificacao, Email, Etapa, Motivo
+from src.email.organizador import configuracao_organizacao, rodada
+from src.email.registro import RegistroNoBanco
 from src.email.repositorio import EmailRecebido, ResultadoEvento, gravar_evento
+from tests.test_email_organizador import GmailFalso, mensagem
 
 APROVADA = "mx.google.com; spf=pass; dkim=pass; dmarc=pass"
 ATAQUE = "'; DROP TABLE evento_email; --"
@@ -43,6 +48,7 @@ def sufixo(banco):
             "DELETE FROM pleito.evento_email WHERE id_mensagem LIKE %s", (f"teste-{valor}%",)
         )
         cursor.execute("DELETE FROM pleito.vaga WHERE id_externo LIKE %s", (f"teste-{valor}%",))
+        cursor.execute("DELETE FROM pleito.empresa WHERE nome LIKE %s", (f"teste-{valor}%",))
     banco.commit()
 
 
@@ -369,3 +375,228 @@ def test_evento_aplicado_nao_pode_estar_numa_fila(banco, sufixo):
                 (f"teste-{sufixo}-check",),
             )
     banco.rollback()
+
+
+AGORA = datetime(2026, 10, 23, 12, 0, tzinfo=UTC)
+
+
+def _empresa(banco, sufixo: str, dominio: str | None) -> tuple[int, str]:
+    nome = f"teste-{sufixo}-acme"
+    with banco.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO pleito.empresa (nome, dominio) VALUES (%s, %s) RETURNING id",
+            (nome, dominio),
+        )
+        empresa_id = cursor.fetchone()[0]
+    banco.commit()
+    return empresa_id, nome
+
+
+def _vaga_da_empresa(banco, sufixo: str, estado: str, empresa_id: int) -> int:
+    vaga_id = _vaga(banco, sufixo, estado)
+    with banco.cursor() as cursor:
+        cursor.execute(
+            "UPDATE pleito.vaga SET empresa_id = %s WHERE id = %s", (empresa_id, vaga_id)
+        )
+    banco.commit()
+    return vaga_id
+
+
+def _candidatura(banco, vaga_id: int, plataforma: str) -> None:
+    with banco.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO pleito.versao_curriculo (
+                vaga_id, familia, idioma, caminho_tex, caminho_pdf, hash_pdf, paginas
+            )
+            VALUES (%s, 'backend', 'pt', 'x.tex', 'x.pdf', %s, 1)
+            RETURNING id
+            """,
+            (vaga_id, hashlib.sha256(b"pdf").digest()),
+        )
+        versao_id = cursor.fetchone()[0]
+        cursor.execute(
+            """
+            INSERT INTO pleito.aprovacao (
+                vaga_id, versao_id, hash_aprovado, expira_em, consumida_em
+            )
+            VALUES (%s, %s, %s, now() + interval '1 day', now())
+            RETURNING id
+            """,
+            (vaga_id, versao_id, hashlib.sha256(b"pdf").digest()),
+        )
+        aprovacao_id = cursor.fetchone()[0]
+        cursor.execute(
+            """
+            INSERT INTO pleito.candidatura (vaga_id, versao_id, aprovacao_id, plataforma)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (vaga_id, versao_id, aprovacao_id, plataforma),
+        )
+    banco.commit()
+
+
+def _cfg(tmp_path):
+    return configuracao_organizacao(caminho_cursor=tmp_path / "estado" / "cursor.json")
+
+
+def _rodar(gmail, tmp_path, forcar: bool = True):
+    with conectar("app") as conexao:
+        return rodada(
+            gmail, _cfg(tmp_path), AGORA, forcar=forcar, registro=RegistroNoBanco(conexao)
+        )
+
+
+def _quantos_eventos(banco, sufixo: str) -> int:
+    with banco.cursor() as cursor:
+        cursor.execute(
+            "SELECT count(*) FROM pleito.evento_email WHERE id_mensagem LIKE %s",
+            (f"teste-{sufixo}%",),
+        )
+        return cursor.fetchone()[0]
+
+
+def _entrevista_da_empresa(sufixo: str, dominio: str, identificador: str = "m1") -> dict:
+    return mensagem(
+        f"teste-{sufixo}-{identificador}",
+        f"RH <rh@{dominio}>",
+        "Convite para entrevista",
+        "Gostariamos de agendar uma entrevista.",
+    )
+
+
+def _vaga_candidatada(banco, sufixo: str, estado: str) -> tuple[int, str]:
+    empresa_id, nome = _empresa(banco, sufixo, None)
+    vaga_id = _vaga_da_empresa(banco, sufixo, estado, empresa_id)
+    _candidatura(banco, vaga_id, "gupy")
+    return vaga_id, nome
+
+
+def _da_plataforma(sufixo: str, assunto: str, identificador: str = "m1") -> dict:
+    return mensagem(f"teste-{sufixo}-{identificador}", "Gupy <no-reply@gupy.com.br>", assunto)
+
+
+def test_rodada_vincula_pela_plataforma_e_pelo_nome_da_empresa_e_avanca_a_vaga(
+    banco, sufixo, tmp_path
+):
+    vaga_id, nome = _vaga_candidatada(banco, sufixo, "aplicada_confirmada")
+    gmail = GmailFalso([_da_plataforma(sufixo, f"Convite para entrevista na {nome}")])
+    resumo = _rodar(gmail, tmp_path)
+    assert resumo.eventos_gravados == 1
+    _, tipo, aplicado, fila, _, vinculada = _evento(banco, f"teste-{sufixo}-m1")
+    assert (tipo, aplicado, fila, vinculada) == ("entrevista", True, None, vaga_id)
+    assert _estado(banco, vaga_id) == "entrevista"
+
+
+def test_rodada_vincula_pelo_dominio_da_empresa_mas_remetente_desconhecido_vai_para_classificar(
+    banco, sufixo, tmp_path
+):
+    dominio = f"acme-{sufixo}.exemplo"
+    empresa_id, _ = _empresa(banco, sufixo, dominio)
+    vaga_id = _vaga_da_empresa(banco, sufixo, "aplicada_confirmada", empresa_id)
+    gmail = GmailFalso([_entrevista_da_empresa(sufixo, dominio)])
+    _rodar(gmail, tmp_path)
+    _, tipo, aplicado, fila, _, vinculada = _evento(banco, f"teste-{sufixo}-m1")
+    assert (tipo, aplicado, fila, vinculada) == ("classificar", False, "classificar", vaga_id)
+    assert _estado(banco, vaga_id) == "aplicada_confirmada"
+
+
+def test_rodada_sem_vinculo_deixa_o_evento_sem_vaga_na_fila_classificar(banco, sufixo, tmp_path):
+    dominio = f"acme-{sufixo}.exemplo"
+    gmail = GmailFalso([_entrevista_da_empresa(sufixo, dominio)])
+    _rodar(gmail, tmp_path)
+    _, _, aplicado, fila, _, vinculada = _evento(banco, f"teste-{sufixo}-m1")
+    assert (aplicado, fila, vinculada) == (False, "classificar", None)
+
+
+@pytest.mark.parametrize("falso", ["{d}.golpe.exemplo", "mail.{d}", "evil{d}", "{d}-vagas.exemplo"])
+def test_rodada_com_dominio_parecido_nao_vincula_nem_muda_a_vaga(banco, sufixo, tmp_path, falso):
+    dominio = f"acme-{sufixo}.exemplo"
+    empresa_id, _ = _empresa(banco, sufixo, dominio)
+    vaga_id = _vaga_da_empresa(banco, sufixo, "aplicada_confirmada", empresa_id)
+    gmail = GmailFalso([_entrevista_da_empresa(sufixo, falso.format(d=dominio))])
+    _rodar(gmail, tmp_path)
+    assert _evento(banco, f"teste-{sufixo}-m1")[5] is None
+    assert _estado(banco, vaga_id) == "aplicada_confirmada"
+
+
+def test_reprocessar_a_mesma_mensagem_nao_duplica_evento_nem_auditoria(banco, sufixo, tmp_path):
+    vaga_id, nome = _vaga_candidatada(banco, sufixo, "aplicada_confirmada")
+    gmail = GmailFalso([_da_plataforma(sufixo, f"Convite para entrevista na {nome}")])
+    primeira = _rodar(gmail, tmp_path)
+    gravar_cursor(_cfg(tmp_path).caminho_cursor, Cursor("1", AGORA))
+    gmail.paginas = [[f"teste-{sufixo}-m1"]]
+    segunda = _rodar(gmail, tmp_path)
+    assert (primeira.eventos_gravados, primeira.eventos_repetidos) == (1, 0)
+    assert (segunda.eventos_gravados, segunda.eventos_repetidos) == (0, 1)
+    assert _quantos_eventos(banco, sufixo) == 1
+    evento_id = _evento(banco, f"teste-{sufixo}-m1")[0]
+    assert _auditorias(banco, "evento_email", evento_id) == ["registrar_evento", "aplicar_evento"]
+    assert _auditorias(banco, "vaga", vaga_id) == ["mudar_estado"]
+
+
+def test_banco_fora_do_ar_falha_a_rodada_sem_perder_mensagem_e_a_proxima_reprocessa(
+    banco, sufixo, tmp_path
+):
+    dominio = f"acme-{sufixo}.exemplo"
+    gmail = GmailFalso(
+        [
+            _entrevista_da_empresa(sufixo, dominio, "m1"),
+            _entrevista_da_empresa(sufixo, dominio, "m2"),
+        ]
+    )
+    conexao = conectar("app")
+    conexao.close()
+    with pytest.raises(psycopg.OperationalError):
+        rodada(gmail, _cfg(tmp_path), AGORA, forcar=True, registro=RegistroNoBanco(conexao))
+    assert ler_cursor(_cfg(tmp_path).caminho_cursor) is None
+    assert gmail.rotuladas() == {}
+    assert _quantos_eventos(banco, sufixo) == 0
+    resumo = _rodar(gmail, tmp_path)
+    assert resumo.eventos_gravados == 2
+    assert _quantos_eventos(banco, sufixo) == 2
+    assert ler_cursor(_cfg(tmp_path).caminho_cursor) == Cursor("500", AGORA)
+
+
+def test_falha_no_meio_desfaz_os_eventos_da_rodada(banco, sufixo, tmp_path, monkeypatch):
+    dominio = f"acme-{sufixo}.exemplo"
+    gmail = GmailFalso(
+        [
+            _entrevista_da_empresa(sufixo, dominio, "m1"),
+            _entrevista_da_empresa(sufixo, dominio, "m2"),
+        ]
+    )
+    original = RegistroNoBanco.gravar
+
+    def gravar_ou_quebrar(self, recebido, classificacao):
+        if recebido.id_mensagem.endswith("m2"):
+            raise psycopg.OperationalError("conexao perdida")
+        return original(self, recebido, classificacao)
+
+    monkeypatch.setattr(RegistroNoBanco, "gravar", gravar_ou_quebrar)
+    with pytest.raises(psycopg.OperationalError):
+        _rodar(gmail, tmp_path)
+    assert _quantos_eventos(banco, sufixo) == 0
+    assert gmail.rotuladas() == {}
+
+
+def test_rodada_com_aspas_no_remetente_e_no_assunto_grava_literal(banco, sufixo, tmp_path):
+    identificador = f"teste-{sufixo}-m1"
+    gmail = GmailFalso(
+        [
+            mensagem(
+                identificador,
+                f"{ATAQUE} <rh@acme-{sufixo}.exemplo>",
+                f"Convite para entrevista {ATAQUE}",
+                ATAQUE,
+            )
+        ]
+    )
+    _rodar(gmail, tmp_path)
+    with banco.cursor() as cursor:
+        cursor.execute(
+            "SELECT remetente FROM pleito.evento_email WHERE id_mensagem = %s", (identificador,)
+        )
+        assert cursor.fetchone()[0] == f"rh@acme-{sufixo}.exemplo"
+        cursor.execute("SELECT to_regclass('pleito.evento_email') IS NOT NULL")
+        assert cursor.fetchone()[0] is True
