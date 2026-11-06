@@ -18,6 +18,7 @@ from src.email.resumo import (
     CabecalhoRecusado,
     ClienteResumo,
     DestinoRecusado,
+    RotuloNaoAplicado,
     configuracao_resumo,
     corpo_do_dia,
     executar,
@@ -87,7 +88,7 @@ def test_rotulo_do_resumo_e_candidaturas_prontas(resumo):
 
 def test_dia_sem_vaga_boa_diz_isso(resumo):
     assert corpo_do_dia(0, resumo) == carregar("resumo")["corpo"]["nenhuma"]
-    assert "nenhuma vaga boa hoje" in corpo_do_dia(0, resumo).lower()
+    assert "nenhuma vaga pronta hoje" in corpo_do_dia(0, resumo).lower()
 
 
 def test_corpo_traz_a_contagem(resumo):
@@ -119,6 +120,10 @@ def test_mensagem_vai_so_para_o_destino_do_ambiente(resumo):
         f"{DESTINO}\r\nBcc: {OUTRO}",
         f"{DESTINO}\nCc: {OUTRO}",
         "sem-arroba.invalid",
+        "destino@exémplo.invalid",
+        "dèstino@exemplo.invalid",
+        "destino@exemplo.invalid\u200b",
+        "destino@exemplo\uff0einvalid",
         "a@b",
     ],
 )
@@ -155,7 +160,7 @@ def test_envio_vai_ao_destino_e_recebe_o_rotulo_prontas(cfg, resumo):
     enviada = _mensagem_enviada(envio)
     assert enviada.get_all("To") == [DESTINO]
     assert enviada.get("Cc") is None and enviada.get("Bcc") is None
-    assert "nenhuma vaga boa hoje" in enviada.get_content().lower()
+    assert "nenhuma vaga pronta hoje" in enviada.get_content().lower()
     assert json.loads(modify.calls.last.request.content) == {
         "addLabelIds": [ID_PRONTAS],
         "removeLabelIds": [],
@@ -235,7 +240,7 @@ def test_comando_padrao_e_dry_run_sem_cliente(resumo, capsys):
     assert executar([], _ambiente(resumo), _sem_cliente) == 0
     saida = capsys.readouterr().out
     assert resumo.assunto in saida
-    assert "nenhuma vaga boa hoje" in saida.lower()
+    assert "nenhuma vaga pronta hoje" in saida.lower()
     assert DESTINO not in saida
 
 
@@ -258,3 +263,54 @@ def test_comando_com_enviar_usa_o_cliente_do_resumo(cfg, resumo):
     assert len(criados) == 1
     assert "2" in _mensagem_enviada(envio).get_content()
     assert modify.call_count == 1
+
+
+def test_chave_de_rotulo_ausente_em_rotulos_yaml_tem_mensagem_clara():
+    dados = copy.deepcopy(carregar("resumo"))
+    dados["rotulo"] = "inexistente"
+    with pytest.raises(RotuloAusente, match="config/rotulos.yaml"):
+        configuracao_resumo(dados)
+
+
+def _modify_falha(cfg, resumo):
+    envio, modify = _rotas(cfg, resumo)
+    modify.mock(return_value=httpx.Response(500))
+    return envio, modify
+
+
+@respx.mock
+def test_rotulo_que_falha_depois_do_envio_informa_o_id_e_nao_reenvia(cfg, resumo):
+    envio, _ = _modify_falha(cfg, resumo)
+    with pytest.raises(RotuloNaoAplicado) as erro:
+        _cliente(cfg, resumo).enviar_resumo(montar(_ambiente(resumo), resumo, 0))
+    assert erro.value.identificador == "enviada1"
+    assert "enviada1" in str(erro.value)
+    assert envio.call_count == 1
+
+
+@respx.mock
+def test_comando_com_rotulo_que_falha_sai_com_erro_e_avisa_para_nao_reenviar(
+    cfg, resumo, capsys
+):
+    envio, _ = _modify_falha(cfg, resumo)
+
+    def criar(variaveis, http):
+        return ClienteResumo(cfg, ChaveFalsa(), http, variaveis, resumo, CLIENTE)
+
+    assert executar(["--enviar"], _ambiente(resumo), criar) not in (0, 2)
+    erro = capsys.readouterr().err
+    assert "enviada1" in erro
+    assert "não rode de novo" in erro
+    assert envio.call_count == 1
+
+
+@respx.mock
+def test_comando_sem_rotulo_na_conta_recusa_sem_enviar(cfg, resumo, capsys):
+    envio, _ = _rotas(cfg, resumo, rotulos=[])
+
+    def criar(variaveis, http):
+        return ClienteResumo(cfg, ChaveFalsa(), http, variaveis, resumo, CLIENTE)
+
+    assert executar(["--enviar"], _ambiente(resumo), criar) == 2
+    assert "crie-o no Gmail" in capsys.readouterr().err
+    assert envio.call_count == 0

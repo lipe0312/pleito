@@ -34,6 +34,12 @@ class CabecalhoRecusado(ValueError):
     pass
 
 
+class RotuloNaoAplicado(RuntimeError):
+    def __init__(self, mensagem: str, identificador: str) -> None:
+        super().__init__(mensagem)
+        self.identificador = identificador
+
+
 @dataclass(frozen=True, slots=True)
 class ConfiguracaoResumo:
     variavel_destino: str
@@ -42,39 +48,49 @@ class ConfiguracaoResumo:
     corpo_nenhuma: str
     corpo_uma: str
     corpo_varias: str
+    comando: Mapping[str, str]
+    erros: Mapping[str, str]
 
 
-def _exigir_cabecalho(valor: str) -> str:
+def _exigir_cabecalho(valor: str, erro: str) -> str:
     if not valor.strip() or any(quebra in valor for quebra in QUEBRAS):
-        raise CabecalhoRecusado("assunto vazio ou com quebra de linha")
+        raise CabecalhoRecusado(erro)
     return valor
+
+
+def _rotulo_configurado(chave: str, erro: str) -> str:
+    outros = carregar("rotulos").get("outros", {})
+    if chave not in outros:
+        raise RotuloAusente(erro.format(chave=chave))
+    return outros[chave]
 
 
 def configuracao_resumo(dados: dict | None = None) -> ConfiguracaoResumo:
     bruto = dados if dados is not None else carregar("resumo")
     corpo = bruto["corpo"]
+    erros = dict(bruto["erros"])
     return ConfiguracaoResumo(
         variavel_destino=bruto["variavel_destino"],
-        rotulo=carregar("rotulos")["outros"][bruto["rotulo"]],
-        assunto=_exigir_cabecalho(bruto["assunto"]),
+        rotulo=_rotulo_configurado(bruto["rotulo"], erros["rotulo_sem_chave"]),
+        assunto=_exigir_cabecalho(bruto["assunto"], erros["assunto"]),
         corpo_nenhuma=corpo["nenhuma"],
         corpo_uma=corpo["uma"],
         corpo_varias=corpo["varias"],
+        comando=dict(bruto["comando"]),
+        erros=erros,
     )
 
 
-def destino_do_ambiente(variaveis: Mapping[str, str], variavel: str) -> str:
-    destino = variaveis.get(variavel, "")
+def destino_do_ambiente(variaveis: Mapping[str, str], cfg: ConfiguracaoResumo) -> str:
+    destino = variaveis.get(cfg.variavel_destino, "")
     if not PADRAO_DESTINO.fullmatch(destino):
-        raise DestinoRecusado(
-            f"{variavel} ausente ou invalido: defina um so endereco no .env, sem nome nem virgula"
-        )
+        raise DestinoRecusado(cfg.erros["destino_invalido"].format(variavel=cfg.variavel_destino))
     return destino
 
 
 def corpo_do_dia(prontas: int, cfg: ConfiguracaoResumo) -> str:
     if prontas < 0:
-        raise ValueError("contagem de vagas prontas negativa")
+        raise ValueError(cfg.erros["contagem"])
     if prontas == 0:
         return cfg.corpo_nenhuma
     if prontas == 1:
@@ -82,31 +98,32 @@ def corpo_do_dia(prontas: int, cfg: ConfiguracaoResumo) -> str:
     return cfg.corpo_varias.format(total=prontas)
 
 
-def exigir_so_o_destino(mensagem: EmailMessage, destino: str) -> None:
+def exigir_so_o_destino(mensagem: EmailMessage, destino: str, cfg: ConfiguracaoResumo) -> None:
+    variavel = cfg.variavel_destino
     if any(mensagem.get_all(nome) for nome in CABECALHOS_DE_DESTINATARIO):
-        raise DestinoRecusado("mensagem com destinatario alem do destino")
+        raise DestinoRecusado(cfg.erros["destino_extra"].format(variavel=variavel))
     valores = mensagem.get_all("To") or []
     enderecos = getaddresses([str(valor) for valor in valores])
     if len(valores) != 1 or len(enderecos) != 1:
-        raise DestinoRecusado("mensagem precisa de um unico destinatario")
+        raise DestinoRecusado(cfg.erros["destino_unico"])
     if enderecos[0][1].lower() != destino.lower():
-        raise DestinoRecusado("destinatario diferente do destino configurado")
+        raise DestinoRecusado(cfg.erros["destino_diferente"].format(variavel=variavel))
 
 
 def montar(variaveis: Mapping[str, str], cfg: ConfiguracaoResumo, prontas: int) -> EmailMessage:
-    destino = destino_do_ambiente(variaveis, cfg.variavel_destino)
+    destino = destino_do_ambiente(variaveis, cfg)
     mensagem = EmailMessage(policy=policy.SMTP)
     mensagem["To"] = destino
     mensagem["Subject"] = cfg.assunto
     mensagem.set_content(corpo_do_dia(prontas, cfg))
-    exigir_so_o_destino(mensagem, destino)
+    exigir_so_o_destino(mensagem, destino, cfg)
     return mensagem
 
 
-def _serializar_conferido(mensagem: EmailMessage, destino: str) -> str:
-    exigir_so_o_destino(mensagem, destino)
+def _serializar_conferido(mensagem: EmailMessage, destino: str, cfg: ConfiguracaoResumo) -> str:
+    exigir_so_o_destino(mensagem, destino, cfg)
     bruto = mensagem.as_bytes(policy=policy.SMTP)
-    exigir_so_o_destino(BytesParser(policy=policy.default).parsebytes(bruto), destino)
+    exigir_so_o_destino(BytesParser(policy=policy.default).parsebytes(bruto), destino, cfg)
     return base64.urlsafe_b64encode(bruto).decode("ascii")
 
 
@@ -125,18 +142,24 @@ class ClienteResumo(ClienteGmail):
         self._resumo = resumo
 
     def enviar_resumo(self, mensagem: EmailMessage) -> str:
-        destino = destino_do_ambiente(self._variaveis, self._resumo.variavel_destino)
-        bruto = _serializar_conferido(mensagem, destino)
+        destino = destino_do_ambiente(self._variaveis, self._resumo)
+        bruto = _serializar_conferido(mensagem, destino, self._resumo)
         rotulo = self._id_do_rotulo(self._resumo.rotulo)
-        enviada = self._requisitar("POST", "messages/send", json={"raw": bruto})
-        self.rotular(enviada["id"], [rotulo], [])
-        return enviada["id"]
+        identificador = self._requisitar("POST", "messages/send", json={"raw": bruto})["id"]
+        try:
+            self.rotular(identificador, [rotulo], [])
+        except (httpx.HTTPError, ValueError) as erro:
+            texto = self._resumo.erros["rotulo_nao_aplicado"].format(
+                id=identificador, rotulo=self._resumo.rotulo
+            )
+            raise RotuloNaoAplicado(texto, identificador) from erro
+        return identificador
 
     def _id_do_rotulo(self, nome: str) -> str:
         for rotulo in self.rotulos():
             if rotulo["name"] == nome:
                 return rotulo["id"]
-        raise RotuloAusente(f"rotulo {nome!r} nao existe na conta")
+        raise RotuloAusente(self._resumo.erros["rotulo_ausente"].format(nome=nome))
 
 
 def _cliente_real(variaveis: Mapping[str, str], http: httpx.Client) -> ClienteResumo:
@@ -145,11 +168,22 @@ def _cliente_real(variaveis: Mapping[str, str], http: httpx.Client) -> ClienteRe
     return ClienteResumo(cfg, chave, http, variaveis, configuracao_resumo())
 
 
-def _contagem(valor: str) -> int:
-    total = int(valor)
-    if total < 0:
-        raise argparse.ArgumentTypeError("contagem negativa")
-    return total
+def _leitor(cfg: ConfiguracaoResumo) -> argparse.ArgumentParser:
+    def contagem(valor: str) -> int:
+        total = int(valor)
+        if total < 0:
+            raise argparse.ArgumentTypeError(cfg.erros["contagem"])
+        return total
+
+    leitor = argparse.ArgumentParser(description=cfg.comando["descricao"])
+    leitor.add_argument("--prontas", type=contagem, default=0)
+    leitor.add_argument("--enviar", action="store_true")
+    return leitor
+
+
+def _recusar(cfg: ConfiguracaoResumo, erro: Exception, codigo: int) -> int:
+    print(cfg.comando["recusado"].format(erro=erro), file=sys.stderr)
+    return codigo
 
 
 def executar(
@@ -157,24 +191,26 @@ def executar(
     variaveis: Mapping[str, str],
     criar_cliente: Callable[[Mapping[str, str], httpx.Client], ClienteResumo] = _cliente_real,
 ) -> int:
-    leitor = argparse.ArgumentParser(description="Monta e envia o resumo diario")
-    leitor.add_argument("--prontas", type=_contagem, default=0)
-    leitor.add_argument("--enviar", action="store_true")
-    opcoes = leitor.parse_args(argumentos)
     cfg = configuracao_resumo()
+    opcoes = _leitor(cfg).parse_args(argumentos)
     try:
         mensagem = montar(variaveis, cfg, opcoes.prontas)
     except (DestinoRecusado, CabecalhoRecusado) as erro:
-        print(f"resumo recusado: {erro}", file=sys.stderr)
-        return 2
+        return _recusar(cfg, erro, 2)
     if not opcoes.enviar:
-        print(f"dry_run para {cfg.variavel_destino} com rotulo {cfg.rotulo}")
-        print(f"assunto: {cfg.assunto}")
+        print(cfg.comando["simulacao"].format(variavel=cfg.variavel_destino, rotulo=cfg.rotulo))
+        print(cfg.comando["assunto"].format(assunto=cfg.assunto))
         print(mensagem.get_content().strip())
         return 0
-    with httpx.Client() as http:
-        identificador = criar_cliente(variaveis, http).enviar_resumo(mensagem)
-    print(f"resumo enviado com rotulo {cfg.rotulo}: {identificador}")
+    try:
+        with httpx.Client() as http:
+            identificador = criar_cliente(variaveis, http).enviar_resumo(mensagem)
+    except (DestinoRecusado, RotuloAusente) as erro:
+        return _recusar(cfg, erro, 2)
+    except RotuloNaoAplicado as erro:
+        print(erro, file=sys.stderr)
+        return 3
+    print(cfg.comando["enviado"].format(rotulo=cfg.rotulo, id=identificador))
     return 0
 
 

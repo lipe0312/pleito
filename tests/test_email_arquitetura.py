@@ -3,11 +3,14 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
 from src.config import RAIZ, carregar
 
 METODOS_PROIBIDOS = frozenset({"delete", "trash", "forward", "send", "batchDelete"})
 TRECHOS_PROIBIDOS = ("/trash", "/send", "/forward", "batchDelete")
 VERBOS_PROIBIDOS = frozenset({"delete"})
+ROTA_DE_ENVIO = "messages/send"
 
 
 def _arquivo_do_modulo(raiz: Path, modulo: str) -> Path:
@@ -97,8 +100,24 @@ def test_unico_arquivo_de_src_que_envia_e_o_modulo_de_resumo():
     assert com_envio == {liberado}
 
 
-def test_modulo_de_resumo_nao_exclui_nem_encaminha():
-    caminho = _arquivo_do_modulo(RAIZ, _modulo_resumo())
-    violacoes = _violacoes_no_arquivo(caminho)
-    assert violacoes
-    assert all("/send" in violacao for violacao in violacoes)
+def _so_a_rota_de_envio(violacoes: list[str]) -> bool:
+    return len(violacoes) == 1 and violacoes[0].endswith(f" {ROTA_DE_ENVIO!r}")
+
+
+def test_modulo_de_resumo_so_tem_a_rota_de_envio():
+    assert _so_a_rota_de_envio(_violacoes_no_arquivo(_arquivo_do_modulo(RAIZ, _modulo_resumo())))
+
+
+@pytest.mark.parametrize(
+    "codigo",
+    [
+        'http.post(base + "messages/trash/send")\n',
+        'http.post(base + "messages/1/forward/send")\n',
+        'http.post(base + "messages/send")\nhttp.request("DELETE", url)\n',
+        'http.post(base + "messages/send")\ncliente.trash(m)\n',
+    ],
+)
+def test_modulo_de_resumo_com_rota_destrutiva_e_acusado(tmp_path, codigo):
+    relativo = _arquivo_do_modulo(Path(), _modulo_resumo())
+    _plantar(tmp_path, str(relativo), codigo)
+    assert not _so_a_rota_de_envio(_violacoes_no_arquivo(tmp_path / relativo))

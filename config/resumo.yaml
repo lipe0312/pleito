@@ -2,6 +2,22 @@ variavel_destino: PLEITO_EMAIL_DESTINO
 rotulo: prontas
 assunto: "pleito: resumo do dia"
 corpo:
-  nenhuma: "Nenhuma vaga boa hoje. Nada para revisar no painel."
+  nenhuma: "Nenhuma vaga pronta hoje. Nada para revisar no painel."
   uma: "1 vaga pronta para revisar no painel."
   varias: "{total} vagas prontas para revisar no painel."
+comando:
+  descricao: "Monta o resumo do dia e, com --enviar, manda para o destino do .env"
+  simulacao: "Simulação, nada enviado. Destino: {variavel}, rótulo: {rotulo}"
+  assunto: "assunto: {assunto}"
+  enviado: "resumo enviado com rótulo {rotulo} (id {id})"
+  recusado: "resumo recusado: {erro}"
+erros:
+  destino_invalido: "{variavel} ausente ou inválido: defina só um endereço no .env, sem nome nem vírgula"
+  destino_diferente: "destinatário diferente de {variavel}; corrija o .env"
+  destino_unico: "a mensagem precisa de um único destinatário"
+  destino_extra: "mensagem com destinatário extra: deixe só o endereço de {variavel}"
+  rotulo_ausente: "rótulo {nome!r} não existe na conta: crie-o no Gmail antes de enviar"
+  rotulo_sem_chave: "rótulo {chave!r} não existe em config/rotulos.yaml (outros): adicione-o antes de enviar"
+  rotulo_nao_aplicado: "resumo já enviado (id {id}), mas o rótulo {rotulo} não entrou: aplique-o à mão no Gmail e não rode de novo, senão o email sai duas vezes"
+  assunto: "assunto vazio ou com quebra de linha em config/resumo.yaml: deixe uma linha só"
+  contagem: "a contagem de vagas prontas não pode ser negativa"
