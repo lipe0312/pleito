@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-CAMINHO = Path(".github/dependabot.yml")
+CAMINHO = Path(__file__).resolve().parents[1] / ".github" / "dependabot.yml"
 
 
 def atualizacoes():
