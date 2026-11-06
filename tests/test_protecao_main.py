@@ -27,5 +27,9 @@ def test_nao_exige_aprovacao_para_o_squash_do_fluxo():
     assert revisoes["required_approving_review_count"] == 0
 
 
+def test_exige_pull_request_para_entrar_na_main():
+    assert isinstance(protecao()["required_pull_request_reviews"], dict)
+
+
 def test_vale_tambem_para_o_dono():
     assert protecao()["enforce_admins"] is True

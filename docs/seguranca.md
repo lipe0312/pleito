@@ -126,6 +126,16 @@ Conferir (checklist do `sec-predeploy`, nível 2): `gh api repos/lipe0312/pleito
 deve mostrar `allow_force_pushes` false, `allow_deletions` false, `required_linear_history` true
 e `required_approving_review_count` 0.
 
+Conferência de 2026-11-06, depois do PUT do orquestrador, com `gh api
+repos/lipe0312/pleito/branches/main/protection`: `enforce_admins` true, `required_approving_review_count`
+0, `required_linear_history` true, `allow_force_pushes` false, `allow_deletions` false,
+`required_status_checks` null.
+
+Risco aceito: `required_status_checks` fica null porque o repositório não tem CI no GitHub. O
+gate é o hook de pre-commit local (`make testes`, `make lint` e `make testes-banco`), e o merge
+só sai com "aprovado merge" do Filipe na sessão dele. Quando houver CI, ligar os checks
+obrigatórios neste mesmo JSON e reaplicar com o comando acima.
+
 ## Quando rodar o quê
 
 | Momento | O que rodar |
