@@ -13,7 +13,7 @@ from apoio_validador import (
 from src.conteudo.modelo import Ancora, Inventario, ItemInventario
 from src.validador.configuracao import configuracao_validador
 from src.validador.resultado import Regra
-from src.validador.tecnologias import validar_tecnologias
+from src.validador.tecnologias import validar_tecnologias, validar_tecnologias_no_texto
 from src.validador.validar import validar_curriculo
 
 
@@ -128,3 +128,36 @@ def test_texto_do_pdf_com_tecnologia_do_inventario_passa(tmp_path):
     pdf = gravar_pdf(tmp_path, ["Experiencia com Python e PostgreSQL"])
 
     assert validar_curriculo(tex_ficticio(), inventario_ficticio(), pdf=pdf).aprovado
+
+
+FORMAS_LARGAS = [
+    "\uff2b\uff55\uff42\uff45\uff52\uff4e\uff45\uff54\uff45\uff53",
+    "\uff2b\uff21\uff26\uff2b\uff21",
+]
+
+
+@pytest.mark.parametrize("texto", FORMAS_LARGAS)
+def test_tecnologia_em_forma_larga_e_reconhecida_apos_normalizar(texto):
+    assert Regra.TECNOLOGIA in _regras(tex_com_corpo(f"Experiência com {texto}"))
+
+
+@pytest.mark.parametrize("texto", FORMAS_LARGAS)
+def test_tecnologia_em_forma_larga_no_pdf_e_reconhecida_apos_normalizar(texto):
+    violacoes = validar_tecnologias_no_texto(
+        f"Experiencia com {texto}", inventario_ficticio(), configuracao_validador()
+    )
+
+    assert [v.regra for v in violacoes] == [Regra.TECNOLOGIA]
+
+
+def test_tecnologia_marcada_em_forma_larga_fora_do_inventario_e_recusada():
+    assert Regra.TECNOLOGIA in _regras(tex_com_corpo("Usei \\tech{\uff2b\uff55\uff42\uff45}."))
+
+
+def test_ligadura_do_pdf_e_normalizada_antes_de_comparar():
+    inventario = _inventario("Flask")
+    config = configuracao_com(tecnologias_conhecidas=["Fixtures"])
+
+    achadas = validar_tecnologias_no_texto("usei \ufb01xtures", inventario, config)
+
+    assert [v.regra for v in achadas] == [Regra.TECNOLOGIA]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from src.conteudo.decompor import ESCAPE, TECH
 from src.conteudo.modelo import Inventario
@@ -23,19 +24,23 @@ def _palavra(nome: str) -> re.Pattern[str]:
     return re.compile(rf"(?<!\w){re.escape(nome)}(?!\w)", re.IGNORECASE)
 
 
+def _normalizar(texto: str) -> str:
+    return unicodedata.normalize("NFKC", texto)
+
+
 def _nomes_do_inventario(inventario: Inventario) -> list[str]:
-    return sorted({item.tech for item in inventario.techs}, key=len, reverse=True)
+    return sorted({_normalizar(item.tech) for item in inventario.techs}, key=len, reverse=True)
 
 
 def validar_tecnologias_no_texto(
     texto: str, inventario: Inventario, config: ConfiguracaoValidador
 ) -> list[Violacao]:
-    restante = ESPACOS.sub(" ", texto)
+    restante = ESPACOS.sub(" ", _normalizar(texto))
     for nome in _nomes_do_inventario(inventario):
         restante = _palavra(nome).sub(" ", restante)
     conhecidas = list(config.tecnologias_conhecidas)
     conhecidas += [equivalencia.pedido for equivalencia in inventario.equivalencias]
-    proibidas = {nome.casefold(): nome for nome in conhecidas}
+    proibidas = {_normalizar(nome).casefold(): _normalizar(nome) for nome in conhecidas}
     achadas = [nome for nome in proibidas.values() if _palavra(nome).search(restante)]
     return [_violacao(f"tecnologia fora do inventario: {nome}") for nome in sorted(achadas)]
 
@@ -51,8 +56,8 @@ def validar_tecnologias(
     tex: str, inventario: Inventario, config: ConfiguracaoValidador
 ) -> list[Violacao]:
     corpo = corpo_do_tex(tex, config)
-    permitidas = {item.tech.casefold() for item in inventario.techs}
-    marcadas = [ESCAPE.sub(r"\1", nome).strip() for nome in TECH.findall(corpo)]
+    permitidas = {_normalizar(item.tech).casefold() for item in inventario.techs}
+    marcadas = [_normalizar(ESCAPE.sub(r"\1", nome)).strip() for nome in TECH.findall(corpo)]
     violacoes = []
     if len(MARCADOR.findall(corpo)) != len(marcadas):
         violacoes.append(_violacao("marcador tech malformado"))

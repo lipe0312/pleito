@@ -4,7 +4,15 @@ latex:
   comentario: "%"
   ambiente_do_corpo: document
   sequencias_proibidas: ["^^"]
-  esquemas_url: ["https://", "mailto:"]
+  links:
+    esquema_seguro: https
+    dominios: [github.com, linkedin.com, example.invalid]
+    esquemas_sem_dominio: ["mailto:"]
+  medidas:
+    comandos: {vspace: 1, setlength: 2, titlespacing: 4}
+    minimo_mm: 0
+    maximo_mm: 30
+    unidades_mm: {pt: 0.3515, bp: 0.3528, mm: 1.0, cm: 10.0, pc: 4.2175, in: 25.4}
   corpo:
     comandos:
       - tech
@@ -46,8 +54,18 @@ latex:
       - large
       - bfseries
       - titlerule
-    classes: [article]
-    pacotes: [fontenc, inputenc, lmodern, babel, geometry, xcolor, enumitem, titlesec, hyperref]
+    classes:
+      article: ['a4paper', '10pt']
+    pacotes:
+      fontenc: ['T1']
+      inputenc: ['utf8']
+      lmodern: []
+      babel: ['brazil', 'english']
+      geometry: ['a4paper', 'margin=[0-9]+(\.[0-9]+)?cm']
+      xcolor: []
+      enumitem: []
+      titlesec: []
+      hyperref: ['hidelinks']
     definiveis: [tech]
     simbolos: ["\\", "{", "}"]
 
@@ -56,6 +74,10 @@ caracteres:
   sequencias_proibidas: ["---"]
   categorias_unicode_proibidas: [Cc, Cf, Cn, Co, Cs, Zl, Zp]
   controles_permitidos: ["\n", "\r", "\t"]
+  alfabeto:
+    scripts: [LATIN]
+    scripts_com_base_ascii: [LATIN]
+    extras: ["\u00aa", "\u00ba"]
 
 tecnologias_conhecidas:
   - Kubernetes

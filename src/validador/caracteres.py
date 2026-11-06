@@ -32,3 +32,27 @@ def validar_invisiveis(texto: str, config: ConfiguracaoValidador) -> list[Violac
         Violacao(Regra.CARACTERE_INVISIVEL, f"caractere invisivel ou de controle {_codigo(c)}")
         for c in achados
     ]
+
+
+def _letra_permitida(caractere: str, config: ConfiguracaoValidador) -> bool:
+    regras = config.caracteres.alfabeto
+    if caractere in regras.extras:
+        return True
+    script = unicodedata.name(caractere, "").split(" ")[0]
+    base = unicodedata.normalize("NFD", caractere)[0]
+    if script not in regras.scripts:
+        return False
+    return base.isascii() or script not in regras.scripts_com_base_ascii
+
+
+def validar_alfabeto(texto: str, config: ConfiguracaoValidador) -> list[Violacao]:
+    achados = sorted(
+        {
+            c
+            for c in texto
+            if unicodedata.category(c).startswith("L") and not _letra_permitida(c, config)
+        }
+    )
+    return [
+        Violacao(Regra.ALFABETO, f"letra fora do alfabeto permitido {_codigo(c)}") for c in achados
+    ]

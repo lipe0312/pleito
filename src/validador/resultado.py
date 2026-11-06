@@ -10,6 +10,7 @@ class Regra(StrEnum):
     TRAVESSAO = "travessao"
     LATEX = "latex"
     CARACTERE_INVISIVEL = "caractere_invisivel"
+    ALFABETO = "alfabeto"
 
 
 @dataclass(frozen=True, slots=True)
