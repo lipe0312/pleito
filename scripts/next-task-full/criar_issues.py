@@ -31,6 +31,11 @@ def frase(texto: str) -> str:
     return texto[:1].upper() + texto[1:]
 
 
+def fechar(texto: str) -> str:
+    limpo = frase(texto.strip())
+    return limpo if limpo.endswith(".") else limpo + "."
+
+
 def numero_da_url(url: str) -> int:
     return int(re.search(r"/issues/(\d+)$", url).group(1))
 
@@ -65,12 +70,39 @@ def corpo_item(item: dict, fases: dict, registros: dict, numeros: dict[str, int]
         f"Fase {item['fase']}: {fase.get('objetivo', '')}."
         + (f" {item['nota']}." if item.get("nota") else ""),
         "",
+    ]
+    if item.get("problema"):
+        partes += ["## Problema", fechar(item["problema"]), ""]
+    if item.get("solucao"):
+        partes += [
+            "## Como vamos resolver",
+            *[f"{indice}. {passo}" for indice, passo in enumerate(item["solucao"], start=1)],
+            "",
+        ]
+    partes += [
         "## O que o Filipe passa a ver",
         frase(item.get("ve") or fase.get("ve", "")) + ".",
         "",
         "## Critérios de aceite",
         *[f"- [ ] {criterio}" for criterio in item["criterios"]],
         "",
+    ]
+    if item.get("testes"):
+        partes += ["## Testes que provam", *[f"- {teste}" for teste in item["testes"]], ""]
+    documentos = item.get("docs") or {}
+    if documentos:
+        partes += [
+            "## Documentação",
+            "**Ler antes:**",
+            *[f"- {doc}" for doc in documentos.get("ler", [])],
+            "",
+            "**Atualizar no PR:**",
+            *[f"- {doc}" for doc in documentos.get("atualizar", [])],
+            "",
+        ]
+    if item.get("riscos"):
+        partes += ["## Riscos e cuidados", fechar(item["riscos"]), ""]
+    partes += [
         "## Fora do escopo",
         frase(item.get("fora") or "nada além dos critérios") + ".",
         "",
