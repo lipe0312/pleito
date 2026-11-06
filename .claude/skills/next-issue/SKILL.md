@@ -28,7 +28,7 @@ O script aplica as regras do repositório (lógica em `scripts/next-task-full/ba
 Agora (paralelo): F0.1 #13 · F1.5 #15 · F1.8 #16
 Depois: F0.2 #14 ⛔decisão (←F0.1) · F1.6 #17 (←F1.8) · F1.7 #18 (←F1.5)
 Depois: …
-Manuais do Filipe agora: M1 #38 · M2 #39 · M5 #42
+Manuais do Filipe agora: M1 #38 · M2 #39 · M3 #40
 Atenção: <só o que o script não vê, ex.: duas da mesma onda mexem no mesmo arquivo>
 Rodar: claude --permission-mode bypassPermissions -n "F0.1" "/next-task-full F0.1 --rec"
 ```

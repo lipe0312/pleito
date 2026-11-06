@@ -22,6 +22,18 @@ Código (vai para `itens:`):
     schema: <true se cria migration>
     toca: [<credencial|terceiro|banco|llm|custo|latex|dado-pessoal|ui|regra|seguranca|config>]
     modelo: <opus-high|sonnet-high|sonnet-medium|haiku-medium>
+    problema: <o que falta ou quebra hoje, com o caso concreto e o custo de não fazer>
+    solucao:
+      - <passo de como pretendemos resolver, com módulo, config e comando>
+    ve: <o que o Filipe passa a ver quando terminar>
+    testes:
+      - <caso que prova a regra, incluindo o de ataque ou de erro>
+    docs:
+      ler:
+        - '<seção do PLANO, ADR, config ou código que manda>'
+      atualizar:
+        - '<doc que o PR atualiza ou cria>'
+    riscos: <segredo, egress, custo, dado pessoal, texto não confiável>
     criterios:
       - <comportamento verificável, com arquivo ou comando>
       - <regra de segurança ou de veredito → "com teste que falha sem ela">
@@ -43,6 +55,8 @@ Regras:
 - Maior que 2 dias de trabalho → quebre em itens encadeados por `depende`.
 - Título sem código de planejamento e sem nome de pessoa; critérios sem email, telefone ou trecho do currículo.
 - Escolha do `modelo`: tabela da §3 da `next-task-full`.
+- Item de código por fazer sempre tem `problema`, `solucao` e `docs` com `ler` e `atualizar`; o teste `test_backlog_real_item_por_fazer_diz_problema_solucao_e_documentacao` quebra sem eles.
+- Manual só quando o agente não consegue fazer sozinho (consentimento, `sudo`, gasto real, aprovação humana, painel de conta externa sem API). O que roda inteiro pelo `gh` ou por comando no terminal vira item de código.
 
 ## 3. Mostrar e esperar
 Mostre a ficha e **espere aprovação** antes de gravar e de criar a issue (escrever em issue é ação externa).

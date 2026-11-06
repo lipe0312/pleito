@@ -127,3 +127,24 @@ def test_backlog_real_manual_diz_como_fazer_e_como_conferir(backlog_real):
     for manual in backlog_real["manuais"]:
         assert manual["id"].startswith("M")
         assert manual["titulo"] and manual["como"] and manual["pronto"] and manual["porque"]
+
+
+def test_backlog_real_item_por_fazer_diz_problema_solucao_e_documentacao(backlog_real):
+    concluidos = set(backlog_real["concluidos_antes_do_detalhamento"])
+    sem_detalhe = [
+        registro["id"]
+        for registro in backlog_real["itens"]
+        if registro["id"] not in concluidos
+        and not (
+            registro.get("problema")
+            and registro.get("solucao")
+            and registro.get("docs", {}).get("ler")
+            and registro.get("docs", {}).get("atualizar")
+        )
+    ]
+    assert sem_detalhe == []
+
+
+def test_backlog_real_concluidos_existem(backlog_real):
+    ids = {i["id"] for i in backlog_real["itens"]}
+    assert set(backlog_real["concluidos_antes_do_detalhamento"]) <= ids

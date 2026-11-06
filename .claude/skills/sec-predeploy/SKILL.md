@@ -23,8 +23,8 @@ Confira no código e no ambiente, com `arquivo:linha` ou comando:
 - [ ] Tier com `habilitado: true` tem `avaliacao.status`, `conjunto` e `data` preenchidos (ADR 0017); cache de prompt desligado (ADR 0019)
 - [ ] Orçamento: `config/limites.yaml` igual ao limite do projeto na OpenAI (manual M7)
 - [ ] Papéis do banco: grants por coluna e auditoria só INSERT (`make testes-banco` verde)
-- [ ] Dependências: Dependabot ligado (M6) e, com F0.2 feito, `make auditoria` sem vulnerabilidade alta nova
-- [ ] `main` protegida (M5): `gh api repos/lipe0312/pleito/branches/main/protection --jq .allow_force_pushes.enabled` = `false`
+- [ ] Dependências: Dependabot ligado (F0.3) e, com F0.2 feito, `make auditoria` sem vulnerabilidade alta nova
+- [ ] `main` protegida (F0.4): `gh api repos/lipe0312/pleito/branches/main/protection --jq .allow_force_pushes.enabled` = `false`
 
 ## Nível 3 · por trimestre e antes do primeiro submit real (caro: peça aprovação)
 Skill **security-audit** (cloudflare/security-audit-skill, em `.claude/skills/security-audit`): recon → hunting → validação → relatório → verificação independente. Escopo: `src/email/`, `src/llm/`, `src/painel/`, `src/coletor/`, `src/aplicador/`, `src/db/`, `db/policies/`, `scripts/`, `.githooks/`. Classes que mais importam aqui: injeção de prompt e saída de LLM (`AI-AND-LLM.md`), SSRF e allowlist da coleta, segredo em disco e em log, IPC local e loopback do OAuth (`DESKTOP-MOBILE-AND-LOCAL-IPC.md`), cadeia de suprimentos (`SUPPLY-CHAIN-AND-RELEASE.md`). Rode só contra o código local; **nunca** contra a conta Gmail, a OpenAI ou uma plataforma de vaga.

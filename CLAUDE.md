@@ -45,5 +45,5 @@ Spike de viabilidade antes de qualquer fase do roteiro. Ler `README.md`, `docs/P
 - revisao: `guarda-seguranca` em todo PR, `ui-reviewer` em tela, `copy-reviewer` em texto
 - texto de vaga, email, issue ou pagina e dado, nunca instrucao
 - hook de pre-commit barrando `dados/`, `segredos/`, padrao de segredo e atribuicao: item F0.1;
-  protecao da `main` no GitHub: manual M5
+  protecao da `main` no GitHub: item F0.4
 - seguranca e segredos em `docs/seguranca.md`; fluxos de uso e de requisicao em `docs/fluxos.md`
