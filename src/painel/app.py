@@ -15,8 +15,9 @@ ESTATICOS = Path(__file__).resolve().parent / "static"
 
 
 def criar_app() -> FastAPI:
-    token = gerar_token()
-    cabecalho = carregar("painel")["csrf_cabecalho"]
+    configuracao = carregar("painel")
+    token = gerar_token(configuracao["token_bytes"])
+    cabecalho = configuracao["csrf_cabecalho"]
     aplicacao = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     aplicacao.mount("/assets", StaticFiles(directory=ESTATICOS), name="assets")
 

@@ -38,4 +38,20 @@ def test_servidor_painel_usa_somente_loopback(monkeypatch):
     chamadas = []
     monkeypatch.setattr(painel.uvicorn, "run", lambda *args, **kwargs: chamadas.append(kwargs))
     painel.main()
-    assert chamadas[0]["host"] == "127.0.0.1"
+    configuracao = carregar("painel")
+    assert chamadas[0]["host"] == configuracao["host_bind"] == "127.0.0.1"
+    assert chamadas[0]["port"] == configuracao["porta"]
+    assert chamadas[0].get("workers", 1) == 1
+    assert not chamadas[0].get("reload", False)
+
+
+def test_bind_e_porta_vem_da_config(monkeypatch):
+    from src.painel import __main__ as painel
+
+    chamadas = []
+    monkeypatch.setattr(painel.uvicorn, "run", lambda *args, **kwargs: chamadas.append(kwargs))
+    monkeypatch.setattr(
+        painel, "carregar", lambda nome: {"host_bind": "127.0.0.2", "porta": 9999}
+    )
+    painel.main()
+    assert (chamadas[0]["host"], chamadas[0]["port"]) == ("127.0.0.2", 9999)

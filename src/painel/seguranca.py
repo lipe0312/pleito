@@ -9,8 +9,8 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from src.config import carregar
 
 
-def gerar_token() -> str:
-    return secrets.token_urlsafe(32)
+def gerar_token(tamanho: int) -> str:
+    return secrets.token_urlsafe(tamanho)
 
 
 class ProtecaoPainel:
@@ -21,7 +21,8 @@ class ProtecaoPainel:
         self.app = app
         self.token = token.encode("utf-8")
         self.hosts = {f"{host}:{porta}" for host in hosts}
-        self.origens = {f"http://{host}:{porta}" for host in hosts}
+        self.origens = {f"{configuracao['esquema_origem']}://{host}:{porta}" for host in hosts}
+        self.fetch_site_aceitos = set(configuracao["fetch_site_aceitos"])
         self.cabecalho_csrf = configuracao["csrf_cabecalho"]
         self.metodos_seguros = {str(m).upper() for m in configuracao["metodos_seguros"]}
         self.cabecalhos = {
@@ -32,8 +33,11 @@ class ProtecaoPainel:
         }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http":
+        if scope["type"] == "lifespan":
             await self.app(scope, receive, send)
+            return
+        if scope["type"] != "http":
+            await send({"type": "websocket.close", "code": 1008})
             return
 
         async def enviar(mensagem: Message) -> None:
@@ -59,7 +63,8 @@ class ProtecaoPainel:
         origem = cabecalhos.get("origin")
         if origem is not None and origem.lower() not in self.origens:
             return PlainTextResponse("origem nao permitida", status_code=403)
-        if cabecalhos.get("sec-fetch-site", "same-origin") not in ("same-origin", "none"):
+        fetch_site = cabecalhos.get("sec-fetch-site")
+        if fetch_site is not None and fetch_site not in self.fetch_site_aceitos:
             return PlainTextResponse("origem nao permitida", status_code=403)
         enviado = cabecalhos.get(self.cabecalho_csrf, "").encode("utf-8")
         if not secrets.compare_digest(enviado, self.token):

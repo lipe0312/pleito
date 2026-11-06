@@ -1,4 +1,10 @@
+host_bind: 127.0.0.1
 porta: 8765
+esquema_origem: http
+token_bytes: 32
+fetch_site_aceitos:
+  - same-origin
+  - none
 hosts_permitidos:
   - 127.0.0.1
   - localhost

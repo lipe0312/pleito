@@ -3,10 +3,13 @@ from __future__ import annotations
 import re
 
 import pytest
+from fastapi import WebSocket
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from src.config import carregar
+from src.painel import app as modulo_app
 from src.painel import seguranca
 from src.painel.app import criar_app
 from src.painel.renderizar import renderizar
@@ -30,6 +33,17 @@ def montar():
     def troca():
         acoes.append(1)
         return PlainTextResponse("feito")
+
+    @aplicacao.patch("/teste/emenda")
+    def emenda():
+        acoes.append(1)
+        return PlainTextResponse("feito")
+
+    @aplicacao.websocket("/teste/ws")
+    async def canal(conexao: WebSocket):
+        await conexao.accept()
+        acoes.append(1)
+        await conexao.close()
 
     @aplicacao.delete("/teste/apaga")
     def apaga():
@@ -82,6 +96,26 @@ def test_host_local_na_porta_da_config_e_aceito(host):
 def test_host_fora_de_loopback_na_porta_da_config_recebe_400(cliente, host):
     resposta = cliente.get("/", headers={"Host": host})
     assert resposta.status_code == 400
+
+
+def test_host_repetido_recebe_400(cliente):
+    resposta = cliente.get(
+        "/", headers=[("Host", f"127.0.0.1:{PORTA}"), ("Host", f"127.0.0.1:{PORTA}")]
+    )
+    assert resposta.status_code == 400
+
+
+def test_host_em_maiuscula_e_aceito(cliente):
+    assert cliente.get("/", headers={"Host": f"LOCALHOST:{PORTA}"}).status_code == 200
+
+
+@pytest.mark.parametrize("host", [f"127.0.0.1:{PORTA}", f"evil.com:{PORTA}"])
+def test_websocket_e_recusado_com_host_valido_ou_nao(cliente_com_acoes, host):
+    cliente, acoes = cliente_com_acoes
+    with pytest.raises(WebSocketDisconnect):
+        with cliente.websocket_connect("/teste/ws", headers={"Host": host}):
+            pass
+    assert acoes == []
 
 
 def test_host_invalido_tambem_e_barrado_em_rota_inexistente_e_estatico(cliente):
@@ -166,10 +200,15 @@ def test_pagina_desliga_estilo_e_eval_inline_do_htmx(cliente):
     assert '"allowEval": false' in pagina
 
 
-@pytest.mark.parametrize("metodo", ["post", "put", "delete"])
+@pytest.mark.parametrize("metodo", ["post", "put", "delete", "patch"])
 def test_acao_sem_token_csrf_e_recusada(cliente_com_acoes, metodo):
     cliente, acoes = cliente_com_acoes
-    caminho = {"post": "/teste/acao", "put": "/teste/troca", "delete": "/teste/apaga"}[metodo]
+    caminho = {
+        "post": "/teste/acao",
+        "put": "/teste/troca",
+        "delete": "/teste/apaga",
+        "patch": "/teste/emenda",
+    }[metodo]
     resposta = getattr(cliente, metodo)(caminho)
     assert resposta.status_code == 403
     assert acoes == []
@@ -197,6 +236,37 @@ def test_acao_com_token_da_pagina_passa(cliente_com_acoes):
     resposta = cliente.post("/teste/acao", headers={CABECALHO: token_da_pagina(cliente)})
     assert resposta.status_code == 200
     assert acoes == [1]
+
+
+def test_tamanho_do_token_vem_da_config(monkeypatch):
+    monkeypatch.setitem(CONFIG, "token_bytes", 48)
+    monkeypatch.setattr(modulo_app, "carregar", lambda nome: CONFIG)
+    aplicacao, _ = montar()
+    token = token_da_pagina(TestClient(aplicacao, base_url=ORIGEM))
+    assert len(token) == len(seguranca.gerar_token(48))
+
+
+def test_esquema_da_origem_vem_da_config(monkeypatch, cliente_com_acoes):
+    monkeypatch.setitem(CONFIG, "esquema_origem", "https")
+    monkeypatch.setattr(seguranca, "carregar", lambda nome: CONFIG)
+    aplicacao, acoes = montar()
+    cliente = TestClient(aplicacao, base_url=ORIGEM)
+    token = token_da_pagina(cliente)
+    http = cliente.post("/teste/acao", headers={CABECALHO: token, "Origin": ORIGEM})
+    https = cliente.post(
+        "/teste/acao", headers={CABECALHO: token, "Origin": ORIGEM.replace("http", "https")}
+    )
+    assert (http.status_code, https.status_code) == (403, 200)
+
+
+def test_fetch_site_aceitos_vem_da_config(monkeypatch):
+    monkeypatch.setitem(CONFIG, "fetch_site_aceitos", ["same-origin"])
+    monkeypatch.setattr(seguranca, "carregar", lambda nome: CONFIG)
+    aplicacao, _ = montar()
+    cliente = TestClient(aplicacao, base_url=ORIGEM)
+    token = token_da_pagina(cliente)
+    resposta = cliente.post("/teste/acao", headers={CABECALHO: token, "Sec-Fetch-Site": "none"})
+    assert resposta.status_code == 403
 
 
 def test_token_e_estavel_no_processo_e_difere_entre_processos():

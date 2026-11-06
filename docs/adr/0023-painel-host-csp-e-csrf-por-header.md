@@ -28,7 +28,18 @@ tem Jinja2 nem `python-multipart`, e a regra é não acrescentar dependência pa
   `html.escape(..., quote=True)` em uma só passada, sem reinterpretar o valor. Placeholder sem
   valor falha. Em modelo, todo atributo com valor externo usa aspas.
 
+- Websocket e qualquer escopo que não seja `http` ou `lifespan` são recusados pelo middleware; o
+  painel não tem websocket.
+- Bind, porta, esquema da Origin, valores aceitos de `Sec-Fetch-Site` e tamanho do token vêm de
+  `config/painel.yaml`.
+
 ## Consequências
+- sem `Sec-Fetch-Site` (navegador antigo ou cliente fora de navegador), só o token CSRF protege
+  a ação; Host e Origin continuam checados
+- o token é por processo e fica só em memória: o painel roda com um worker só e sem reload
+  (`uvicorn` com `workers>1` ou `reload` daria tokens diferentes e 403 aleatório)
+- erro 500 não tratado é gerado pelo `ServerErrorMiddleware`, fora do middleware do painel, e sai
+  sem os cabeçalhos de segurança (pendente)
 - header em vez de cookie ou campo de formulário: formulário HTML puro não funciona sem
   `hx-post`; toda ação do painel passa pelo HTMX
 - sem estilo inline nem `style=`: o CSS das telas vem de arquivo em `/assets`
