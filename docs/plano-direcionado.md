@@ -13,6 +13,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] Fase 0, fundação: banco com papéis e RLS, auditoria, flag, roteador LLM com orçamento,
   painel vazio (commits 4588e24, de48423, 3af8c71, e7eaa7f)
 - [x] Etapa 0.5, ajustes da revisão (commits bbbfb7b, b75f05b, a4d6496, 4efa4f6)
+- [x] F0.1, guarda de commit em `src/repositorio_guarda/`: o pre-commit recusa `dados/`,
+  `segredos/`, `.env`, perfil de navegador, symlink e submódulo staged em qualquer nível, e
+  padrão de segredo no diff staged; o commit-msg recusa linha de atribuição; regras em
+  `config/repositorio.yaml`
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
 - [x] ADRs 0001 a 0021 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
