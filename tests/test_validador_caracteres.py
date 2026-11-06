@@ -12,7 +12,7 @@ from apoio_validador import (
 from src.validador.caracteres import validar_alfabeto, validar_invisiveis, validar_travessao
 from src.validador.configuracao import configuracao_validador
 from src.validador.resultado import Regra
-from src.validador.validar import validar_curriculo, validar_fonte
+from src.validador.validar import validar_arquivos, validar_fonte
 
 TRAVESSOES = {
     "em_dash": "feito \u2014 pronto",
@@ -50,7 +50,7 @@ def test_faixa_com_dois_hifens_continua_valendo():
 def test_travessao_no_texto_do_pdf_e_recusado(tmp_path):
     pdf = gravar_pdf(tmp_path, ["feito \u2014 pronto"])
 
-    resultado = validar_curriculo(tex_ficticio(), inventario_ficticio(), pdf=pdf)
+    resultado = validar_arquivos(tex_ficticio(), inventario_ficticio(), pdf=pdf)
 
     assert Regra.TRAVESSAO in resultado.regras
 
@@ -106,7 +106,7 @@ def test_curriculo_com_letra_fora_do_alfabeto_e_recusado(texto):
 def test_letra_fora_do_alfabeto_no_texto_do_pdf_e_recusada(tmp_path):
     pdf = gravar_pdf(tmp_path, ["Experiencia com k\u00f8fka"])
 
-    resultado = validar_curriculo(tex_ficticio(), inventario_ficticio(), pdf=pdf)
+    resultado = validar_arquivos(tex_ficticio(), inventario_ficticio(), pdf=pdf)
 
     assert Regra.ALFABETO in resultado.regras
 

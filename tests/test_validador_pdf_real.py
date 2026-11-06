@@ -8,7 +8,7 @@ from apoio_validador import inventario_ficticio, tex_ficticio
 from src.gerador.compilar import compilar
 from src.gerador.configuracao import configuracao_gerador
 from src.validador.paginas import texto_do_pdf
-from src.validador.validar import validar_curriculo
+from src.validador.validar import validar_arquivos
 
 pytestmark = pytest.mark.latex
 
@@ -21,7 +21,7 @@ def test_pdf_compilado_do_template_passa_em_todas_as_regras(tmp_path, idioma):
     tex = tex_ficticio(idioma)
     pdf = compilar(tex, tmp_path, config)
 
-    resultado = validar_curriculo(tex, inventario_ficticio(), pdf=pdf)
+    resultado = validar_arquivos(tex, inventario_ficticio(), pdf=pdf)
 
     assert resultado.aprovado, resultado.violacoes
     assert "Python" in texto_do_pdf(pdf)

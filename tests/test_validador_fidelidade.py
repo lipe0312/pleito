@@ -272,3 +272,57 @@ def test_regras_de_fidelidade_nao_acham_nada_no_template(idioma):
     contexto = contexto_rico(idioma)
 
     assert validar_conteudo(tex_rico(idioma), inventario_rico(), contexto) == []
+
+
+def com_segundo_itemize(texto):
+    return tex_rico().replace(
+        "\\section{Projetos}",
+        f"\\begin{{itemize}}\n    \\item {texto}\n\\end{{itemize}}\n\\section{{Projetos}}",
+    )
+
+
+def test_copia_da_vaga_num_segundo_itemize_e_recusada_por_v13():
+    vaga = Vaga(empresa="Acme Ltda", descricao=f"Buscamos pessoa para {FRASE_DE_DOZE} de codigo.")
+    tex = com_segundo_itemize(f"Atuei para {FRASE_DE_DOZE} com \\tech{{RabbitMQ}}.")
+
+    assert so(tex, Regra.COPIA_DA_VAGA, vaga=vaga)
+
+
+def test_copia_da_vaga_em_texto_solto_depois_do_itemize_e_recusada_por_v13():
+    vaga = Vaga(empresa="Acme Ltda", descricao=f"Buscamos pessoa para {FRASE_DE_DOZE} de codigo.")
+    tex = tex_rico().replace(
+        "\\vspace{2mm}\n\n\\section{Projetos}",
+        f"Atuei para {FRASE_DE_DOZE}.\n\\vspace{{2mm}}\n\n\\section{{Projetos}}",
+    )
+
+    assert tex != tex_rico()
+    assert so(tex, Regra.COPIA_DA_VAGA, vaga=vaga)
+
+
+def test_senioridade_inflada_em_segundo_itemize_e_recusada_por_v21():
+    assert so(com_segundo_itemize("Liderei o time."), Regra.SENIORIDADE)
+
+
+def test_texto_solto_depois_do_itemize_passa_por_v20_e_v21():
+    tex = tex_rico().replace(
+        "\\vspace{2mm}\n\n\\section{Projetos}",
+        "Liderei o time sem ponto final\n\\vspace{2mm}\n\n\\section{Projetos}",
+    )
+
+    assert so(tex, Regra.SENIORIDADE)
+    assert so(tex, Regra.PONTUACAO)
+
+
+def test_texto_fora_de_secao_e_lido_pelas_regras_de_texto_livre():
+    tex = tex_rico().replace("\\section{Sobre}", "Liderei o time.\n\n\\section{Sobre}", 1)
+
+    assert so(tex, Regra.SENIORIDADE)
+
+
+def test_segundo_itemize_num_projeto_conta_para_v21():
+    tex = tex_rico().replace(
+        "\\textbf{Projeto Delta}",
+        "\\begin{itemize}\n    \\item Arquitetei tudo.\n\\end{itemize}\n\\textbf{Projeto Delta}",
+    )
+
+    assert so(tex, Regra.SENIORIDADE)

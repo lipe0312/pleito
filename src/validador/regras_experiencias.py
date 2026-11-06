@@ -94,7 +94,7 @@ def validar_experiencias_vazias(analise: Analise, config: ConfiguracaoValidador)
             Regra.EXPERIENCIA_VAZIA,
             "experiencia sem bullet",
             plano(entrada.titulo, config),
-            "escreva ao menos um bullet para a experiencia",
+            f"escreva ao menos um bullet para a experiencia {plano(entrada.titulo, config)}",
         )
         for entrada in analise.entradas_de_experiencia
         if not entrada.bullets
@@ -115,7 +115,7 @@ def validar_projetos(analise: Analise, config: ConfiguracaoValidador) -> list[Vi
                 Regra.PROJETOS,
                 f"{len(projetos)} projetos, esperado de {regras.minimo} a {regras.maximo}",
                 ", ".join(projetos),
-                f"deixe de {regras.minimo} a {regras.maximo} projetos dos blocos",
+                f"deixe entre {regras.minimo} e {regras.maximo} projetos dos blocos",
             )
         )
     if rotulo in titulos and titulos[-1] != rotulo:

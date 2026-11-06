@@ -11,7 +11,7 @@ from apoio_validador import (
 from src.validador import conteudo
 from src.validador.configuracao import configuracao_validador
 from src.validador.resultado import CODIGOS, CurriculoInvalido, Regra
-from src.validador.validar import exigir_fonte_valida, validar_curriculo, validar_fonte
+from src.validador.validar import exigir_valido, validar_curriculo, validar_fonte
 
 CODIGOS_DESTE_ITEM = {
     "V6",
@@ -98,10 +98,37 @@ def test_template_real_passa_em_todas_as_regras(idioma):
 
 
 @pytest.mark.parametrize("idioma", ["pt", "en"])
-def test_validar_fonte_com_contexto_aprova_o_template(idioma):
-    resultado = validar_fonte(tex_rico(idioma), inventario_rico(), contexto=contexto_rico(idioma))
+def test_validar_curriculo_com_contexto_aprova_o_template(tmp_path, idioma):
+    pdf = gravar_pdf(tmp_path, ["Pessoa Ficticia"])
+
+    resultado = validar_curriculo(
+        tex_rico(idioma), inventario_rico(), pdf=pdf, contexto=contexto_rico(idioma)
+    )
 
     assert resultado.aprovado
+
+
+def test_validar_curriculo_sem_contexto_nao_existe():
+    with pytest.raises(TypeError):
+        validar_curriculo(tex_rico(), inventario_rico())
+
+
+def test_exigir_valido_sem_contexto_nao_existe(tmp_path):
+    pdf = gravar_pdf(tmp_path, ["Pessoa Ficticia"])
+
+    with pytest.raises(TypeError):
+        exigir_valido(tex_rico(), inventario_rico(), pdf=pdf)
+
+
+def test_exigir_valido_recusa_violacao_de_conteudo_com_pdf_correto(tmp_path):
+    pdf = gravar_pdf(tmp_path, ["Pessoa Ficticia"])
+
+    with pytest.raises(CurriculoInvalido) as erro:
+        exigir_valido(
+            CASOS_RUINS[Regra.NUMERO], inventario_rico(), pdf=pdf, contexto=contexto_rico()
+        )
+
+    assert Regra.NUMERO in erro.value.resultado.regras
 
 
 def test_validar_curriculo_devolve_codigo_trecho_e_sugestao(tmp_path):
@@ -124,15 +151,6 @@ def test_validar_curriculo_junta_regras_de_conteudo_e_as_do_f23(tmp_path):
     resultado = validar_curriculo(tex, inventario_rico(), pdf=pdf, contexto=contexto_rico())
 
     assert {"V2", "V17", "V21"} <= {v.codigo for v in resultado.violacoes}
-
-
-def test_exigir_fonte_valida_levanta_com_violacao_de_conteudo():
-    with pytest.raises(CurriculoInvalido) as erro:
-        exigir_fonte_valida(
-            CASOS_RUINS[Regra.EMPRESA_DA_VAGA], inventario_rico(), contexto=contexto_rico()
-        )
-
-    assert Regra.EMPRESA_DA_VAGA in erro.value.resultado.regras
 
 
 def test_sem_contexto_o_comportamento_do_f23_nao_muda():

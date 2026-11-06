@@ -14,10 +14,7 @@ from src.validador.tecnologias import validar_tecnologias, validar_tecnologias_n
 
 
 def validar_fonte(
-    tex: str,
-    inventario: Inventario,
-    config: ConfiguracaoValidador | None = None,
-    contexto: ContextoConteudo | None = None,
+    tex: str, inventario: Inventario, config: ConfiguracaoValidador | None = None
 ) -> Resultado:
     config = config or configuracao_validador()
     violacoes: list[Violacao] = []
@@ -26,20 +23,17 @@ def validar_fonte(
     violacoes += validar_alfabeto(tex, config)
     violacoes += validar_travessao(tex, config)
     violacoes += validar_tecnologias(tex, inventario, config)
-    if contexto is not None:
-        violacoes += validar_conteudo(tex, inventario, contexto, config)
     return Resultado(tuple(dict.fromkeys(violacoes)))
 
 
-def validar_curriculo(
+def validar_arquivos(
     tex: str,
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
     pdf: Path | None = None,
-    contexto: ContextoConteudo | None = None,
 ) -> Resultado:
     config = config or configuracao_validador()
-    violacoes = list(validar_fonte(tex, inventario, config, contexto).violacoes)
+    violacoes = list(validar_fonte(tex, inventario, config).violacoes)
     if pdf is None:
         violacoes.append(Violacao(Regra.PAGINAS, "pdf ausente, paginas nao conferidas"))
     else:
@@ -51,13 +45,35 @@ def validar_curriculo(
     return Resultado(tuple(dict.fromkeys(violacoes)))
 
 
-def exigir_fonte_valida(
+def validar_curriculo(
     tex: str,
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
-    contexto: ContextoConteudo | None = None,
+    pdf: Path | None = None,
+    *,
+    contexto: ContextoConteudo,
+) -> Resultado:
+    config = config or configuracao_validador()
+    violacoes = list(validar_arquivos(tex, inventario, config, pdf).violacoes)
+    violacoes += validar_conteudo(tex, inventario, contexto, config)
+    return Resultado(tuple(dict.fromkeys(violacoes)))
+
+
+def exigir_fonte_valida(
+    tex: str, inventario: Inventario, config: ConfiguracaoValidador | None = None
 ) -> None:
-    resultado = validar_fonte(tex, inventario, config, contexto)
+    resultado = validar_fonte(tex, inventario, config)
+    if not resultado.aprovado:
+        raise CurriculoInvalido(resultado)
+
+
+def exigir_arquivos_validos(
+    tex: str,
+    inventario: Inventario,
+    config: ConfiguracaoValidador | None = None,
+    pdf: Path | None = None,
+) -> None:
+    resultado = validar_arquivos(tex, inventario, config, pdf)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)
 
@@ -67,8 +83,9 @@ def exigir_valido(
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
     pdf: Path | None = None,
-    contexto: ContextoConteudo | None = None,
+    *,
+    contexto: ContextoConteudo,
 ) -> None:
-    resultado = validar_curriculo(tex, inventario, config, pdf, contexto)
+    resultado = validar_curriculo(tex, inventario, config, pdf, contexto=contexto)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)

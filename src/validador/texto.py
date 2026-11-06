@@ -8,7 +8,7 @@ from src.conteudo.decompor import ESCAPE
 from src.validador.configuracao import ConfiguracaoValidador
 from src.validador.resultado import Regra, Violacao
 
-DESTINO_DO_LINK = re.compile(r"\\href\s*\{[^{}]*\}")
+DESTINO_DO_LINK = re.compile(r"\\href\s*\{([^{}]*)\}")
 SIMBOLO_DE_CONTROLE = re.compile(r"\\[^A-Za-z]", re.S)
 COMANDO_COM_LETRAS = re.compile(r"\\[A-Za-z]+")
 PALAVRA = re.compile(r"\w+")

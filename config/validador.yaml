@@ -125,6 +125,7 @@ conteudo:
   escapes:
     simbolos: ["&", "_", "#", "$"]
   idioma:
+    nomes: {pt: portugues, en: ingles}
     marcadores:
       pt: [com, em, uma, para, sobre, de, do, da, e, os, as, "no", na, que]
       en: [with, the, for, and, of, in, "on", over, an, to, that, is]

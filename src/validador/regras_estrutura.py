@@ -11,15 +11,13 @@ from src.validador.configuracao import ConfiguracaoValidador
 from src.validador.latex import sem_comentarios
 from src.validador.resultado import Regra, Violacao
 from src.validador.texto import (
+    DESTINO_DO_LINK,
     ao_redor,
     normalizar,
     palavras,
     plano,
     violacao,
 )
-
-DESTINO = re.compile(r"\\href\s*\{([^{}]*)\}")
-INICIO_DO_DOCUMENTO = re.compile(r"\\begin\s*\{document\}")
 
 
 def _linhas_do_preambulo(texto: str, config: ConfiguracaoValidador) -> list[str]:
@@ -32,7 +30,8 @@ def _preambulo_do_template(idioma: str, config: ConfiguracaoValidador) -> str:
     templates = configuracao_gerador().templates
     fonte = (RAIZ / templates.pasta / templates.arquivos[idioma]).read_text(encoding="utf-8")
     limpo = sem_comentarios(fonte, config.latex.comentario)
-    marca = INICIO_DO_DOCUMENTO.search(limpo)
+    ambiente = re.escape(config.latex.ambiente_do_corpo)
+    marca = re.search(rf"\\begin\s*\{{{ambiente}\}}", limpo)
     return limpo[: marca.start()] if marca else limpo
 
 
@@ -51,7 +50,7 @@ def validar_preambulo(analise: Analise, config: ConfiguracaoValidador) -> list[V
             Regra.PREAMBULO,
             f"preambulo diferente do template de {idioma}",
             trecho,
-            "restaure o preambulo do template; so linespread, margens e vspace podem variar",
+            "restaure o preambulo do template; so linespread e margens podem variar",
         )
     ]
 
@@ -63,7 +62,8 @@ def validar_cabecalho(analise: Analise, config: ConfiguracaoValidador) -> list[V
     esperados = {"nome": cabecalho.nome, "email": cabecalho.email}
     if cabecalho.telefone:
         esperados["telefone"] = cabecalho.telefone
-    esperados["cidade"] = cabecalho.localizacao.get(idioma, "")
+    if cabecalho.localizacao.get(idioma):
+        esperados["cidade"] = cabecalho.localizacao[idioma]
     texto = plano(analise.documento.cabecalho, config)
     restante = normalizar(texto)
     violacoes = []
@@ -76,7 +76,7 @@ def validar_cabecalho(analise: Analise, config: ConfiguracaoValidador) -> list[V
                     Regra.CABECALHO,
                     f"cabecalho sem {campo} igual ao base",
                     texto,
-                    f"use exatamente {campo}: {valor}",
+                    f"use exatamente o {campo} do base",
                 )
             )
         restante = restante.replace(alvo, " ")
@@ -91,17 +91,17 @@ def validar_cabecalho(analise: Analise, config: ConfiguracaoValidador) -> list[V
                 "deixe no cabecalho so nome, cidade, email e telefone do base",
             )
         )
-    permitido = f"mailto:{cabecalho.email}"
+    permitidos = {f"{e}{cabecalho.email}" for e in config.latex.links.esquemas_sem_dominio}
     violacoes += [
         violacao(
             config,
             Regra.CABECALHO,
             "link do cabecalho diferente do base",
             destino,
-            f"use apenas o link {permitido}",
+            "use apenas o link de email do base",
         )
-        for destino in dict.fromkeys(DESTINO.findall(analise.documento.cabecalho))
-        if destino != permitido
+        for destino in dict.fromkeys(DESTINO_DO_LINK.findall(analise.documento.cabecalho))
+        if destino not in permitidos
     ]
     if analise.formacao is not None:
         formacao = normalizar(plano(analise.formacao.conteudo, config))
@@ -115,7 +115,7 @@ def validar_cabecalho(analise: Analise, config: ConfiguracaoValidador) -> list[V
                 Regra.CABECALHO,
                 f"formacao sem {campo} igual ao base",
                 plano(analise.formacao.conteudo, config),
-                f"use exatamente {campo}: {valor}",
+                f"use exatamente o {campo} do base",
             )
             for campo, valor in base.items()
             if normalizar(plano(valor, config)) not in formacao
@@ -186,15 +186,15 @@ def validar_estrutura(analise: Analise, config: ConfiguracaoValidador) -> list[V
 
 def validar_escapes(analise: Analise, config: ConfiguracaoValidador) -> list[Violacao]:
     simbolos = "".join(re.escape(s) for s in config.conteudo.escapes.simbolos)
-    padrao = re.compile(rf"(?<!\\)[{simbolos}]")
-    corpo = DESTINO.sub(lambda achado: " " * len(achado.group(0)), analise.documento.corpo)
+    padrao = re.compile(rf"(?<!\\)(?:\\\\)*(?P<simbolo>[{simbolos}])")
+    corpo = DESTINO_DO_LINK.sub(lambda achado: " " * len(achado.group(0)), analise.documento.corpo)
     return [
         violacao(
             config,
             Regra.ESCAPE,
-            f"simbolo sem escape: {achado.group(0)}",
-            ao_redor(corpo, achado.start(), achado.end(), config),
-            f"escreva \\{achado.group(0)} no lugar de {achado.group(0)}",
+            f"simbolo sem escape: {achado['simbolo']}",
+            ao_redor(corpo, achado.start("simbolo"), achado.end("simbolo"), config),
+            f"escreva \\{achado['simbolo']} no lugar de {achado['simbolo']}",
         )
         for achado in padrao.finditer(corpo)
     ]
@@ -203,13 +203,21 @@ def validar_escapes(analise: Analise, config: ConfiguracaoValidador) -> list[Vio
 def _marcadores(texto: str, config: ConfiguracaoValidador) -> dict[str, int]:
     formas = [p.forma for p in palavras(texto)]
     return {
-        idioma: sum(1 for forma in formas if forma in {normalizar(m) for m in lista})
+        idioma: sum(1 for forma in formas if forma in conhecidos)
+        for idioma, conhecidos in _formas_conhecidas(config).items()
+    }
+
+
+def _formas_conhecidas(config: ConfiguracaoValidador) -> dict[str, set[str]]:
+    return {
+        idioma: {normalizar(m) for m in lista}
         for idioma, lista in config.conteudo.idioma.marcadores.items()
     }
 
 
 def validar_idioma(analise: Analise, config: ConfiguracaoValidador) -> list[Violacao]:
     idioma = analise.contexto.idioma
+    nomes = config.conteudo.idioma.nomes
     violacoes = []
     babel = BABEL.search(analise.documento.preambulo)
     declarado = None
@@ -217,26 +225,30 @@ def validar_idioma(analise: Analise, config: ConfiguracaoValidador) -> list[Viol
         opcao = babel.group(1).split(",")[-1].strip()
         declarado = configuracao_conteudo().idiomas_babel.get(opcao)
     if declarado != idioma:
+        esperada = next(
+            (o for o, i in configuracao_conteudo().idiomas_babel.items() if i == idioma), idioma
+        )
         violacoes.append(
             violacao(
                 config,
                 Regra.IDIOMA,
                 f"babel declara {declarado or 'idioma desconhecido'}, esperado {idioma}",
                 babel.group(0) if babel else "sem babel",
-                f"use o babel do idioma {idioma}",
+                f"use o babel {esperada}, do idioma {nomes[idioma]}",
             )
         )
     for segmento in analise.segmentos(config):
         contagem = _marcadores(segmento, config)
-        outro = max(contagem, key=contagem.get)
-        if outro != idioma and contagem[outro] > contagem[idioma]:
+        outros = [i for i in contagem if i != idioma and contagem[i] > contagem[idioma]]
+        if outros:
+            outro = max(outros, key=contagem.get)
             violacoes.append(
                 violacao(
                     config,
                     Regra.IDIOMA,
-                    f"texto parece estar em {outro}, esperado {idioma}",
+                    f"texto parece estar em {nomes[outro]}, esperado {nomes[idioma]}",
                     segmento,
-                    f"reescreva o texto em {idioma}",
+                    f"reescreva o texto em {nomes[idioma]}",
                 )
             )
     return violacoes

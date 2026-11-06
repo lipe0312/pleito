@@ -47,9 +47,15 @@ class Analise:
 
     @property
     def textos_livres(self) -> tuple[str, ...]:
-        textos = [self.sobre.conteudo] if self.sobre else []
-        for entrada in (*self.entradas_de_experiencia, *self.entradas_de_projeto):
-            textos += entrada.bullets
+        textos = [self.documento.fora_das_secoes]
+        if self.sobre:
+            textos.append(self.sobre.conteudo)
+        for secao in (self.experiencias, self.projetos):
+            if secao is None:
+                continue
+            textos.append(secao.antes_da_primeira_entrada())
+            for entrada in secao.entradas():
+                textos += [*entrada.bullets, entrada.solto]
         return tuple(textos)
 
     def segmentos(self, config: ConfiguracaoValidador) -> list[str]:

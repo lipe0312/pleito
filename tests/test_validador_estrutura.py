@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 from apoio_validador import configuracao_com, contexto_rico, inventario_rico, tex_rico
 
@@ -323,7 +325,7 @@ def test_texto_em_ingles_na_versao_pt_e_recusado_por_v19():
     achado = so(tex, Regra.IDIOMA)
 
     assert [v.codigo for v in achado] == ["V19"]
-    assert "en" in achado[0].detalhe
+    assert "ingles" in achado[0].detalhe
 
 
 def test_documento_no_idioma_certo_passa_em_v19():
@@ -334,3 +336,68 @@ def test_documento_no_idioma_certo_passa_em_v19():
 def test_idioma_fora_dos_blocos_e_recusado():
     with pytest.raises(ValueError):
         validar_conteudo(tex_rico(), inventario_rico(), contexto_rico("fr"))
+
+
+def test_projeto_sem_hfill_conta_para_v15():
+    extra = (
+        "\\textbf{Projeto Sem Data}, descricao\n"
+        "\\begin{itemize}\n    \\item Algo.\n\\end{itemize}\n"
+    )
+    tex = tex_rico().replace("\\end{document}", extra * 2 + "\\end{document}")
+
+    achado = so(tex, Regra.PROJETOS)
+
+    assert achado
+    assert "5 projetos" in achado[0].detalhe
+
+
+def test_experiencia_sem_hfill_nao_escapa_de_v8():
+    tex = tex_rico().replace(
+        "\\textbf{Pesquisadora, Laboratório Exemplo, Visão \\& Borda} \\hfill 2022 -- 2023",
+        "\\textbf{Pesquisadora, Laboratório Exemplo, Visão \\& Borda}",
+    )
+
+    assert so(tex, Regra.EXPERIENCIAS)
+
+
+def test_experiencia_com_dois_itemize_tem_bullets_de_ambos():
+    tex = tex_rico().replace(
+        "\\vspace{2mm}\n\n\\section{Projetos}",
+        "\\begin{itemize}\n    \\item Outro.\n\\end{itemize}\n\\vspace{2mm}\n\n\\section{Projetos}",
+    )
+
+    assert not so(tex, Regra.EXPERIENCIA_VAZIA)
+
+
+def test_sugestao_de_v7_nao_repete_dado_pessoal_do_base():
+    tex = tex_rico().replace("pessoa@exemplo.invalid", "outra@exemplo.invalid")
+    tex = tex.replace("(00) 00000-0000", "(11) 99999-9999")
+
+    achados = so(tex, Regra.CABECALHO)
+
+    assert achados
+    assert all("pessoa@" not in v.sugestao and "00000" not in v.sugestao for v in achados)
+
+
+def test_e_comercial_depois_de_quebra_de_linha_e_recusado_por_v16():
+    tex = tex_rico().replace("Visão \\& Borda", "Visão \\\\& Borda")
+
+    assert so(tex, Regra.ESCAPE)
+
+
+def test_sugestao_de_v6_nao_cita_vspace():
+    tex = tex_rico().replace("\\pagestyle{empty}", "\\pagestyle{plain}")
+
+    assert "vspace" not in so(tex, Regra.PREAMBULO)[0].sugestao
+
+
+def test_localizacao_sem_o_idioma_nao_gera_falso_positivo_em_v7():
+    contexto = contexto_rico()
+    cabecalho = contexto.travado.cabecalho.model_copy(
+        update={"localizacao": {"en": "Example City"}}
+    )
+    travado = contexto.travado.model_copy(update={"cabecalho": cabecalho})
+
+    achados = validar_conteudo(tex_rico(), inventario_rico(), replace(contexto, travado=travado))
+
+    assert not [v for v in achados if v.regra == Regra.CABECALHO and "cidade" in v.detalhe]

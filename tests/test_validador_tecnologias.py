@@ -14,7 +14,7 @@ from src.conteudo.modelo import Ancora, Inventario, ItemInventario
 from src.validador.configuracao import configuracao_validador
 from src.validador.resultado import Regra
 from src.validador.tecnologias import validar_tecnologias, validar_tecnologias_no_texto
-from src.validador.validar import validar_curriculo
+from src.validador.validar import validar_arquivos
 
 
 def _regras(tex: str, inventario=None, config=None) -> list[Regra]:
@@ -119,7 +119,7 @@ def test_tecnologia_no_texto_do_pdf_e_recusada_em_qualquer_caixa(tmp_path):
     for texto in ("Kubernetes", "KUBERNETES", "kubernetes"):
         pdf = gravar_pdf(tmp_path, [f"Experiencia com {texto}"])
 
-        resultado = validar_curriculo(tex_ficticio(), inventario_ficticio(), pdf=pdf)
+        resultado = validar_arquivos(tex_ficticio(), inventario_ficticio(), pdf=pdf)
 
         assert Regra.TECNOLOGIA in resultado.regras
 
@@ -127,7 +127,7 @@ def test_tecnologia_no_texto_do_pdf_e_recusada_em_qualquer_caixa(tmp_path):
 def test_texto_do_pdf_com_tecnologia_do_inventario_passa(tmp_path):
     pdf = gravar_pdf(tmp_path, ["Experiencia com Python e PostgreSQL"])
 
-    assert validar_curriculo(tex_ficticio(), inventario_ficticio(), pdf=pdf).aprovado
+    assert validar_arquivos(tex_ficticio(), inventario_ficticio(), pdf=pdf).aprovado
 
 
 FORMAS_LARGAS = [

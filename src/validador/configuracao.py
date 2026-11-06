@@ -136,6 +136,7 @@ class Escapes(Estrito):
 
 class IdiomaDoConteudo(Estrito):
     marcadores: PorIdioma = Field(min_length=2)
+    nomes: dict[Identificador, Fragmento] = Field(min_length=2)
 
 
 class SecoesDoIdioma(Estrito):
@@ -159,8 +160,9 @@ class ConfiguracaoDoConteudo(Estrito):
     @model_validator(mode="after")
     def _mesmos_idiomas_em_tudo(self) -> ConfiguracaoDoConteudo:
         idiomas = set(self.secoes)
-        if set(self.projetos.rotulo_final) != idiomas or set(self.idioma.marcadores) != idiomas:
-            raise ValueError("secoes, rotulo_final e marcadores precisam dos mesmos idiomas")
+        por_idioma = [self.projetos.rotulo_final, self.idioma.marcadores, self.idioma.nomes]
+        if any(set(lista) != idiomas for lista in por_idioma):
+            raise ValueError("secoes, rotulo_final, marcadores e nomes precisam dos mesmos idiomas")
         return self
 
 

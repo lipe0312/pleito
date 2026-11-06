@@ -9,13 +9,10 @@ from src.validador.texto import normalizar, plano
 
 SECAO = re.compile(r"\\section\*?\{((?:[^{}\\]|\\.)*)\}")
 CENTRO = re.compile(r"\\begin\s*\{center\}(.*?)\\end\s*\{center\}", re.S)
-ENTRADA = re.compile(
-    r"^[ \t]*\\textbf\{(?P<titulo>(?:[^{}\\]|\\.)*)\}"
-    r"(?P<complemento>[^\n]*?)\\hfill(?P<fim>[^\n]*)$",
-    re.M,
-)
-LISTA = re.compile(r"\s*\\begin\{itemize\}(?P<itens>.*?)\\end\{itemize\}", re.S)
+ENTRADA = re.compile(r"^[ \t]*\\textbf\{(?P<titulo>(?:[^{}\\]|\\.)*)\}(?P<resto>[^\n]*)$", re.M)
+LISTA = re.compile(r"\\begin\{itemize\}(?P<itens>.*?)\\end\{itemize\}", re.S)
 ITEM = re.compile(r"\\item(?![A-Za-z])")
+HFILL = re.compile(r"\\hfill(?![A-Za-z])")
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +21,14 @@ class Entrada:
     complemento: str
     fim: str
     bullets: tuple[str, ...]
+    solto: str
+
+
+def _itens(trecho: str) -> tuple[str, ...]:
+    itens = []
+    for lista in LISTA.finditer(trecho):
+        itens += [" ".join(i.split()) for i in ITEM.split(lista["itens"]) if i.strip()]
+    return tuple(itens)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,19 +36,27 @@ class Secao:
     titulo: str
     conteudo: str
 
+    def antes_da_primeira_entrada(self) -> str:
+        primeira = ENTRADA.search(self.conteudo)
+        return self.conteudo[: primeira.start()] if primeira else self.conteudo
+
     def entradas(self) -> tuple[Entrada, ...]:
         achados = list(ENTRADA.finditer(self.conteudo))
         entradas = []
         for posicao, achado in enumerate(achados):
             limite = achados[posicao + 1].start() if posicao + 1 < len(achados) else None
-            lista = LISTA.match(self.conteudo[achado.end() : limite])
-            itens = ITEM.split(lista["itens"]) if lista else []
+            regiao = self.conteudo[achado.end() : limite]
+            resto = achado["resto"]
+            marca = HFILL.search(resto)
+            complemento = resto[: marca.start()] if marca else resto
+            fim = resto[marca.end() :] if marca else ""
             entradas.append(
                 Entrada(
                     titulo=achado["titulo"].strip(),
-                    complemento=achado["complemento"].strip(),
-                    fim=achado["fim"].strip(),
-                    bullets=tuple(" ".join(item.split()) for item in itens if item.strip()),
+                    complemento=complemento.strip().lstrip(",").strip(),
+                    fim=fim.strip(),
+                    bullets=_itens(regiao),
+                    solto=LISTA.sub(" ", regiao),
                 )
             )
         return tuple(entradas)
@@ -55,6 +68,7 @@ class Documento:
     corpo: str
     cabecalho: str
     secoes: tuple[Secao, ...]
+    fora_das_secoes: str = ""
 
     def secao(self, titulo: str, config: ConfiguracaoValidador) -> Secao | None:
         alvo = normalizar(titulo)
@@ -72,4 +86,7 @@ def ler_documento(tex: str, config: ConfiguracaoValidador) -> Documento:
     centro = CENTRO.search(corpo)
     partes = SECAO.split(corpo)
     secoes = tuple(Secao(t, c) for t, c in zip(partes[1::2], partes[2::2], strict=True))
-    return Documento(limpo[: inicio.start()], corpo, centro.group(1) if centro else "", secoes)
+    fora = CENTRO.sub(" ", partes[0])
+    return Documento(
+        limpo[: inicio.start()], corpo, centro.group(1) if centro else "", secoes, fora
+    )

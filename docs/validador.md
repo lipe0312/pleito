@@ -2,7 +2,7 @@
 
 O validador roda em código, sem IA, sobre o `.tex` gerado e, quando existe, o PDF. Devolve uma lista de violações; cada uma traz `codigo` (V<n>), `trecho` (o pedaço do documento que motivou a recusa, no máximo `conteudo.trecho_max_chars`) e `sugestao` (uma frase curta). É o formato que o laço de geração (F3.3) devolve à IA.
 
-Entrada das regras de conteúdo (V6 a V9 e V11 a V21): o `.tex`, o inventário e um `ContextoConteudo` com os blocos, a vaga (`Vaga`: empresa, descrição e título), os padrões de escrita, o cabeçalho e a formação travados e o idioma escolhido. Sem `contexto`, `validar_curriculo` roda só as regras do F2.3 e nada muda para quem já chama. O texto da vaga só entra como comparação (V12 e V13), nunca como regra, então "ignore as regras" dentro de uma vaga não altera nenhum veredito.
+Entrada das regras de conteúdo (V6 a V9 e V11 a V21): o `.tex`, o inventário e um `ContextoConteudo` com os blocos, a vaga (`Vaga`: empresa, descrição e título), os padrões de escrita, o cabeçalho e a formação travados e o idioma escolhido. `validar_curriculo` e `exigir_valido` exigem o `contexto` (sem ele a chamada nem existe, para um currículo não passar sem as regras de conteúdo). `validar_arquivos` e `exigir_arquivos_validos` são as regras do F2.3 com o PDF, e `validar_fonte` e `exigir_fonte_valida` só as da fonte; nenhum deles roda V6 a V21 e nenhum serve de aprovação final. O texto da vaga não define regra; só entra como comparação (V12 e V13), que pode recusar um trecho, mas nunca liberar um. Por isso "ignore as regras" dentro de uma vaga não altera nenhum veredito.
 
 Limites, listas e nomes de seção vêm de `config/validador.yaml` (chave `conteudo`) e de `config/padroes_curriculo.yaml`; o código não carrega número nem lista. Cada regra é uma função em `REGRAS` (`src/validador/conteudo.py`) e tem teste que falha sem ela (`tests/test_validador_conteudo_integracao.py`).
 
@@ -36,7 +36,7 @@ Fora da lista V<n>, o F2.3 também recusa travessão, caractere invisível e alf
 ## Decisões
 
 - "Mais projetos" ausente passa em V15: o template atual não o gera. Presente, precisa ser o último e não conta como projeto.
-- V8 trata a ordem dos blocos como a ordem cronológica e recusa experiência removida, porque a ordem de corte nunca remove experiência.
+- V8 trata a ordem dos blocos como a ordem cronológica e recusa experiência removida, porque a ordem de corte (a sequência de cortes que o código aplica, do menor ao maior impacto, quando o currículo passa de uma página; PLANO 7.6 e `ordem_de_corte` dos padrões) nunca remove experiência.
 - V12 ignora o nome da empresa quando ele aparece só nos títulos e no cabeçalho vindos dos blocos (o candidato pode ter trabalhado na empresa da vaga); citado no Sobre ou em bullet, recusa.
 - V19 compara palavras-marca por trecho de texto, não pelo documento inteiro, para uma frase em outro idioma não se diluir no resto.
 - Número escrito por extenso ("trezentos") não é visto por V11.
