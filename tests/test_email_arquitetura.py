@@ -3,11 +3,14 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
 from src.config import RAIZ, carregar
 
 METODOS_PROIBIDOS = frozenset({"delete", "trash", "forward", "send", "batchDelete"})
 TRECHOS_PROIBIDOS = ("/trash", "/send", "/forward", "batchDelete")
 VERBOS_PROIBIDOS = frozenset({"delete"})
+ROTA_DE_ENVIO = "messages/send"
 
 
 def _arquivo_do_modulo(raiz: Path, modulo: str) -> Path:
@@ -79,3 +82,42 @@ def test_envio_dentro_do_modulo_de_resumo_do_config_e_permitido(tmp_path):
 def test_o_mesmo_envio_fora_do_modulo_de_resumo_e_acusado(tmp_path):
     _plantar(tmp_path, "src/email/outro.py", "cliente.send(resumo)\n")
     assert varrer(tmp_path, _modulo_resumo()) != []
+
+
+def test_modulo_de_resumo_do_config_existe_e_e_uma_unica_excecao():
+    modulo = _modulo_resumo()
+    assert isinstance(modulo, str)
+    assert _arquivo_do_modulo(RAIZ, modulo).is_file()
+
+
+def test_unico_arquivo_de_src_que_envia_e_o_modulo_de_resumo():
+    liberado = _arquivo_do_modulo(RAIZ, _modulo_resumo()).resolve()
+    com_envio = {
+        caminho.resolve()
+        for caminho in sorted((RAIZ / "src").rglob("*.py"))
+        if _violacoes_no_arquivo(caminho)
+    }
+    assert com_envio == {liberado}
+
+
+def _so_a_rota_de_envio(violacoes: list[str]) -> bool:
+    return len(violacoes) == 1 and violacoes[0].endswith(f" {ROTA_DE_ENVIO!r}")
+
+
+def test_modulo_de_resumo_so_tem_a_rota_de_envio():
+    assert _so_a_rota_de_envio(_violacoes_no_arquivo(_arquivo_do_modulo(RAIZ, _modulo_resumo())))
+
+
+@pytest.mark.parametrize(
+    "codigo",
+    [
+        'http.post(base + "messages/trash/send")\n',
+        'http.post(base + "messages/1/forward/send")\n',
+        'http.post(base + "messages/send")\nhttp.request("DELETE", url)\n',
+        'http.post(base + "messages/send")\ncliente.trash(m)\n',
+    ],
+)
+def test_modulo_de_resumo_com_rota_destrutiva_e_acusado(tmp_path, codigo):
+    relativo = _arquivo_do_modulo(Path(), _modulo_resumo())
+    _plantar(tmp_path, str(relativo), codigo)
+    assert not _so_a_rota_de_envio(_violacoes_no_arquivo(tmp_path / relativo))

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco painel lint viabilidade limpar gmail-autorizar conteudo gmail-organizar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco painel lint viabilidade limpar gmail-autorizar conteudo gmail-organizar resumo
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -72,6 +72,9 @@ conteudo:
 
 gmail-organizar:
 	$(PY) scripts/organizar_gmail.py $(ARGS)
+
+resumo:
+	$(PY) -m src.email.resumo $(ARGS)
 
 viabilidade:
 	$(PY) -m viabilidade.cli veredito

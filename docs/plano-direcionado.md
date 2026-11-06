@@ -32,6 +32,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `config/rotulos.yaml`, leitura incremental por `historyId` com cursor em `dados/estado/`,
   intervalo de `email_intervalo_min`, golpe em `Candidaturas/Suspeitos`, email pessoal e alerta
   do LinkedIn intocados; só rotula e arquiva (`make gmail-organizar`); agendamento fica no F1.7
+- [x] F1.5, resumo diário em `src/email/resumo.py`, único módulo com envio: destino só de
+  `PLEITO_EMAIL_DESTINO`, mensagem conferida antes de sair (um To, sem cópia), rótulo
+  `Candidaturas/Prontas`, dry-run por padrão (`make resumo`, `--enviar` explícito) e textos em
+  `config/resumo.yaml` (ADR 0024); contagem real de vagas fica para a fase 4
 - [x] F2.1, currículo base decomposto em blocos e inventário por `make conteudo`, lendo o guia
   de `PLEITO_GUIA` e gravando em `dados/conteudo/` (fora do git, ADR 0021); template (F2.2)
   pendente
