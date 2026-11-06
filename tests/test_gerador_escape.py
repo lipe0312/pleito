@@ -11,9 +11,10 @@ from src.gerador.escape import LatexSeguro, compor_texto, escapar_latex, texto_l
 
 SEQUENCIAS_INOFENSIVAS = re.compile(
     r"\\text(?:backslash|asciicircum|asciitilde|quotedbl|less|greater|bar|asciigrave)\{\}"
+    r"|\{[\[\]]\}"
     r"|\\[{}$&%#_]"
 )
-ESPECIAIS_CRUS = re.compile(r"[\\{}$&%#_^~]")
+ESPECIAIS_CRUS = re.compile(r"[\\{}$&%#_^~\[\]]")
 
 
 @pytest.fixture(scope="module")
@@ -38,6 +39,11 @@ def test_escape_dos_dez_especiais_do_plano():
     assert escapar_latex("$&%#_") == r"\$\&\%\#\_"
     assert escapar_latex("^") == r"\textasciicircum{}"
     assert escapar_latex("~") == r"\textasciitilde{}"
+
+
+def test_escape_de_colchetes_impede_argumento_opcional_e_fechamento_solto():
+    assert escapar_latex("[Python]") == "{[}Python{]}"
+    assert escapar_latex("]") == "{]}"
 
 
 def test_escape_mantem_acento_e_pontuacao_comum():

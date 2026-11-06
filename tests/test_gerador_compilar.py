@@ -85,3 +85,20 @@ def test_documento_de_duas_paginas_e_recusado(config, tmp_path):
 
     with pytest.raises(PaginasDemais):
         compilar(tex, tmp_path, config)
+
+
+def test_bullet_que_comeca_com_colchete_compila_como_texto(conteudo, config, tmp_path):
+    blocos, inventario = conteudo
+    slots = slots_ficticios(blocos, "pt")
+    slots["experiencias"][0]["bullets"] = [
+        {"texto": "[Python] primeiro", "techs": ["Python"]},
+        {"texto": "fecha] sem abrir [ e abre sem fechar", "techs": []},
+    ]
+    tex = renderizar("pt", slots, travado_ficticio(), blocos, inventario, config)
+
+    pdf = compilar(tex, tmp_path, config)
+
+    texto = _texto(pdf)
+    assert len(PdfReader(pdf).pages) == 1
+    assert "[Python] primeiro" in texto
+    assert "fecha] sem abrir [ e abre sem fechar" in texto

@@ -15,6 +15,11 @@ COMANDOS_DE_ESCAPE |= {"textless", "textgreater", "textbar", "textasciigrave"}
 
 
 ATAQUES = [
+    "[Python] item opcional",
+    "texto]solto",
+    "[",
+    "]",
+    "[x]{y}[z]",
     r"\input{/etc/passwd}",
     r"\include{segredo}",
     r"\write18{touch /tmp/x}",

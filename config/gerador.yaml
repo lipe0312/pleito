@@ -47,5 +47,7 @@ compilacao:
     openin_any: p
     openout_any: p
     shell_escape: f
+  variaveis_herdadas: [PATH, HOME]
+  linhas_do_erro: 15
   timeout_s: 90
   paginas_max: 1

@@ -22,6 +22,8 @@ TABELA = str.maketrans(
         ">": r"\textgreater{}",
         "|": r"\textbar{}",
         "`": r"\textasciigrave{}",
+        "[": "{[}",
+        "]": "{]}",
     }
 )
 CATEGORIAS_PROIBIDAS = ("C", "Zl", "Zp")

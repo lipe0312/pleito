@@ -7,9 +7,7 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from src.gerador.configuracao import ConfiguracaoGerador
-
-LINHAS_DO_ERRO = 15
+from src.gerador.configuracao import Compilacao, ConfiguracaoGerador
 
 
 class MotorAusente(RuntimeError):
@@ -22,6 +20,11 @@ class CompilacaoFalhou(RuntimeError):
 
 class PaginasDemais(RuntimeError):
     pass
+
+
+def ambiente_do_motor(opcoes: Compilacao) -> dict[str, str]:
+    herdado = {nome: os.environ[nome] for nome in opcoes.variaveis_herdadas if nome in os.environ}
+    return herdado | opcoes.ambiente
 
 
 def compilar(tex: str, pasta: Path, config: ConfiguracaoGerador) -> Path:
@@ -38,7 +41,7 @@ def compilar(tex: str, pasta: Path, config: ConfiguracaoGerador) -> Path:
         resultado = subprocess.run(
             [motor, *opcoes.argumentos, fonte.name],
             cwd=pasta,
-            env=os.environ | opcoes.ambiente,
+            env=ambiente_do_motor(opcoes),
             capture_output=True,
             stdin=subprocess.DEVNULL,
             timeout=opcoes.timeout_s,
@@ -47,7 +50,7 @@ def compilar(tex: str, pasta: Path, config: ConfiguracaoGerador) -> Path:
     except subprocess.TimeoutExpired as erro:
         raise CompilacaoFalhou(f"{opcoes.motor} passou de {opcoes.timeout_s}s") from erro
     if resultado.returncode != 0 or not pdf.is_file():
-        fim = resultado.stdout.decode("utf-8", "replace").splitlines()[-LINHAS_DO_ERRO:]
+        fim = resultado.stdout.decode("utf-8", "replace").splitlines()[-opcoes.linhas_do_erro :]
         raise CompilacaoFalhou("\n".join(fim))
     paginas = len(PdfReader(pdf).pages)
     if paginas > opcoes.paginas_max:

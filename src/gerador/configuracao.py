@@ -64,18 +64,32 @@ class SlotEntradas(Estrito):
 DeclaracaoSlot = Annotated[SlotTexto | SlotListaTexto | SlotEntradas, Field(discriminator="tipo")]
 
 
+TRAVAS_DO_MOTOR = {"openin_any": "p", "openout_any": "p", "shell_escape": "f"}
+
+
 class Compilacao(Estrito):
     motor: str
     nome_arquivo: Identificador
     argumentos: list[str]
     ambiente: dict[str, str]
+    variaveis_herdadas: list[str]
+    linhas_do_erro: int = Field(gt=0)
     timeout_s: int = Field(gt=0)
     paginas_max: int = Field(gt=0)
 
     @model_validator(mode="after")
-    def _sem_shell_escape(self) -> Compilacao:
+    def _travas_do_motor(self) -> Compilacao:
         if "-no-shell-escape" not in self.argumentos:
             raise ValueError("compilacao exige -no-shell-escape")
+        frouxas = {
+            chave: self.ambiente.get(chave)
+            for chave, valor in TRAVAS_DO_MOTOR.items()
+            if self.ambiente.get(chave) != valor
+        }
+        if frouxas:
+            raise ValueError(f"ambiente do motor precisa de {TRAVAS_DO_MOTOR}, achou {frouxas}")
+        if set(self.ambiente) & set(self.variaveis_herdadas):
+            raise ValueError("variavel herdada nao pode ser fixada no ambiente")
         return self
 
 
