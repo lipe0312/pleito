@@ -1,0 +1,61 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[brazil]{babel}
+\usepackage[a4paper,margin=1.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\definecolor{techgray}{gray}{0.3}
+\newcommand{\tech}[1]{\textcolor{techgray}{\textbf{#1}}}
+\setlist[itemize]{nosep,leftmargin=*}
+\titleformat{\section}{\large\bfseries}{}{0pt}{}[\titlerule]
+\titlespacing*{\section}{0pt}{2mm}{1mm}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\begin{center}
+    {\large \textbf{<< cabecalho.nome >>}} \\ \vspace{1mm}
+    << cabecalho.localizacao >> | \href{<< cabecalho.email_url >>}{<< cabecalho.email >>}<% if cabecalho.telefone %> | << cabecalho.telefone >><% endif %> \\
+\end{center}
+
+\section{Sobre}
+<< sobre >>
+
+\section{Formação}
+\textbf{<< formacao.instituicao >>} \hfill << formacao.periodo >><% if disciplinas %> \\
+Disciplinas: << disciplinas >><% endif %>
+
+
+\section{Experiência}
+<% for e in experiencias %>
+\textbf{<< e.cargo >>, << e.empresa >>} \hfill << e.periodo >>
+<% if e.bullets %>
+\begin{itemize}
+<% for b in e.bullets %>
+    \item << b >>
+<% endfor %>
+\end{itemize}
+<% endif %>
+\vspace{2mm}
+<% endfor %>
+
+\section{Projetos}
+<% for p in projetos %>
+\textbf{<< p.nome >>}<% if p.descricao %>, << p.descricao >><% endif %><% if p.link_url is defined %> \hfill \href{<< p.link_url >>}{<< p.link_texto >>}<% endif %>
+
+<% if p.bullets %>
+\begin{itemize}
+<% for b in p.bullets %>
+    \item << b >>
+<% endfor %>
+\end{itemize}
+<% endif %>
+\vspace{2mm}
+<% endfor %>
+
+\end{document}

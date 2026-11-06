@@ -1,0 +1,12 @@
+cabecalho:
+  nome: PESSOA FICTICIA
+  email: pessoa@exemplo.invalid
+  telefone: "(00) 00000-0000"
+  localizacao:
+    pt: Cidade Exemplo
+    en: Example City
+formacao:
+  instituicao:
+    pt: Universidade Exemplo
+    en: Example University
+  periodo: 2020 -- 2024
