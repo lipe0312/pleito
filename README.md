@@ -40,6 +40,14 @@ src/                acessos ao banco, auditoria, flag, painel local e roteador L
 docs/adr/           decisoes de arquitetura em formato MADR minimo
 ```
 
+## Documentação
+
+- `docs/plano-direcionado.md`: o caminho até o produto e o andamento
+- `docs/fluxos.md`: fluxos de uso e de requisição, com o que já existe e o que falta
+- `docs/seguranca.md` e `docs/ameacas.md`: o que proteger, controles e segredos
+- `docs/fluxo-de-desenvolvimento.md`: backlog, issues, worktree, revisão e merge
+- `docs/adr/`: decisões
+
 ## Setup
 
 ```bash

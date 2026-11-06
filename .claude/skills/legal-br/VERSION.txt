@@ -1,0 +1,4 @@
+legal-br skill
+Version: 1.2.0
+Base revisada: 2026-08-21
+Biblioteca local: ver ULTIMA-ATUALIZACAO.txt

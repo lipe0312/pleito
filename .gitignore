@@ -57,3 +57,7 @@ pgadmin-data/
 templates/cv_*.tex
 templates/cv_*.pdf
 docs/guia-adaptacao.md
+.claude/preview/
+.claude/worktrees/
+.claude/handoff/
+.claude/screenshots/
