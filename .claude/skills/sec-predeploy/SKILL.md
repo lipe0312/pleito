@@ -23,7 +23,7 @@ Confira no código e no ambiente, com `arquivo:linha` ou comando:
 - [ ] Tier com `habilitado: true` tem `avaliacao.status`, `conjunto` e `data` preenchidos (ADR 0017); cache de prompt desligado (ADR 0019)
 - [ ] Orçamento: `config/limites.yaml` igual ao limite do projeto na OpenAI (manual M7)
 - [ ] Papéis do banco: grants por coluna e auditoria só INSERT (`make testes-banco` verde)
-- [ ] Dependências: Dependabot ligado (F0.3) e, com F0.2 feito, `make auditoria` sem vulnerabilidade alta nova
+- [ ] Dependências: `gh api repos/lipe0312/pleito --jq .security_and_analysis` mostra `dependabot_security_updates` e `secret_scanning` ativos (F0.3); `.github/dependabot.yml` tem só pip, weekly e `open-pull-requests-limit`; com F0.2 feito, `make auditoria` sem vulnerabilidade alta nova
 - [ ] `main` protegida (F0.4): `gh api repos/lipe0312/pleito/branches/main/protection --jq .allow_force_pushes.enabled` = `false`
 
 ## Nível 3 · por trimestre e antes do primeiro submit real (caro: peça aprovação)
