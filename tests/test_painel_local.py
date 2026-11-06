@@ -5,11 +5,14 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from src.painel.app import app
+from src.config import carregar
+from src.painel.app import criar_app
+
+ORIGEM = f"http://127.0.0.1:{carregar('painel')['porta']}"
 
 
 def test_painel_abre_uma_pagina_vazia_sem_operacoes():
-    cliente = TestClient(app)
+    cliente = TestClient(criar_app(), base_url=ORIGEM)
     resposta = cliente.get("/")
     assert resposta.status_code == 200
     assert "Pleito" in resposta.text
