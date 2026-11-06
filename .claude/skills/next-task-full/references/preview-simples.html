@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- Preview SIMPLIFICADO da skill next-task-full. Copie, troque os {{CAMPOS}} e apague os blocos que não servem.
+     Sem app, sem JS, sem base64. Tela: "antes → depois" desenhado em HTML/CSS só do pedaço que muda.
+     Backend: use o bloco "Como funciona" e apague o de tela. Dados sempre fictícios. -->
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#{{N}} · {{TITULO_CURTO}}</title>
+<style>
+:root{--tinta:#1c1f23;--c100:#f1f2f4;--c300:#d7dbe0;--c600:#5b636e;--marca:#2f6f4f;--marca50:#ecf5f0;--destaque:#e0a800;--ok:#047857;--bad:#b91c1c}
+@media (prefers-color-scheme:dark){:root{--tinta:#e8eaed;--c100:#16181b;--c300:#33373d;--c600:#9aa1ab;--marca:#6fcf97;--marca50:#1c2a22;--ok:#34d399;--bad:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--c100);color:var(--tinta);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:960px;margin:0 auto;padding:16px}
+h1{font:700 28px/1.15 system-ui,sans-serif;margin:8px 0}h2{font:600 19px/1.2 system-ui,sans-serif;margin:0 0 8px}
+.card{background:color-mix(in srgb,var(--c100) 40%,#fff 60%);border:1px solid var(--c300);border-radius:12px;padding:16px;margin:12px 0}
+@media (prefers-color-scheme:dark){.card{background:#1f2226}}
+.meta{color:var(--c600);font-size:13px}.ganha{background:var(--marca50);border-left:4px solid var(--marca);padding:10px 12px;border-radius:8px}
+.selo{display:inline-block;font-size:12px;border:1px dashed var(--c600);border-radius:6px;padding:2px 8px;color:var(--c600)}
+.lado{display:grid;gap:12px;grid-template-columns:1fr}@media(min-width:720px){.lado{grid-template-columns:1fr 1fr}}
+.tela{border:1px solid var(--c300);border-radius:10px;padding:12px;min-height:120px}
+.tela b.tag{font-size:12px;color:var(--c600);display:block;margin-bottom:6px}
+.novo{outline:2px solid var(--destaque);outline-offset:2px;border-radius:6px}
+code{font:13px ui-monospace,Menlo,monospace}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--c300);vertical-align:top}
+th{color:var(--c600);font-weight:600}.ok{color:var(--ok)}.bad{color:var(--bad)}
+footer{color:var(--c600);font-size:14px;margin:16px 0 32px}
+</style></head><body><main>
+<span class="selo">Preview simplificado · ilustração · dados fictícios</span>
+<h1>{{TITULO}}</h1>
+<p class="meta">Item {{ID}} · issue #{{N}} · PR #{{PR}} · branch {{BRANCH}} · conferir: <code>{{COMANDO_OU_TELA}}</code></p>
+<p class="ganha"><strong>O Filipe passa a ver:</strong> {{GANHA}}</p>
+
+<section class="card"><h2>Como era → como fica (tela)</h2>
+ <div class="lado">
+  <div class="tela"><b class="tag">Antes</b>{{HTML_ANTES}}</div>
+  <div class="tela"><b class="tag">Depois</b>{{HTML_DEPOIS — marque o novo com class="novo"}}</div>
+ </div>
+</section>
+
+<section class="card"><h2>Como funciona (sem tela)</h2>
+ <ol><li>{{PASSO_1 — ex.: email chega e o remetente é checado por domínio exato}}</li><li>{{PASSO_2}}</li><li>{{PASSO_3}}</li></ol>
+ <p class="meta">O que fica bloqueado: {{ex.: enviar a outro destinatário, excluir email, chamar o modelo forte sem pré-nota}}</p>
+</section>
+
+<section class="card"><h2>Casos</h2>
+ <table><tr><th>Situação</th><th>O que acontece</th></tr>
+  <tr><td>{{CASO_COMUM}}</td><td class="ok">{{RESULTADO}}</td></tr>
+  <tr><td>{{CASO_BORDA}}</td><td>{{RESULTADO}}</td></tr>
+  <tr><td>{{CASO_ATAQUE_OU_ERRO}}</td><td class="bad">{{RESULTADO}}</td></tr>
+ </table>
+</section>
+
+<section class="card"><h2>Critérios de aceite</h2>
+ <table><tr><th>Critério</th><th>Feito</th><th>Onde conferir</th></tr>
+  <tr><td>{{CRITERIO_1}}</td><td class="ok">✓</td><td>{{TESTE_OU_COMANDO}}</td></tr>
+ </table>
+ <p class="meta">Gate: {{testes ✓ lint ✓ testes-banco ✓|pulado}} · CI: não há · Riscos: {{segredo ✓ · egress n.a. · Gmail ✓ · LLM sem gasto ✓}}</p>
+</section>
+<footer>Responda no chat: <strong>Aprovado merge</strong> · <strong>Ajustes: …</strong> · Fechar sem merge</footer>
+</main></body></html>

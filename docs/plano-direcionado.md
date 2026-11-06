@@ -18,7 +18,7 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   padrão de segredo no diff staged; o commit-msg recusa linha de atribuição; regras em
   `config/repositorio.yaml`
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
-- [x] ADRs 0001 a 0021 versionadas
+- [x] ADRs 0001 a 0022 versionadas
 - [x] Pré-requisitos da Fase 1 no Google Cloud e no `.env` (seção abaixo); falta só a autorização
   interativa e o push no iPhone
 - [x] F4.1, coletor em `src/coletor/` gravando vagas no Postgres sem duplicar (migration
@@ -60,6 +60,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   reprocessa sem duplicar (idempotente por `id_mensagem`); vínculo com a vaga por domínio exato
   da empresa ou por plataforma mais nome da empresa citado, regras em `config/eventos_email.yaml`
   (`vinculo`); sem vínculo único o evento fica sem vaga na fila `classificar`
+- [x] Backlog inteiro em issues (#13 a #37 e #50) e manuais do Filipe como issues `manual`
+  (#38 a #49); fluxo de desenvolvimento, segurança e fluxos de uso e de requisição em
+  `docs/fluxo-de-desenvolvimento.md`, `docs/seguranca.md` e `docs/fluxos.md` (ADR 0022). Itens
+  novos da revisão: F0.1, F0.2, F1.8, F1.9 e FM.2
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar
@@ -70,6 +74,9 @@ Ordem de leitura. Quem começa uma fase relê o que ela toca; nada aqui é opcio
 - [x] `CLAUDE.md`: constraints de código, commit e fluxo
 - [x] `docs/onboarding-novo-agente.md` e `docs/estado.md`: o que o spike provou e os 17 defeitos achados
 - [x] `docs/plano-direcionado.md`: este arquivo
+- [x] `docs/fluxo-de-desenvolvimento.md`, `docs/seguranca.md` e `docs/fluxos.md`: como o trabalho
+  anda, o que proteger e o que cada pedaço chama
+- [x] `config/backlog.yaml`: itens, dependências, zonas e manuais
 
 **Plano-mãe**, `docs/PLANO.md`, por fase:
 - todas: seção 3 (arquitetura e roteador), 10 (segurança), 12 (custo), 13 (dados), 14 (roteiro),

@@ -1,0 +1,582 @@
+fonte: docs/plano-direcionado.md
+repo: lipe0312/pleito
+
+fases:
+  0:
+    objetivo: fundacao segura do repositorio e do fluxo de desenvolvimento
+    ve: commits que nao conseguem levar segredo, dado pessoal ou assinatura de ferramenta
+  1:
+    objetivo: o Gmail passa a se organizar sozinho e o Filipe recebe o aviso diario
+    ve: as pastas Candidaturas/* preenchidas, o resumo diario com o rotulo Prontas e as telas Hoje e Candidaturas
+  2:
+    objetivo: provar que o curriculo gerado e seguro e liberar o uso da IA
+    ve: o curriculo base em blocos, o template travado, o validador e o resultado do conjunto de avaliacao
+  3:
+    objetivo: curriculos de familia gerados por slots, nunca pelo .tex inteiro
+    ve: as 8 variantes-base com diff em relacao ao original, para aprovar uma vez
+  4:
+    objetivo: vagas chegando todo dia sem desperdicio de token
+    ve: a lista Hoje com poucas vagas boas e o motivo da nota de cada uma
+  5:
+    objetivo: edicao e aprovacao do curriculo por vaga
+    ve: a tela de diff por vaga, o historico de versoes e o chat curto com o gasto no painel
+  6:
+    objetivo: aplicacao assistida que para antes do ultimo clique (ADR 0011)
+    ve: o formulario preenchido com captura de cada etapa e a pendencia manual da Gupy com material pronto
+  7:
+    objetivo: curriculos campeoes como referencia
+    ve: quais versoes geraram resposta e quais viraram referencia
+  8:
+    objetivo: cobertura de outras plataformas e do Calendar
+    ve: o evento de entrevista na agenda e plataformas novas entrando por config
+  9:
+    objetivo: metricas de resposta e calibracao dos pesos
+    ve: taxa de resposta por familia, fonte e campeao no painel
+  10:
+    objetivo: disponibilidade e recuperacao
+    ve: aviso por email quando uma janela nao gerou resumo e backup diario restauravel
+
+manuais:
+  - id: M1
+    titulo: Autorizar a conta Gmail uma vez no navegador
+    depende: [F1.1]
+    como:
+      - no checkout principal, rode make gmail-autorizar e aceite o escopo gmail.modify na conta propria
+      - o navegador volta para 127.0.0.1; feche a aba quando o terminal disser que gravou no Keychain
+    pronto: security find-generic-password -s pleito-gmail -a refresh-token encontra o item, e make gmail-organizar roda sem pedir login
+    porque: sem o refresh token o organizador (F1.4) e o resumo (F1.5) so rodam nos testes, com respx
+  - id: M2
+    titulo: Ativar o push do Gmail no iPhone para Candidaturas/Prontas
+    depende: []
+    como:
+      - app Gmail no iPhone, Configuracoes, a conta, Notificacoes, escolher Personalizado e marcar o rotulo Candidaturas/Prontas
+    pronto: um email de teste com o rotulo Candidaturas/Prontas gera notificacao no iPhone
+    porque: o resumo diario (ADR 0013) so avisa se o push do rotulo estiver ligado
+  - id: M3
+    titulo: Instalar o plist do launchd e o despertar do pmset
+    depende: [F1.7]
+    como:
+      - copie o plist gerado pelo F1.7 para ~/Library/LaunchAgents e rode launchctl bootstrap gui/$(id -u) com ele
+      - rode o comando sudo pmset repeat documentado no F1.7, com o horario de config/limites.yaml
+    pronto: launchctl print gui/$(id -u)/<rotulo do plist> mostra o job e pmset -g sched mostra o despertar
+    porque: o agente nunca roda sudo; sem isso a rotina diaria so roda na mao
+  - id: M4
+    titulo: Escolher uma vaga Greenhouse ou Ashby e autorizar um submit real
+    depende: [F6.2]
+    como:
+      - escolha a vaga no painel, confira o PDF e as respostas da captura do dry-run
+      - gere o token de 16+ caracteres, ponha PLEITO_EGRESS_MODO=submit_real e o token no .env so para esta execucao
+      - depois do envio, volte PLEITO_EGRESS_MODO para dry_run
+    pronto: a captura da pagina de confirmacao existe e a candidatura aparece como aplicada
+    porque: dry-run nunca vale GO pleno; so um envio real autorizado fecha a prova da fronteira de egress
+  - id: M5
+    titulo: Proteger a branch main no GitHub
+    depende: []
+    como:
+      - rode gh api -X PUT repos/lipe0312/pleito/branches/main/protection --input docs/protecao-main.json
+    pronto: gh api repos/lipe0312/pleito/branches/main/protection mostra allow_force_pushes false e required_linear_history true
+    porque: o fluxo next-task-full nunca da push na main, mas so a protecao do GitHub impede isso de verdade
+  - id: M6
+    titulo: Ligar os alertas e as correcoes do Dependabot
+    depende: []
+    como:
+      - rode gh api -X PUT repos/lipe0312/pleito/vulnerability-alerts
+      - rode gh api -X PUT repos/lipe0312/pleito/automated-security-fixes
+    pronto: gh api repos/lipe0312/pleito --jq .security_and_analysis mostra dependabot_security_updates enabled
+    porque: o repositorio e publico e as dependencias Python nao tem auditoria automatica hoje
+  - id: M7
+    titulo: Limitar o gasto e o alcance da chave da OpenAI
+    depende: []
+    como:
+      - no painel da OpenAI, crie um projeto so do pleito com limite mensal igual a llm.orcamento_mensal_usd de config/limites.yaml
+      - gere a chave dentro desse projeto, com permissao restrita a Responses, e troque OPENAI_API_KEY no .env
+    pronto: o painel da OpenAI mostra o limite do projeto e a chave antiga foi revogada
+    porque: o orcamento do roteador (ADR 0017) corta no codigo; o limite do provedor e a segunda trava se o codigo falhar
+  - id: M8
+    titulo: Rodar o conjunto de avaliacao com chamada real e aprovar o tier
+    depende: [F2.4]
+    como:
+      - rode o comando do runner do F2.4 com o orcamento do dia livre e leia o relatorio por tier
+      - so com o resultado aprovado, mude habilitado para true em config/modelos.yaml num PR com data e versao do conjunto
+    pronto: config/modelos.yaml tem avaliacao.status aprovado, conjunto e data preenchidos no tier liberado
+    porque: a IA fica desligada ate passar na avaliacao (ADR 0017); o gasto real e decisao do Filipe
+  - id: M9
+    titulo: Aprovar as oito variantes de familia
+    depende: [F3.2]
+    como:
+      - abra o diff de cada variante contra o original no painel e aprove ou rejeite com motivo
+    pronto: a tabela aprovacao tem uma linha por variante aprovada
+    porque: as variantes viram base de todo curriculo por vaga; a aprovacao e humana por definicao
+  - id: M10
+    titulo: Escrever o banco de respostas real em dados/
+    depende: [F6.1]
+    como:
+      - copie o exemplo ficticio do F6.1 para dados/ e preencha com as respostas reais
+      - rode o comando de carga do F6.1
+    pronto: a busca por uma pergunta comum devolve a resposta real no painel
+    porque: resposta real e dado pessoal e nunca e versionada
+  - id: M11
+    titulo: Ler e registrar os termos de uso das fontes de vaga
+    depende: [F4.1]
+    como:
+      - para cada fonte de config/fontes.yaml, leia os termos e anote data, link e o que permite em docs/fontes-termos.md
+    pronto: docs/fontes-termos.md cobre todas as fontes ativas e nenhuma tem proibicao de uso automatizado
+    porque: robots.txt nao basta; a ameaca A4 exige leitura dos termos antes do GO pleno da coleta
+  - id: M12
+    titulo: Ativar a Calendar API e o escopo de eventos
+    depende: [F8.1]
+    como:
+      - no projeto do Google Cloud do pleito, ative a Google Calendar API e acrescente so o escopo calendar.events na tela de consentimento
+      - rode de novo a autorizacao do F8.1 para o token novo ir ao Keychain
+    pronto: a autorizacao do F8.1 termina e um evento de teste aparece so na agenda propria, sem convidado
+    porque: o escopo novo exige consentimento interativo, que o agente nunca faz
+
+itens:
+  - id: F0.1
+    fase: 0
+    titulo: Barrar segredo, dado pessoal e assinatura no commit
+    zona: repositorio
+    depende: []
+    schema: false
+    toca: [seguranca, regra]
+    modelo: sonnet-high
+    criterios:
+      - pre-commit recusa arquivo staged em dados/, segredos/, .env, perfil do navegador ou symlink, com a lista de caminhos em config/repositorio.yaml
+      - pre-commit recusa padrao de segredo no diff staged (chave OpenAI, token GitHub, chave privada PEM, client_secret, refresh_token), padroes em config/repositorio.yaml
+      - commit-msg recusa Co-Authored-By, Generated with e qualquer linha de atribuicao a ferramenta
+      - cada regra tem teste que falha sem ela, com fixture ficticia
+      - make setup continua ativando .githooks
+    fora: CI no GitHub (o gate continua local)
+
+  - id: F0.2
+    fase: 0
+    titulo: Auditar as dependencias Python sob demanda
+    zona: repositorio
+    depende: [F0.1]
+    schema: false
+    toca: [seguranca, config]
+    modelo: sonnet-medium
+    criterios:
+      - make auditoria lista vulnerabilidades conhecidas das dependencias instaladas
+      - make testes continua offline; a auditoria nunca entra no gate padrao
+      - docs/seguranca.md diz quando rodar a auditoria
+    fora: Dependabot (manual M6)
+    decisao: auditoria com pip-audit como dependencia dev (recomendado) ou so o Dependabot do GitHub?
+
+  - id: F1.9
+    fase: 1
+    titulo: Ligar o organizador do Gmail ao registro de eventos
+    zona: email-cliente
+    depende: [F1.3, F1.4]
+    schema: false
+    toca: [banco, terceiro, regra]
+    modelo: sonnet-high
+    criterios:
+      - cada mensagem relevante da rodada vira evento_email por gravar_evento, idempotente pelo id da mensagem
+      - o cursor so avanca depois que os eventos da rodada foram gravados; banco fora do ar faz a rodada falhar sem perder mensagem, e a proxima reprocessa sem duplicar
+      - vinculo do email com a vaga por regra de config (dominio da empresa e plataforma); sem vinculo o evento fica sem vaga e vai para classificar
+      - testes com caixa falsa e teste de banco cobrindo reprocessamento
+    fora: tela Candidaturas (F1.6) e agendamento (F1.7)
+
+  - id: F1.8
+    fase: 1
+    titulo: Proteger o painel com Host, CSP e CSRF
+    zona: painel
+    depende: []
+    schema: false
+    toca: [seguranca, ui]
+    modelo: sonnet-high
+    criterios:
+      - requisicao com Host fora de 127.0.0.1 e localhost na porta de config/painel.yaml recebe 400 (DNS rebinding)
+      - toda resposta tem CSP estrita sem script inline nem origem externa, provada por teste
+      - toda acao POST exige token CSRF e e recusada sem ele
+      - texto externo renderizado escapado, com teste de titulo de vaga contendo script
+      - cada regra tem teste que falha sem ela
+    fora: telas Hoje e Candidaturas (F1.6)
+
+  - id: F1.1
+    fase: 1
+    titulo: Conectar ao Gmail com OAuth proprio e token no Keychain
+    zona: email-cliente
+    depende: []
+    schema: false
+    toca: [credencial, terceiro]
+    modelo: opus-high
+    criterios:
+      - fluxo OAuth Desktop le o cliente de segredos/gmail_cliente.json e pede so os escopos listados em config/emails.yaml
+      - token guardado no Keychain do macOS pelo comando security, nunca em arquivo
+      - cliente expoe so listar, ler, rotular e arquivar; nenhum metodo de excluir, lixeira, encaminhar ou responder
+      - teste de arquitetura falha se src/ chamar delete, trash, forward ou send fora do modulo de resumo
+      - testes offline com respx, sem rede
+    fora: aplicar rotulos de verdade (F1.4) e enviar resumo (F1.5)
+    nota: dependencia nova so se httpx puro nao bastar; google-auth-oauthlib exige aprovacao
+
+  - id: F1.2
+    fase: 1
+    titulo: Classificar email de retorno por regra, sem IA
+    zona: email-regras
+    depende: []
+    schema: false
+    toca: [regra, seguranca]
+    modelo: sonnet-high
+    criterios:
+      - config/emails.yaml e config/rotulos.yaml criados, sem nenhum email pessoal
+      - verificador de remetente por dominio exato migrado para src/email/, recusando linkedin.com.golpe.net
+      - classificador devolve etapa (aplicada, teste, entrevista, oferta, encerrada, classificar, suspeito) e confianca
+      - abaixo do limiar rigoroso de config/emails.yaml vai para classificar; remetente forjado vai para suspeito
+      - gatilho de candidatura manual (plano 4.8.1) reconhecido por regra, com fixture
+    fora: gravar no banco (F1.3) e falar com o Gmail (F1.1)
+
+  - id: F1.3
+    fase: 1
+    titulo: Gravar eventos de email com auditoria e atualizar a candidatura
+    zona: banco-email
+    depende: [F1.2]
+    schema: true
+    toca: [banco, regra]
+    modelo: sonnet-high
+    criterios:
+      - evento_email gravado de forma idempotente pelo id da mensagem
+      - estado da candidatura muda sozinho so acima do limiar; abaixo vira fila classificar
+      - toda escrita gera linha em auditoria
+      - grants por papel e coluna (ADR 0016) cobertos por teste de banco
+    fora: telas (F1.6)
+
+  - id: F1.4
+    fase: 1
+    titulo: Rotular e arquivar emails nas pastas Candidaturas
+    zona: email-cliente
+    depende: [F1.1, F1.2]
+    schema: false
+    toca: [terceiro]
+    modelo: opus-high
+    criterios:
+      - rotulo resolvido pelo nome de config/rotulos.yaml, nunca por id fixo
+      - leitura incremental por historyId a cada email_intervalo_min
+      - email falsificado termina em Candidaturas/Suspeitos
+      - nenhuma exclusao, provado por teste
+    fora: agendamento (F1.7)
+
+  - id: F1.5
+    fase: 1
+    titulo: Enviar o resumo diario so para o destino do .env
+    zona: email-envio
+    depende: [F1.1, F1.3]
+    schema: false
+    toca: [terceiro, seguranca]
+    modelo: opus-high
+    criterios:
+      - unico modulo com envio, destino lido de PLEITO_EMAIL_DESTINO
+      - tentativa de enviar a outro destinatario falha em teste
+      - email sai com o rotulo Candidaturas/Prontas, inclusive no dia sem vaga boa dizendo isso
+    fora: conteudo de vagas (fase 4)
+
+  - id: F1.6
+    fase: 1
+    titulo: Telas Hoje e Candidaturas no painel
+    zona: painel
+    depende: [F1.3, F1.8]
+    schema: false
+    toca: [ui]
+    modelo: sonnet-high
+    criterios:
+      - tela Hoje lista eventos e pendencias do dia
+      - tela Candidaturas lista por etapa com o ultimo evento
+      - painel continua so em 127.0.0.1 e com o papel de leitura do painel
+      - make painel-ficticio sobe o painel com repositorio ficticio de tests/fixtures, sem banco, para preview e verificacao visual
+    fora: diff de curriculo (F5.2)
+
+  - id: F1.7
+    fase: 1
+    titulo: Agendar as rotinas por launchd com retry ao acordar
+    zona: agendamento
+    depende: [F1.4, F1.5, F1.9]
+    schema: false
+    toca: [config]
+    modelo: sonnet-medium
+    criterios:
+      - plist gerado a partir de config/limites.yaml, com mais de uma janela
+      - retry_ao_acordar respeitado e registrado
+      - instrucao do pmset em docs/, sem executar sudo
+    fora: monitor de disponibilidade (FM.1)
+
+  - id: F2.1
+    fase: 2
+    titulo: Decompor o curriculo base em blocos e inventario
+    zona: curriculo-conteudo
+    depende: []
+    schema: false
+    toca: [dado-pessoal, regra]
+    modelo: sonnet-high
+    criterios:
+      - schema dos blocos e do inventario validado por pydantic
+      - conteudo real fora do git; fixture ficticia em tests/fixtures
+      - comando gera os blocos a partir do guia apontado por PLEITO_GUIA
+    fora: template (F2.2)
+    decisao: blocos e inventario moram em dados/ (arquivo) ou no banco (Q9)? recomendado arquivo em dados/, banco na fase 7
+
+  - id: F2.2
+    fase: 2
+    titulo: Template LaTeX travado com slots declarados
+    zona: curriculo-template
+    depende: [F2.1]
+    schema: false
+    toca: [latex, seguranca]
+    modelo: sonnet-high
+    criterios:
+      - templates/cv_pt.tex.j2 e cv_en.tex.j2 com cabecalho travado
+      - todo slot escapado contra LaTeX malicioso (plano 10.4), com teste de ataque
+      - fixture ficticia compila em uma pagina (marcador latex)
+    fora: preenchimento por IA (F3.1)
+
+  - id: F2.3
+    fase: 2
+    titulo: Validador de curriculo sem IA
+    zona: validador
+    depende: [F2.1]
+    schema: false
+    toca: [regra, seguranca]
+    modelo: sonnet-high
+    criterios:
+      - recusa PDF com mais de uma pagina
+      - recusa tecnologia fora do inventario
+      - recusa travessao e comando LaTeX fora da allowlist
+      - cada regra tem teste que falha sem ela
+    fora: conjunto de avaliacao (F2.4)
+
+  - id: F2.4
+    fase: 2
+    titulo: Conjunto de avaliacao que libera os tiers de IA
+    zona: avaliacao
+    depende: [F2.2, F2.3]
+    schema: false
+    toca: [llm, custo, seguranca]
+    modelo: opus-high
+    criterios:
+      - 20 vagas reais lidas de dados/ e armadilhas de injecao versionadas
+      - runner registra data, versao do conjunto e resultado por tier
+      - habilitado true em config/modelos.yaml so com aprovacao registrada
+    fora: geracao das variantes (F3.2)
+    decisao: rodar com chamada real gasta orcamento; execucao autorizada pelo Filipe
+
+  - id: F3.1
+    fase: 3
+    titulo: Gerador que preenche slots do template
+    zona: gerador
+    depende: [F2.2, F2.3]
+    schema: false
+    toca: [llm, seguranca]
+    modelo: sonnet-high
+    criterios:
+      - IA devolve JSON de slots validado por schema estrito, nunca o .tex inteiro
+      - saida passa no validador antes de virar arquivo
+      - sem tier habilitado, gera com os blocos base sem chamar IA
+    fora: versao por vaga (F5.1)
+
+  - id: F3.2
+    fase: 3
+    titulo: Oito variantes de familia com diff e aprovacao
+    zona: gerador
+    depende: [F3.1, F2.4]
+    schema: false
+    toca: [banco, regra]
+    modelo: sonnet-high
+    criterios:
+      - 4 familias por 2 idiomas compilam em uma pagina e passam no validador
+      - diff em relacao ao original legivel
+      - aprovacao registrada na tabela aprovacao
+    fora: chat de edicao (F5.3)
+
+  - id: F4.1
+    fase: 4
+    titulo: Migrar o coletor do spike para src e gravar vagas
+    zona: coletor
+    depende: []
+    schema: true
+    toca: [terceiro, banco, seguranca]
+    modelo: sonnet-high
+    criterios:
+      - coletores de viabilidade/ingest movidos para src/coletor, spike so reexporta
+      - robots.txt e allowlist por sufixo preservados com os testes do spike
+      - vaga gravada com deduplicacao por hash, fonte e empresa
+      - nenhuma coleta de rede nos testes padrao
+    fora: funil e pontuacao (F4.2)
+
+  - id: F4.2
+    fase: 4
+    titulo: Funil de triagem sem desperdicio de token
+    zona: triagem
+    depende: [F4.1]
+    schema: false
+    toca: [llm, custo, regra]
+    modelo: sonnet-high
+    criterios:
+      - duplicata, filtros de config/triagem.yaml e pre-nota antes de qualquer modelo forte
+      - pre-pontuacao limitada por vagas_pre_pontuadas_max, descricao cortada e cache por hash
+      - dia sem vaga boa gera zero chamada forte, provado por teste e por uso_llm
+    fora: geracao de curriculo
+
+  - id: F4.3
+    fase: 4
+    titulo: Alertas do LinkedIn por email viram vagas
+    zona: coletor
+    depende: [F4.1, F1.1]
+    schema: false
+    toca: [terceiro]
+    modelo: sonnet-medium
+    criterios:
+      - parser do spike migrado, URL sem rastreio
+      - remetente por dominio exato reaproveitado do F1.2
+      - nenhum acesso ao site do LinkedIn
+
+  - id: F5.1
+    fase: 5
+    titulo: Versionar curriculo por vaga
+    zona: versao
+    depende: [F3.1, F4.2]
+    schema: true
+    toca: [banco, regra]
+    modelo: sonnet-high
+    criterios:
+      - versao_curriculo por vaga com hash e nivel
+      - constraint de uma pagina no banco preservada
+      - historico consultavel
+
+  - id: F5.2
+    fase: 5
+    titulo: Tela de diff por vaga
+    zona: painel
+    depende: [F5.1, F1.6]
+    schema: false
+    toca: [ui]
+    modelo: sonnet-high
+    criterios:
+      - diff da variante contra a familia
+      - aprovar e rejeitar com motivo, gravando aprovacao
+
+  - id: F5.3
+    fase: 5
+    titulo: Chat curto de edicao com limite de rodadas
+    zona: chat
+    depende: [F5.1]
+    schema: false
+    toca: [llm, custo, seguranca]
+    modelo: opus-high
+    criterios:
+      - rodadas_chat_por_vaga e tamanho_pedido_chat_max_chars respeitados
+      - revisao cruzada para nota quase maxima ou chat usado (Q23)
+      - gasto do chat aparece no painel
+      - teste de injecao no pedido do chat
+
+  - id: F6.1
+    fase: 6
+    titulo: Banco de respostas padrao
+    zona: respostas
+    depende: []
+    schema: true
+    toca: [banco, dado-pessoal]
+    modelo: sonnet-high
+    criterios:
+      - respostas carregadas de arquivo em dados/ para resposta_banco
+      - busca por pergunta normalizada
+      - nenhuma resposta real versionada
+
+  - id: F6.2
+    fase: 6
+    titulo: Aplicador em dry-run para Greenhouse e Ashby
+    zona: aplicador
+    depende: [F6.1, F5.1]
+    schema: false
+    toca: [terceiro, seguranca]
+    modelo: opus-high
+    criterios:
+      - fluxo do spike migrado para src/aplicador, dry-run por padrao
+      - captura por etapa e hash da versao enviada
+      - pergunta nova vira pendencia com rascunho, nunca resposta automatica
+      - submit real so com PLEITO_EGRESS_MODO e token
+
+  - id: F6.3
+    fase: 6
+    titulo: Pendencia manual da Gupy com material pronto
+    zona: pendencias
+    depende: [F5.1, F1.6]
+    schema: false
+    toca: [ui]
+    modelo: sonnet-medium
+    criterios:
+      - pendencia com link, PDF e respostas para copiar
+      - nenhuma automacao na Gupy (ADR 0011)
+
+  - id: F7.1
+    fase: 7
+    titulo: Curriculos campeoes
+    zona: campeoes
+    depende: [F6.2, F1.3]
+    schema: true
+    toca: [banco, regra]
+    modelo: sonnet-high
+    criterios:
+      - rastreio evento para versao
+      - promocao automatica para forte e com confirmacao para campeao
+      - retencao protegida
+
+  - id: F8.1
+    fase: 8
+    titulo: Evento no Calendar quando a etapa vira entrevista
+    zona: calendar
+    depende: [F1.3]
+    schema: false
+    toca: [terceiro, credencial]
+    modelo: opus-high
+    criterios:
+      - evento criado so na agenda do Filipe, com escopo minimo
+      - sem convidado e sem envio de convite
+
+  - id: F8.2
+    fase: 8
+    titulo: Aplicador para outras plataformas
+    zona: aplicador
+    depende: [F6.2]
+    schema: false
+    toca: [terceiro, seguranca]
+    modelo: opus-high
+    criterios:
+      - plataforma nova entra por config, com dry-run
+
+  - id: F9.1
+    fase: 9
+    titulo: Metricas de resposta e calibracao de pesos
+    zona: metricas
+    depende: [F7.1]
+    schema: false
+    toca: [ui, regra]
+    modelo: sonnet-high
+    criterios:
+      - taxa de resposta por familia, fonte e campeao no painel
+
+  - id: FM.1
+    fase: 10
+    titulo: Monitor de disponibilidade das janelas
+    zona: agendamento
+    depende: [F1.7]
+    schema: false
+    toca: [config]
+    modelo: sonnet-medium
+    criterios:
+      - le o registro de execucao e avisa por email se uma janela nao gerou resumo
+
+  - id: FM.2
+    fase: 10
+    titulo: Backup diario criptografado do banco
+    zona: backup
+    depende: [F1.7]
+    schema: false
+    toca: [banco, seguranca, dado-pessoal]
+    modelo: sonnet-high
+    criterios:
+      - pg_dump diario para dados/backup/, criptografado com chave guardada no Keychain, nunca em arquivo
+      - retencao em config/limites.yaml, com os mais antigos apagados so dentro de dados/backup/
+      - restauracao provada num banco descartavel por teste de banco
+      - nenhum backup e nenhuma chave entram no git
+    fora: copia para fora do Mac
+    decisao: criptografar com openssl do macOS (recomendado, sem dependencia nova) ou com age?
