@@ -17,6 +17,9 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `segredos/`, `.env`, perfil de navegador, symlink e submódulo staged em qualquer nível, e
   padrão de segredo no diff staged; o commit-msg recusa linha de atribuição; regras em
   `config/repositorio.yaml`
+- [x] F0.3, alertas e correções automáticas do Dependabot ligados no GitHub (orquestrador roda
+  os PUT) e `.github/dependabot.yml` com pip semanal e limite de PRs abertos; teste em
+  `tests/test_dependabot_config.py`; pypdf, certifi e setuptools seguem como item novo
 - [x] F0.2, `make auditoria` roda o pip-audit (dependência dev) sobre as dependências instaladas; fica fora de `make testes` e do pre-commit; quando rodar em `docs/seguranca.md`
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
 - [x] ADRs 0001 a 0022 versionadas
@@ -69,6 +72,11 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   sem tocar blocos nem inventário; `make conteudo-aprovar` grava o bloco ou a âncora com quem e
   quando (`docs/inventario-projetos.md`); entrada semanal em `config/limites.yaml`, sem instalar o
   plist; tela de aprovação fica no F3.4
+- [x] F3.0, padrões escritos do currículo em `config/padroes_curriculo.yaml` (validado por pydantic,
+  `src/padroes/`) e `docs/curriculo-padroes.md`; `prompts/gerar_slots.md` versionado, montado a
+  partir do yaml (versão e hash graváveis por tentativa, vaga só dentro da marcação de dado não
+  confiável) e rubrica de qualidade com pesos que somam 1 (`avaliar`); pontuação dos bullets (Q5)
+  mantém a do currículo base; aplicar a rubrica no laço fica para o F3.3
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)
