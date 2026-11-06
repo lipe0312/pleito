@@ -68,6 +68,13 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   caractere invisível e LaTeX fora da allowlist (comando, símbolo, ambiente, pacote, classe,
   endereço de `\href`, `^^`, também com espaço, quebra ou comentário no meio); o conjunto de
   avaliação (F2.4) e a ligação ao gerador (F3.1) ficam para os itens seguintes
+- [x] F2.5, conteúdo e estrutura do currículo contra os blocos em `src/validador/` (V6 a V9 e V11 a
+  V21, cada violação com código, trecho e sugestão curta para o laço do F3.3): preâmbulo igual ao
+  do template, cabeçalho e experiências iguais aos blocos, de 3 a 4 projetos, número, empresa da vaga e
+  trecho copiado do anúncio recusados, seção nova ou de Skills, negrito fora de `\tech{}`, escape,
+  idioma, pontuação e senioridade inflada; limites em `config/validador.yaml` e
+  `config/padroes_curriculo.yaml`, uma linha por regra em `docs/validador.md`; layout (V1, V3, V4,
+  V5, V18) fica para o F2.6 e o laço de retry para o F3.3
 - [x] F2.7, `make conteudo-sincronizar` lê os repositórios públicos do usuário de
   `config/conteudo.yaml` pela API do GitHub e as páginas do portfólio (lista vazia até o Filipe
   preencher a URL), extrai tecnologias por dicionário e grava `dados/conteudo/sugestoes.yaml`

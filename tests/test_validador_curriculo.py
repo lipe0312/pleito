@@ -5,9 +5,9 @@ from apoio_validador import gravar_pdf, inventario_ficticio, tex_com_corpo, tex_
 
 from src.validador.resultado import CurriculoInvalido, Regra
 from src.validador.validar import (
+    exigir_arquivos_validos,
     exigir_fonte_valida,
-    exigir_valido,
-    validar_curriculo,
+    validar_arquivos,
     validar_fonte,
 )
 
@@ -15,7 +15,7 @@ from src.validador.validar import (
 def test_curriculo_ficticio_de_uma_pagina_e_aprovado(tmp_path):
     pdf = gravar_pdf(tmp_path, ["Pessoa Ficticia, Python e PostgreSQL"])
 
-    resultado = validar_curriculo(tex_ficticio(), inventario_ficticio(), pdf=pdf)
+    resultado = validar_arquivos(tex_ficticio(), inventario_ficticio(), pdf=pdf)
 
     assert resultado.aprovado
     assert resultado.violacoes == ()
@@ -30,7 +30,7 @@ def test_todas_as_violacoes_aparecem_juntas(tmp_path):
     pdf = gravar_pdf(tmp_path, ["um", "dois"])
     tex = tex_com_corpo("\\input{x} \\tech{Cobol} feito \u2014 pronto a\u200bb")
 
-    resultado = validar_curriculo(tex, inventario_ficticio(), pdf=pdf)
+    resultado = validar_arquivos(tex, inventario_ficticio(), pdf=pdf)
 
     assert set(resultado.regras) == {
         Regra.PAGINAS,
@@ -42,7 +42,7 @@ def test_todas_as_violacoes_aparecem_juntas(tmp_path):
     assert not resultado.aprovado
 
 
-def test_exigir_valido_levanta_com_as_regras_violadas():
+def test_exigir_arquivos_validos_levanta_com_as_regras_violadas():
     with pytest.raises(CurriculoInvalido) as erro:
         exigir_fonte_valida(tex_com_corpo("\\write18{x}"), inventario_ficticio())
 
@@ -50,22 +50,22 @@ def test_exigir_valido_levanta_com_as_regras_violadas():
     assert "latex" in str(erro.value)
 
 
-def test_exigir_valido_nao_levanta_para_curriculo_limpo(tmp_path):
+def test_exigir_arquivos_validos_nao_levanta_para_curriculo_limpo(tmp_path):
     pdf = gravar_pdf(tmp_path, ["Pessoa Ficticia"])
 
-    exigir_valido(tex_ficticio(), inventario_ficticio(), pdf=pdf)
+    exigir_arquivos_validos(tex_ficticio(), inventario_ficticio(), pdf=pdf)
 
 
 def test_curriculo_sem_pdf_nao_e_aprovado_porque_paginas_nao_foram_conferidas():
-    resultado = validar_curriculo(tex_ficticio(), inventario_ficticio())
+    resultado = validar_arquivos(tex_ficticio(), inventario_ficticio())
 
     assert not resultado.aprovado
     assert resultado.regras == (Regra.PAGINAS,)
 
 
-def test_exigir_valido_sem_pdf_levanta():
+def test_exigir_arquivos_validos_sem_pdf_levanta():
     with pytest.raises(CurriculoInvalido) as erro:
-        exigir_valido(tex_ficticio(), inventario_ficticio())
+        exigir_arquivos_validos(tex_ficticio(), inventario_ficticio())
 
     assert erro.value.resultado.regras == (Regra.PAGINAS,)
 
@@ -83,4 +83,4 @@ def test_pdf_de_duas_paginas_barra_mesmo_com_tex_limpo(tmp_path):
     pdf = gravar_pdf(tmp_path, ["um", "dois"])
 
     with pytest.raises(CurriculoInvalido):
-        exigir_valido(tex_ficticio(), inventario_ficticio(), pdf=pdf)
+        exigir_arquivos_validos(tex_ficticio(), inventario_ficticio(), pdf=pdf)

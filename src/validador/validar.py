@@ -3,8 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.conteudo.modelo import Inventario
+from src.validador.analise import ContextoConteudo
 from src.validador.caracteres import validar_alfabeto, validar_invisiveis, validar_travessao
 from src.validador.configuracao import ConfiguracaoValidador, configuracao_validador
+from src.validador.conteudo import validar_conteudo
 from src.validador.latex import validar_latex
 from src.validador.paginas import texto_do_pdf, validar_paginas
 from src.validador.resultado import CurriculoInvalido, Regra, Resultado, Violacao
@@ -24,7 +26,7 @@ def validar_fonte(
     return Resultado(tuple(dict.fromkeys(violacoes)))
 
 
-def validar_curriculo(
+def validar_arquivos(
     tex: str,
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
@@ -43,10 +45,35 @@ def validar_curriculo(
     return Resultado(tuple(dict.fromkeys(violacoes)))
 
 
+def validar_curriculo(
+    tex: str,
+    inventario: Inventario,
+    config: ConfiguracaoValidador | None = None,
+    pdf: Path | None = None,
+    *,
+    contexto: ContextoConteudo,
+) -> Resultado:
+    config = config or configuracao_validador()
+    violacoes = list(validar_arquivos(tex, inventario, config, pdf).violacoes)
+    violacoes += validar_conteudo(tex, inventario, contexto, config)
+    return Resultado(tuple(dict.fromkeys(violacoes)))
+
+
 def exigir_fonte_valida(
     tex: str, inventario: Inventario, config: ConfiguracaoValidador | None = None
 ) -> None:
     resultado = validar_fonte(tex, inventario, config)
+    if not resultado.aprovado:
+        raise CurriculoInvalido(resultado)
+
+
+def exigir_arquivos_validos(
+    tex: str,
+    inventario: Inventario,
+    config: ConfiguracaoValidador | None = None,
+    pdf: Path | None = None,
+) -> None:
+    resultado = validar_arquivos(tex, inventario, config, pdf)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)
 
@@ -56,7 +83,9 @@ def exigir_valido(
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
     pdf: Path | None = None,
+    *,
+    contexto: ContextoConteudo,
 ) -> None:
-    resultado = validar_curriculo(tex, inventario, config, pdf)
+    resultado = validar_curriculo(tex, inventario, config, pdf, contexto=contexto)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)

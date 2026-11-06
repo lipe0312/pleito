@@ -3,11 +3,28 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
-from apoio_gerador import conteudo_ficticio, slots_ficticios, travado_ficticio
+from apoio_gerador import (
+    conteudo_ficticio,
+    entrada_do_bloco,
+    slots_ficticios,
+    travado_ficticio,
+)
 
 from src.config import carregar
+from src.conteudo.modelo import Blocos
 from src.gerador.renderizar import renderizar
+from src.padroes.configuracao import configuracao_padroes
 from src.validador.configuracao import ConfiguracaoValidador, configuracao_validador
+from src.validador.conteudo import ContextoConteudo, Vaga
+
+VAGA_FICTICIA = Vaga(
+    empresa="Acme Ltda",
+    titulo="Desenvolvedor Backend",
+    descricao=(
+        "Buscamos pessoa para manter servicos de dados em ambiente conteinerizado com "
+        "testes automatizados e revisao de codigo constante pela equipe inteira"
+    ),
+)
 
 
 def configuracao_com(**ajustes) -> ConfiguracaoValidador:
@@ -79,3 +96,55 @@ def gravar_pdf(pasta: Path, paginas: list[str]) -> Path:
     caminho = pasta / "cv.pdf"
     caminho.write_bytes(pdf_minimo(paginas))
     return caminho
+
+
+def conteudo_rico() -> tuple[Blocos, object]:
+    blocos, inventario = conteudo_ficticio()
+    base = next(bloco for bloco in blocos.blocos if bloco.id == "proj_projeto_alfa_beta")
+    novos = []
+    for sufixo, nome in (("gama", "Projeto Gama"), ("delta", "Projeto Delta")):
+        imutavel = {campo: dict(por_idioma) for campo, por_idioma in base.imutavel.items()}
+        imutavel["nome"] = {idioma: nome for idioma in blocos.idiomas}
+        imutavel["link"] = {
+            idioma: f"https://example.invalid/{sufixo}" for idioma in blocos.idiomas
+        }
+        bullets = [
+            bullet.model_copy(update={"id": f"proj_{sufixo}_{indice}"})
+            for indice, bullet in enumerate(base.bullets, 1)
+        ]
+        novos.append(
+            base.model_copy(
+                update={"id": f"proj_{sufixo}", "imutavel": imutavel, "bullets": bullets}
+            )
+        )
+    return blocos.model_copy(update={"blocos": [*blocos.blocos, *novos]}), inventario
+
+
+def slots_ricos(blocos: Blocos, idioma: str) -> dict:
+    slots = slots_ficticios(blocos, idioma)
+    por_id = {bloco.id: bloco for bloco in blocos.blocos}
+    slots["projetos"] = [
+        entrada_do_bloco(por_id[nome], idioma)
+        for nome in ("proj_projeto_alfa_beta", "proj_gama", "proj_delta")
+    ]
+    return slots
+
+
+def tex_rico(idioma: str = "pt") -> str:
+    blocos, inventario = conteudo_rico()
+    return renderizar(idioma, slots_ricos(blocos, idioma), travado_ficticio(), blocos, inventario)
+
+
+def contexto_rico(idioma: str = "pt", vaga: Vaga = VAGA_FICTICIA) -> ContextoConteudo:
+    blocos, _ = conteudo_rico()
+    return ContextoConteudo(
+        blocos=blocos,
+        vaga=vaga,
+        padroes=configuracao_padroes(),
+        travado=travado_ficticio(),
+        idioma=idioma,
+    )
+
+
+def inventario_rico():
+    return conteudo_rico()[1]
