@@ -1,0 +1,49 @@
+caminhos:
+  proibidos:
+    - "dados"
+    - "dados/*"
+    - "segredos"
+    - "segredos/*"
+    - ".env"
+    - ".env.*"
+    - "*/.env"
+    - "*/.env.*"
+    - "perfil_navegador"
+    - "perfil_navegador/*"
+    - "*_perfil_navegador"
+    - "*_perfil_navegador/*"
+    - "*/perfil_navegador/*"
+    - "*/*_perfil_navegador/*"
+  excecoes:
+    - ".env.example"
+  recusar_symlink: true
+segredos:
+  - nome: chave_openai
+    expressao: "sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}"
+  - nome: token_github
+    expressao: "gh[pousr]_[A-Za-z0-9]{36,}"
+  - nome: token_github_fino
+    expressao: "github_pat_[A-Za-z0-9_]{22,}"
+  - nome: chave_privada_pem
+    expressao: "-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----"
+  - nome: client_secret
+    expressao: "(?i)client_secret[\"']?\\s*[:=]\\s*[\"'][^\"'\\s]{16,}[\"']"
+  - nome: client_secret_sem_aspas
+    expressao: "(?i)^\\s*client_secret\\s*[:=]\\s*[A-Za-z0-9_./-]{16,}\\s*$"
+  - nome: refresh_token
+    expressao: "(?i)refresh_token[\"']?\\s*[:=]\\s*[\"'][^\"'\\s]{16,}[\"']"
+  - nome: refresh_token_sem_aspas
+    expressao: "(?i)^\\s*refresh_token\\s*[:=]\\s*[A-Za-z0-9_./-]{16,}\\s*$"
+atribuicao:
+  - nome: co_authored_by
+    expressao: "(?i)^\\s*co-authored-by\\s*:"
+  - nome: generated_with
+    expressao: "(?i)\\bgenerated\\s+(?:with|by)\\b"
+  - nome: assinatura_de_ferramenta
+    expressao: "(?i)^\\s*(?:assisted|authored|created|written|made)[- ]by\\s*:?\\s*(?:claude|chatgpt|gpt|copilot|codex|gemini|cursor|an?\\s+ai\\b)"
+  - nome: email_de_ferramenta
+    expressao: "(?i)noreply@(?:anthropic|openai)\\.com"
+  - nome: nome_de_ferramenta
+    expressao: "(?i)\\bclaude\\s+(?:code|opus|sonnet|haiku|fable)\\b"
+  - nome: emoji_de_assinatura
+    expressao: "\U0001F916"

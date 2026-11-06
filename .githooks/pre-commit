@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PY=.venv/bin/python
+
+$PY -m src.repositorio_guarda arquivos
+$PY -m src.repositorio_guarda diff
 make testes
 make lint
 make testes-banco
