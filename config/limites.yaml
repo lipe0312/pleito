@@ -31,3 +31,17 @@ rede:
   timeout_s: 20
   tentativas: 3
   redirecionamentos_max: 3
+
+agendamento:
+  rotulo: br.pleito.rotinas
+  tolerancia_min: 10
+  saida_plist: dados/agendamento/br.pleito.rotinas.plist
+  registro: dados/agendamento/execucoes.json
+  log: dados/agendamento/launchd.log
+  rotinas:
+    gmail_organizar:
+      comando: ["/usr/bin/make", "gmail-organizar"]
+      intervalo: email_intervalo_min
+    resumo:
+      comando: ["/usr/bin/make", "resumo"]
+      horario: resumo_diario

@@ -79,6 +79,9 @@ gmail-organizar:
 resumo:
 	$(PY) -m src.email.resumo $(ARGS)
 
+agendamento-plist:
+	$(PY) -m src.agendamento.plist $(ARGS)
+
 viabilidade:
 	$(PY) -m viabilidade.cli veredito
 

@@ -44,6 +44,11 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   dia, vagas por etapa com o último email; leitura só `SELECT` pelo papel do painel
   (`src/painel/repositorio.py`); `make painel-ficticio` sobe o painel com fixture fictícia, sem
   banco (padrões em `docs/painel-design.md`)
+- [x] F1.7, agendamento por launchd em `src/agendamento/`: `make agendamento-plist` gera o plist
+  de `config/limites.yaml` (várias janelas de horário mais o intervalo do Gmail) em
+  `dados/agendamento/`, sem instalar; o executor aplica `retry_ao_acordar` e registra cada
+  execução, recuperação ou perda em `dados/agendamento/execucoes.json`; instalação e `pmset` são
+  manuais (`docs/agendamento.md`, M3)
 - [x] F2.1, currículo base decomposto em blocos e inventário por `make conteudo`, lendo o guia
   de `PLEITO_GUIA` e gravando em `dados/conteudo/` (fora do git, ADR 0021); template (F2.2)
   pendente
