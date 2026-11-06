@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar resumo
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar resumo
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -66,6 +66,9 @@ painel-ficticio:
 
 lint:
 	.venv/bin/ruff check .
+
+auditoria:
+	$(PY) -m pip_audit
 
 gmail-autorizar:
 	$(PY) scripts/autorizar_gmail.py

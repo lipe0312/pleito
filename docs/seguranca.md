@@ -105,5 +105,6 @@ destrutivo e uma sessão aprovando o trabalho de outra. Regras (ADR 0022):
 | todo PR | `make testes && make lint` (pre-commit) e o agente `guarda-seguranca` |
 | PR que toca Gmail, OAuth, LLM, egress, LaTeX, painel ou policies | `sec-predeploy` nível 1 (+ `/security-review`) |
 | antes de ligar `sistema_ativo`, habilitar tier, instalar o launchd ou o primeiro submit real | `sec-predeploy` nível 2 |
-| por trimestre | `sec-predeploy` nível 3, com a skill `security-audit` |
+| mudou `pyproject.toml` (dependência nova ou versão) e antes de cada `sec-predeploy` nível 2 | `make auditoria` (pip-audit, consulta a rede; fora do `make testes` e do pre-commit); vulnerabilidade achada vira item do backlog |
+| por trimestre | `sec-predeploy` nível 3, com a skill `security-audit`, e `make auditoria` |
 | incidente (token vazado, email estranho enviado) | revogar no Google ou na OpenAI, apagar o item do Keychain, `make senha-rotacionar` para o banco, registrar em `docs/` |
