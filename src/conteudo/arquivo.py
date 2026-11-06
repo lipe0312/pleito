@@ -30,7 +30,7 @@ def destino_conteudo(pasta_dados: Path, config: ConfiguracaoConteudo) -> Path:
     return destino
 
 
-def _escrever(caminho: Path, modelo: BaseModel) -> None:
+def escrever(caminho: Path, modelo: BaseModel) -> None:
     texto = yaml.safe_dump(
         modelo.model_dump(mode="json"), allow_unicode=True, sort_keys=False, width=1000
     )
@@ -55,6 +55,20 @@ def gravar(
     os.chmod(destino, PERMISSAO_PASTA)
     caminho_blocos = destino / config.arquivo_blocos
     caminho_inventario = destino / config.arquivo_inventario
-    _escrever(caminho_blocos, blocos)
-    _escrever(caminho_inventario, inventario)
+    escrever(caminho_blocos, blocos)
+    escrever(caminho_inventario, inventario)
     return caminho_blocos, caminho_inventario
+
+
+def ler_blocos(pasta_dados: Path, config: ConfiguracaoConteudo) -> Blocos | None:
+    caminho = destino_conteudo(pasta_dados, config) / config.arquivo_blocos
+    if not caminho.is_file():
+        return None
+    return Blocos.model_validate(yaml.safe_load(caminho.read_text(encoding="utf-8")))
+
+
+def ler_inventario(pasta_dados: Path, config: ConfiguracaoConteudo) -> Inventario | None:
+    caminho = destino_conteudo(pasta_dados, config) / config.arquivo_inventario
+    if not caminho.is_file():
+        return None
+    return Inventario.model_validate(yaml.safe_load(caminho.read_text(encoding="utf-8")))

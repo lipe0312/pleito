@@ -371,3 +371,27 @@ sequenceDiagram
   end
   Note over T,DB: contato vem do cabeçalho travado e nunca entra em prompt
 ```
+
+### R10. Sincronizar projetos do GitHub e do portfólio ✅ F2.7, ⏳ tela no F3.4
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant S as make conteudo-sincronizar
+  participant L as leitor (allowlist, robots, limite)
+  participant W as GitHub API e portfólio
+  participant X as extrator por dicionário
+  participant F as dados/conteudo/sugestoes.yaml
+  participant A as make conteudo-aprovar
+  participant C as blocos.yaml e inventario.yaml
+  S->>L: lista repositórios do usuário de config/conteudo.yaml
+  L->>L: host fora da allowlist, http puro ou acima do limite: recusa sem requisição
+  L->>W: GET sem token, sem seguir redirect
+  W-->>S: README e páginas como texto não confiável
+  S->>X: linguagens, topics e termos fora de frase de instrução
+  X-->>S: tecnologia e evidência, nunca um comando
+  S->>F: sugestão pendente com âncora tipo projeto e a URL
+  Note over S,C: sincronizar nunca escreve em blocos.yaml nem em inventario.yaml
+  A->>F: aprovar com --por grava quem e quando
+  A->>C: bloco ou âncora, validado antes de gravar
+```

@@ -33,6 +33,7 @@ IA no desenvolvimento). Fluxos de requisição com os controles no caminho em `d
 | Gasto de LLM fora do controle | tier desligado até a avaliação, reserva antes da chamada, teto diário e mensal, saldo mínimo do forte, limite no painel da OpenAI | LLM | ✅ código; M7 (#44) |
 | LaTeX malicioso | LLM preenche slot, escape, comandos proibidos, `-no-shell-escape`, uma página por constraint | currículo | F2.2 (#19), F2.3 (#20) |
 | Coleta fora do permitido | allowlist por sufixo com ponto em `config/fontes.yaml`, robots.txt antes e depois de redirect, só https, rps por domínio | coletor | ✅; termos de uso em F4.4 (#48) |
+| Leitura do perfil público (GitHub e portfólio) fora do permitido | exceção à `fontes.yaml`: allowlist própria em `config/conteudo.yaml`, só https, sem redirect, corpo em stream com limite de bytes, robots no portfólio, limite de requisições; texto lido nunca vira instrução | `src/conteudo/leitor.py` | ✅ F2.7 (`docs/inventario-projetos.md`) |
 | Envio de candidatura sem aprovação | `dry_run` padrão, `PLEITO_EGRESS_MODO=submit_real` mais token de 16+, hash do PDF aprovado, candidatura única por vaga | egress | spike ✅; F6.2 (#30) |
 | Senha ou CAPTCHA | o sistema nunca lê, digita ou resolve; seletor de senha, CPF e cartão recusado | egress | ✅ spike |
 | Painel atacado por outra página (DNS rebinding, CSRF, XSS) | bind `127.0.0.1`, checagem de Host, CSP estrita, CSRF, autoescape | painel | F1.8 (#16) |
