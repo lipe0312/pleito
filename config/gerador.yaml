@@ -39,6 +39,27 @@ slots:
     max_bullets: 4
     max_chars: 300
 
+ia:
+  tarefa: escrita_slots
+  tier: forte
+  tipos_na_ordem_dos_blocos: [experiencia]
+  tipos_com_enfase: [projeto]
+  entradas_min:
+    projeto: 3
+  bullets_min: 1
+  techs_max: 8
+  tech_max_chars: 60
+  enfase_max: 4
+
+sem_ia:
+  entradas_por_tipo:
+    projeto: 3
+  bullets_por_tipo:
+    experiencia: 3
+    projeto: 2
+  peso_familia: 2
+  peso_tech: 1
+
 compilacao:
   motor: pdflatex
   nome_arquivo: cv

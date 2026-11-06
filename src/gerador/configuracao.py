@@ -93,17 +93,70 @@ class Compilacao(Estrito):
         return self
 
 
+class ConfiguracaoIa(Estrito):
+    tarefa: Identificador
+    tier: Identificador
+    tipos_na_ordem_dos_blocos: list[TipoBloco]
+    tipos_com_enfase: list[TipoBloco]
+    entradas_min: dict[TipoBloco, int]
+    bullets_min: int = Field(gt=0)
+    techs_max: int = Field(gt=0)
+    tech_max_chars: int = Field(gt=0)
+    enfase_max: int = Field(gt=0)
+
+
+class ConfiguracaoSemIa(Estrito):
+    entradas_por_tipo: dict[TipoBloco, int]
+    bullets_por_tipo: dict[TipoBloco, int]
+    peso_familia: int = Field(ge=0)
+    peso_tech: int = Field(ge=0)
+
+
 class ConfiguracaoGerador(Estrito):
     templates: Templates
     jinja: Delimitadores
     travado: ConfiguracaoTravado
     slots: dict[Identificador, DeclaracaoSlot] = Field(min_length=1)
+    ia: ConfiguracaoIa
+    sem_ia: ConfiguracaoSemIa
     compilacao: Compilacao
 
     @model_validator(mode="after")
     def _slot_nao_usa_nome_do_travado(self) -> ConfiguracaoGerador:
         if set(self.slots) & set(self.travado.nomes):
             raise ValueError("slot com o mesmo nome de um dado travado")
+        return self
+
+    def entradas_do_tipo(self, tipo: str) -> SlotEntradas:
+        achados = [
+            declaracao
+            for declaracao in self.slots.values()
+            if isinstance(declaracao, SlotEntradas) and declaracao.tipo_bloco == tipo
+        ]
+        if len(achados) != 1:
+            raise ValueError(f"precisa de exatamente um slot de entradas do tipo {tipo}")
+        return achados[0]
+
+    @model_validator(mode="after")
+    def _ia_e_sem_ia_cabem_nos_slots(self) -> ConfiguracaoGerador:
+        for tipo in {*self.ia.tipos_na_ordem_dos_blocos, *self.ia.tipos_com_enfase}:
+            self.entradas_do_tipo(tipo)
+        for tipo, minimo in self.ia.entradas_min.items():
+            if not 0 < minimo <= self.entradas_do_tipo(tipo).max_entradas:
+                raise ValueError(f"entradas_min de {tipo} fora de 1..max_entradas")
+        for tipo, total in self.sem_ia.entradas_por_tipo.items():
+            piso = self.ia.entradas_min.get(tipo, 1)
+            if not piso <= total <= self.entradas_do_tipo(tipo).max_entradas:
+                raise ValueError(f"sem_ia.entradas_por_tipo de {tipo} fora de min..max_entradas")
+        for tipo, total in self.sem_ia.bullets_por_tipo.items():
+            if not self.ia.bullets_min <= total <= self.entradas_do_tipo(tipo).max_bullets:
+                raise ValueError(f"sem_ia.bullets_por_tipo de {tipo} fora de min..max_bullets")
+        for declaracao in self.slots.values():
+            if isinstance(declaracao, SlotEntradas):
+                if declaracao.tipo_bloco not in self.sem_ia.bullets_por_tipo:
+                    raise ValueError(f"sem_ia.bullets_por_tipo sem {declaracao.tipo_bloco}")
+                if declaracao.max_bullets < self.ia.bullets_min:
+                    raise ValueError("max_bullets abaixo de ia.bullets_min")
         return self
 
 
