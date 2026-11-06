@@ -20,6 +20,8 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] F0.3, alertas e correções automáticas do Dependabot ligados no GitHub (orquestrador roda
   os PUT) e `.github/dependabot.yml` com pip semanal e limite de PRs abertos; teste em
   `tests/test_dependabot_config.py`; pypdf, certifi e setuptools seguem como item novo
+- [x] F0.4, branch `main` protegida no GitHub com `docs/protecao-main.json` (orquestrador roda o
+  PUT e a conferência descritas em `docs/seguranca.md`); teste em `tests/test_protecao_main.py`
 - [x] F0.2, `make auditoria` roda o pip-audit (dependência dev) sobre as dependências instaladas; fica fora de `make testes` e do pre-commit; quando rodar em `docs/seguranca.md`
 - [x] Rótulos `Candidaturas/*` criados na conta do Gmail
 - [x] ADRs 0001 a 0022 versionadas

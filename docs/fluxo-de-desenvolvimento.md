@@ -96,7 +96,7 @@ A ordem real sai sempre do painel; o desenho acima é um exemplo do estado de no
 - autor `lipe0312` com o email noreply do GitHub, nunca o email pessoal
 - PR com O Filipe passa a ver · Como conferir · Riscos · Gate · `Closes #N`
 - merge só com squash, só com "aprovado merge" do Filipe na própria sessão
-- a `main` é protegida no GitHub (item F0.4): sem push direto, sem force push, histórico linear
+- a `main` é protegida no GitHub (F0.4, #42): sem push direto, sem force push, histórico linear
 
 ## Itens manuais
 
