@@ -35,6 +35,9 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] F2.1, currículo base decomposto em blocos e inventário por `make conteudo`, lendo o guia
   de `PLEITO_GUIA` e gravando em `dados/conteudo/` (fora do git, ADR 0021); template (F2.2)
   pendente
+- [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
+  cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
+  recusa websocket e escapa texto externo (ADR 0023)
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar

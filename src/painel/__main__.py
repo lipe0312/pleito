@@ -7,7 +7,8 @@ from src.painel.app import app
 
 
 def main() -> None:
-    uvicorn.run(app, host="127.0.0.1", port=int(carregar("painel")["porta"]))
+    configuracao = carregar("painel")
+    uvicorn.run(app, host=configuracao["host_bind"], port=int(configuracao["porta"]))
 
 
 if __name__ == "__main__":

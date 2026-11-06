@@ -1,1 +1,31 @@
+host_bind: 127.0.0.1
 porta: 8765
+esquema_origem: http
+token_bytes: 32
+fetch_site_aceitos:
+  - same-origin
+  - none
+hosts_permitidos:
+  - 127.0.0.1
+  - localhost
+csrf_cabecalho: X-CSRF-Token
+metodos_seguros:
+  - GET
+  - HEAD
+  - OPTIONS
+csp:
+  default-src: "'none'"
+  script-src: "'self'"
+  style-src: "'self'"
+  img-src: "'self'"
+  connect-src: "'self'"
+  form-action: "'self'"
+  base-uri: "'none'"
+  frame-ancestors: "'none'"
+cabecalhos:
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Cache-Control: no-store
