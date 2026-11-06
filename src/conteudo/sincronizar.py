@@ -4,10 +4,9 @@ import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated
 
 import httpx
-from pydantic import BaseModel, ConfigDict, StringConstraints, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from src.coletor.conformidade import Limitador
 from src.config import ambiente
@@ -17,6 +16,7 @@ from src.conteudo.configuracao import ConfiguracaoConteudo, configuracao_conteud
 from src.conteudo.leitor import Leitor, LeituraRecusada, LimiteDeRequisicoes
 from src.conteudo.sincronizacao import (
     ConfiguracaoSincronizacao,
+    FonteGithub,
     PaginaPortfolio,
     configuracao_sincronizacao,
 )
@@ -27,15 +27,13 @@ from src.conteudo.sugestoes import (
     carregar_sugestoes,
     gravar_sugestoes,
 )
-from src.conteudo.tecnologias import extrair_tecnologias, limpar_texto, texto_da_pagina
+from src.conteudo.tecnologias import (
+    descricao_sem_instrucao,
+    extrair_tecnologias,
+    texto_da_pagina,
+)
 
-CABECALHO_JSON = {"Accept": "application/vnd.github+json"}
-CABECALHO_README = {"Accept": "application/vnd.github.raw+json"}
 NAO_ALFANUMERICO = re.compile(r"[^a-z0-9]+")
-TOPIC_VALIDO = re.compile(r"^[a-z0-9-]{1,50}$")
-TOPICS_MAX = 30
-LINGUAGEM_MAX_CHARS = 50
-NomeRepositorio = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9._-]{1,100}$")]
 
 
 class ErroDeSincronizacao(Exception):
@@ -45,7 +43,7 @@ class ErroDeSincronizacao(Exception):
 class RepositorioApi(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    name: NomeRepositorio
+    name: str
     description: str | None = None
     topics: list[str] = []
     homepage: str | None = None
@@ -55,17 +53,13 @@ class RepositorioApi(BaseModel):
     private: bool = False
     language: str | None = None
 
-    @field_validator("name")
-    @classmethod
-    def _nome_sem_navegacao(cls, valor: str) -> str:
-        if valor.strip(".") == "":
-            raise ValueError("nome de repositorio invalido")
-        return valor
 
-    @field_validator("topics")
-    @classmethod
-    def _topics_validos(cls, valor: list[str]) -> list[str]:
-        return [t for t in valor if isinstance(t, str) and TOPIC_VALIDO.match(t)][:TOPICS_MAX]
+def _repositorio_valido(item: object, fonte: FonteGithub) -> RepositorioApi:
+    repo = RepositorioApi.model_validate(item)
+    if not re.fullmatch(fonte.nome_repositorio_padrao, repo.name) or not repo.name.strip("."):
+        raise ValueError("nome de repositorio invalido")
+    topics = [t for t in repo.topics if re.fullmatch(fonte.topic_padrao, t)]
+    return repo.model_copy(update={"topics": topics[: fonte.topics_max]})
 
 
 def _identificador(prefixo: str, nome: str) -> str:
@@ -87,7 +81,9 @@ def _listar_repositorios(
             f"?per_page={fonte.por_pagina}&page={pagina}&sort=pushed"
         )
         try:
-            resposta = leitor.obter(url, fonte.dominios, fonte.respeitar_robots, CABECALHO_JSON)
+            resposta = leitor.obter(
+                url, fonte.dominios, fonte.respeitar_robots, fonte.cabecalho_json
+            )
             itens = resposta.json() if resposta.status_code == 200 else None
         except (LeituraRecusada, httpx.HTTPError, ValueError) as erro:
             raise ErroDeSincronizacao(f"listagem do GitHub falhou: {erro}") from erro
@@ -95,8 +91,8 @@ def _listar_repositorios(
             raise ErroDeSincronizacao(f"GitHub respondeu {resposta.status_code} na listagem")
         for item in itens:
             try:
-                repositorios.append(RepositorioApi.model_validate(item))
-            except ValidationError:
+                repositorios.append(_repositorio_valido(item, fonte))
+            except (ValidationError, ValueError):
                 avisos.append("repositorio com nome ou formato invalido ignorado")
         if len(itens) < fonte.por_pagina:
             return repositorios, True
@@ -110,12 +106,12 @@ def _detalhes(
     fonte = config.github
     base = f"{fonte.api}/repos/{fonte.usuario}/{nome}"
     resposta = leitor.obter(
-        f"{base}/languages", fonte.dominios, fonte.respeitar_robots, CABECALHO_JSON
+        f"{base}/languages", fonte.dominios, fonte.respeitar_robots, fonte.cabecalho_json
     )
     bruto = resposta.json() if resposta.status_code == 200 else {}
-    linguagens = [k for k in bruto if isinstance(k, str) and len(k) <= LINGUAGEM_MAX_CHARS]
+    linguagens = [k for k in bruto if isinstance(k, str) and len(k) <= fonte.linguagem_max_chars]
     resposta = leitor.obter(
-        f"{base}/readme", fonte.dominios, fonte.respeitar_robots, CABECALHO_README
+        f"{base}/readme", fonte.dominios, fonte.respeitar_robots, fonte.cabecalho_readme
     )
     readme = resposta.text[: fonte.readme_max_chars] if resposta.status_code == 200 else ""
     return linguagens, readme
@@ -146,7 +142,10 @@ def _ler_github(
             id=_identificador(config.prefixo_id_projeto, repo.name),
             nome=repo.name,
             url=f"{fonte.url_publica}/{fonte.usuario}/{repo.name}",
-            descricao=limpar_texto(repo.description or repo.name, config.descricao_max_chars),
+            descricao=descricao_sem_instrucao(
+                repo.description or "", config.padroes_instrucao, config.descricao_max_chars
+            )
+            or repo.name,
             topics=repo.topics,
             linguagens=todas,
             homepage=_url_publica(repo.homepage),
@@ -170,7 +169,10 @@ def _ler_pagina(
         id=_identificador(config.prefixo_id_projeto, pagina.nome),
         nome=pagina.nome,
         url=pagina.url,
-        descricao=limpar_texto(descricao or pagina.nome, config.descricao_max_chars),
+        descricao=descricao_sem_instrucao(
+            descricao, config.padroes_instrucao, config.descricao_max_chars
+        )
+        or pagina.nome,
     )
     return ProjetoLido(
         projeto, "portfolio", extrair_tecnologias(config, [], [], texto, "portfolio")

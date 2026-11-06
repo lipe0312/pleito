@@ -54,6 +54,17 @@ Dicionário `sincronizacao.dicionario`: cada tecnologia tem `linguagens`, `topic
 - `robots.txt` é respeitado no portfólio (`respeitar_robots`). Na API do GitHub fica desligado
   de propósito: é a API documentada, sem token, limitada a 60 requisições por hora, e cada
   consulta de robots gastaria cota.
+- Exceção explícita à `config/fontes.yaml`: aquela allowlist é de coleta de vaga; este fluxo lê o
+  perfil público do próprio Filipe (GitHub e portfólio), então a allowlist própria mora em
+  `config/conteudo.yaml` (`github.dominios`, `portfolio.dominios`) e vale só para
+  `src/conteudo/leitor.py`. Nenhum outro módulo pode usar essa lista, e o coletor continua
+  restrito a `fontes.yaml`.
+- O corpo é lido em stream e a leitura para ao passar `resposta_max_bytes` (ou recusa antes, se o
+  `Content-Length` já passa do limite).
+- Descrição do repositório e `<meta description>` da página passam pelo mesmo filtro de frase de
+  instrução do README; o que sobra é limpo e cortado.
+- Limites de topics, linguagens, padrão de nome e cabeçalhos `Accept` ficam em `config/conteudo.yaml`.
+  A porta 443 (https) fica no código por ser semântica do protocolo, não política.
 - `requisicoes_max` corta a execução; cortada, a listagem fica `completo: false` e nenhum projeto
   é declarado sumido. Ritmo vem de `PLEITO_RATE_LIMIT_RPS`.
 - Descrição é limpa de caractere de controle e cortada em `descricao_max_chars`; nome de

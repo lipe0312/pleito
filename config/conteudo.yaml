@@ -46,6 +46,12 @@ sincronizacao:
     por_pagina: 100
     paginas_max: 3
     readme_max_chars: 4000
+    topics_max: 30
+    topic_padrao: '^[a-z0-9-]{1,50}$'
+    linguagem_max_chars: 50
+    nome_repositorio_padrao: '^[A-Za-z0-9._-]{1,100}$'
+    cabecalho_json: {Accept: application/vnd.github+json}
+    cabecalho_readme: {Accept: application/vnd.github.raw+json}
   portfolio:
     dominios: []
     respeitar_robots: true

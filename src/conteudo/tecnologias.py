@@ -51,6 +51,10 @@ def frases_sem_instrucao(texto: str, padroes: Iterable[re.Pattern[str]]) -> list
     return [f for f in frases if not any(p.search(f) for p in padroes)]
 
 
+def descricao_sem_instrucao(texto: str, padroes: Iterable[re.Pattern[str]], max_chars: int) -> str:
+    return limpar_texto(" ".join(frases_sem_instrucao(texto, padroes)), max_chars)
+
+
 def _contem_termo(frases: list[str], termo: str) -> bool:
     padrao = re.compile(rf"(?<!\w){re.escape(termo)}(?!\w)", re.IGNORECASE)
     return any(padrao.search(frase) for frase in frases)

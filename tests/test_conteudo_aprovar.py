@@ -7,6 +7,7 @@ import respx
 import yaml
 from apoio_sincronizacao import AGORA, REPO_URL, montar_github, repositorio, rodar
 
+from src.conteudo import aprovar as aprovar_modulo
 from src.conteudo.aprovar import (
     JaDecidida,
     ProjetoNaoAprovado,
@@ -213,3 +214,36 @@ def test_comando_rejeita_com_motivo(pasta):
         )
         == 0
     )
+
+
+def test_falha_ao_gravar_as_sugestoes_depois_do_bloco_pode_ser_reaprovada(pasta, monkeypatch):
+    sugestao_id = _id(pasta, "projeto_novo")
+    original = aprovar_modulo.gravar_sugestoes
+
+    def falha(*args, **kwargs):
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr(aprovar_modulo, "gravar_sugestoes", falha)
+    with pytest.raises(OSError):
+        _aprovar(pasta, sugestao_id)
+    monkeypatch.setattr(aprovar_modulo, "gravar_sugestoes", original)
+
+    decidida = _aprovar(pasta, sugestao_id)
+
+    assert decidida.status == "aprovada"
+    assert [b.id for b in _blocos(pasta).blocos] == [ID_PROJETO]
+
+
+def test_reaprovar_nao_aceita_bloco_de_mesmo_id_apontando_para_outro_lugar(pasta):
+    sugestao_id = _id(pasta, "projeto_novo")
+    outro = {
+        "id": ID_PROJETO,
+        "tipo": "projeto",
+        "imutavel": {"link": {"pt": "https://github.com/alguem-outro/ficticio-api"}},
+    }
+    (pasta / PASTA / "blocos.yaml").write_text(
+        yaml.safe_dump({"idiomas": ["pt"], "blocos": [outro]}), encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="ja existe"):
+        _aprovar(pasta, sugestao_id)

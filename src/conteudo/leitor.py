@@ -70,7 +70,22 @@ class Leitor:
             if not consultar_robots(url, self._client).permitido:
                 raise RobotsProibe(f"robots.txt de {host} nao permite {partes.path or '/'}")
         self._gastar_requisicao()
-        resposta = self._client.get(url, headers=cabecalhos, follow_redirects=False)
-        if len(resposta.content) > self._resposta_max_bytes:
-            raise RespostaInvalida(f"resposta de {host} maior que o limite de bytes")
-        return resposta
+        with self._client.stream(
+            "GET", url, headers=cabecalhos, follow_redirects=False
+        ) as resposta:
+            declarado = resposta.headers.get("content-length", "")
+            if declarado.isdigit() and int(declarado) > self._resposta_max_bytes:
+                raise RespostaInvalida(f"resposta de {host} maior que o limite de bytes")
+            pedacos: list[bytes] = []
+            total = 0
+            for pedaco in resposta.iter_bytes():
+                total += len(pedaco)
+                if total > self._resposta_max_bytes:
+                    raise RespostaInvalida(f"resposta de {host} maior que o limite de bytes")
+                pedacos.append(pedaco)
+            return httpx.Response(
+                resposta.status_code,
+                headers=resposta.headers,
+                content=b"".join(pedacos),
+                request=resposta.request,
+            )

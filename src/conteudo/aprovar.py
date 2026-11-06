@@ -8,6 +8,7 @@ from pathlib import Path
 
 from src.config import ambiente
 from src.conteudo.arquivo import destino_conteudo, escrever, ler_blocos, ler_inventario
+from src.conteudo.calculo import normalizar_url
 from src.conteudo.configuracao import ConfiguracaoConteudo, configuracao_conteudo
 from src.conteudo.modelo import (
     Ancora,
@@ -56,14 +57,22 @@ def _registrar(sugestoes: Sugestoes, alvo: Sugestao, **campos) -> tuple[Sugestao
     return decidida, sugestoes.model_copy(update={"sugestoes": lista})
 
 
+def _mesmo_link(bloco: Bloco, url: str) -> bool:
+    links = bloco.imutavel.get("link", {}).values()
+    return bool(links) and all(normalizar_url(link) == normalizar_url(url) for link in links)
+
+
 def _com_projeto(blocos: Blocos | None, alvo: Sugestao, config: ConfiguracaoConteudo) -> Blocos:
     if blocos is None:
         principal = config.idioma_principal
         idiomas = [principal, *sorted(set(config.idiomas_babel.values()) - {principal})]
         blocos = Blocos(idiomas=idiomas, blocos=[])
-    if any(bloco.id == alvo.projeto.id for bloco in blocos.blocos):
-        raise ValueError(f"bloco {alvo.projeto.id} ja existe")
     projeto = alvo.projeto
+    existente = next((b for b in blocos.blocos if b.id == projeto.id), None)
+    if existente is not None:
+        if _mesmo_link(existente, projeto.url):
+            return blocos
+        raise ValueError(f"bloco {projeto.id} ja existe")
     novo = Bloco(
         id=projeto.id,
         tipo="projeto",

@@ -30,6 +30,12 @@ class FonteGithub(Estrito):
     por_pagina: int
     paginas_max: int
     readme_max_chars: int
+    topics_max: int
+    topic_padrao: TextoNaoVazio
+    linguagem_max_chars: int
+    nome_repositorio_padrao: TextoNaoVazio
+    cabecalho_json: dict[str, str]
+    cabecalho_readme: dict[str, str]
 
 
 class PaginaPortfolio(Estrito):
