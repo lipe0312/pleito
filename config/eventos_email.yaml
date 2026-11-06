@@ -38,3 +38,21 @@ origens_permitidas:
     - teste
     - entrevista
     - oferta
+
+vinculo:
+  estados_candidatos:
+    - aplicada_aguardando_confirmacao
+    - aplicada_confirmada
+    - aplicada_nao_confirmada
+    - pendente
+    - teste
+    - entrevista
+    - oferta
+  dominios_ignorados:
+    - gmail.com
+    - googlemail.com
+    - outlook.com
+    - hotmail.com
+    - yahoo.com
+    - icloud.com
+  limite_candidatas: 50
