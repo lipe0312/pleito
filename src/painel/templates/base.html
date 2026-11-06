@@ -4,13 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false}'>
-    <title>Pleito</title>
+    <title>{{titulo}} · {{pagina}}</title>
+    <link rel="stylesheet" href="/assets/painel.css">
     <script src="/assets/htmx.min.js" defer></script>
   </head>
   <body hx-headers='{"{{csrf_cabecalho}}": "{{csrf_token}}"}'>
+    <header class="topo">
+      <span class="marca">{{pagina}}</span>
+      <nav aria-label="{{rotulo_navegacao}}">{{navegacao}}</nav>
+    </header>
+    {{aviso}}
     <main>
-      <h1>Pleito</h1>
-      <p>Painel local ainda sem operacoes.</p>
+{{conteudo}}
     </main>
   </body>
 </html>

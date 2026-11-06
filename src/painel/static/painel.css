@@ -1,0 +1,272 @@
+:root {
+  --fundo: #f7f7f5;
+  --superficie: #ffffff;
+  --texto: #1c1d1f;
+  --texto-suave: #55585d;
+  --linha: #dcdcd6;
+  --marca: #1f4f8f;
+  --ok: #1d6b3a;
+  --ok-fundo: #e3f3e8;
+  --alerta: #8a4b00;
+  --alerta-fundo: #fdeccd;
+  --atencao: #6b5200;
+  --atencao-fundo: #f6efc4;
+  --erro: #9b1c1c;
+  --erro-fundo: #fbe0e0;
+  --neutro: #3f434a;
+  --neutro-fundo: #ebebe6;
+  --foco: #1f4f8f;
+  --largura: 60rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #141517;
+    --superficie: #1c1e21;
+    --texto: #ececea;
+    --texto-suave: #a7abb1;
+    --linha: #34373c;
+    --marca: #8db6ee;
+    --ok: #8fd3a5;
+    --ok-fundo: #1b3326;
+    --alerta: #f2c27a;
+    --alerta-fundo: #3a2b12;
+    --atencao: #e6d57e;
+    --atencao-fundo: #34300f;
+    --erro: #f2a0a0;
+    --erro-fundo: #3d1b1b;
+    --neutro: #c4c7cc;
+    --neutro-fundo: #2a2c30;
+    --foco: #8db6ee;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1rem;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--linha);
+}
+
+.marca {
+  font-weight: 700;
+  color: var(--marca);
+}
+
+nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  color: var(--texto-suave);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+nav a[aria-current="page"] {
+  color: var(--texto);
+  font-weight: 600;
+  border-bottom-color: var(--marca);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+
+main {
+  max-width: var(--largura);
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+h1 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.contagem {
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-suave);
+  font-weight: 400;
+}
+
+.data,
+.meta,
+.detalhe,
+.vazio,
+.rotulo {
+  color: var(--texto-suave);
+}
+
+.data {
+  margin: 0;
+}
+
+.aviso {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: var(--atencao-fundo);
+  color: var(--atencao);
+  border-bottom: 1px solid var(--linha);
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-top: 1px solid var(--linha);
+  border-left: 3px solid transparent;
+}
+
+.item:first-child {
+  border-top: 0;
+}
+
+.item--data {
+  grid-template-columns: 6rem minmax(0, 1fr);
+}
+
+.item--alerta {
+  border-left-color: var(--alerta);
+}
+
+.item--erro {
+  border-left-color: var(--erro);
+}
+
+.item--atencao {
+  border-left-color: var(--atencao);
+}
+
+.quando {
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-suave);
+}
+
+.corpo {
+  min-width: 0;
+}
+
+.corpo p,
+.ultimo p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.titulo {
+  font-weight: 600;
+}
+
+.selos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 0.25rem;
+}
+
+.selo {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.selo--ok {
+  background: var(--ok-fundo);
+  color: var(--ok);
+}
+
+.selo--alerta {
+  background: var(--alerta-fundo);
+  color: var(--alerta);
+}
+
+.selo--atencao {
+  background: var(--atencao-fundo);
+  color: var(--atencao);
+}
+
+.selo--erro {
+  background: var(--erro-fundo);
+  color: var(--erro);
+}
+
+.selo--neutro {
+  background: var(--neutro-fundo);
+  color: var(--neutro);
+}
+
+section .item:has(.ultimo) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 16rem);
+}
+
+.ultimo .rotulo {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+.vazio {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--superficie);
+  border: 1px dashed var(--linha);
+  border-radius: 6px;
+}
+
+@media (max-width: 600px) {
+  .item {
+    grid-template-columns: 3rem minmax(0, 1fr);
+  }
+
+  .item--data {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
+
+  .selos {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  section .item:has(.ultimo) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

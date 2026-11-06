@@ -29,3 +29,59 @@ cabecalhos:
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
   Cache-Control: no-store
+
+fuso: America/Sao_Paulo
+formato_hora: "%H:%M"
+formato_data: "%d/%m %H:%M"
+formato_dia: "%d/%m/%Y"
+limite_eventos_dia: 100
+limite_pendencias: 50
+limite_candidaturas: 300
+rota_inicial: /hoje
+
+navegacao:
+  - {chave: hoje, rota: /hoje, rotulo: Hoje}
+  - {chave: candidaturas, rota: /candidaturas, rotulo: Candidaturas}
+
+etapas_candidatura:
+  - {estado: oferta, rotulo: Oferta}
+  - {estado: entrevista, rotulo: Entrevista}
+  - {estado: teste, rotulo: Teste}
+  - {estado: pendente, rotulo: Pendente}
+  - {estado: aplicada_confirmada, rotulo: Aplicação confirmada}
+  - {estado: aplicada_aguardando_confirmacao, rotulo: "Aplicada, aguardando confirmação"}
+  - {estado: aplicada_nao_confirmada, rotulo: Aplicada sem confirmação}
+  - {estado: encerrada, rotulo: Encerrada}
+  - {estado: rejeitada_pela_empresa, rotulo: Recusada pela empresa}
+
+tipos_evento:
+  aplicada: {rotulo: Aplicação confirmada, classe: ok}
+  teste: {rotulo: Teste recebido, classe: alerta}
+  entrevista: {rotulo: Convite de entrevista, classe: alerta}
+  oferta: {rotulo: Oferta, classe: alerta}
+  encerrada: {rotulo: Processo encerrado, classe: neutro}
+  classificar: {rotulo: Para classificar, classe: atencao}
+  suspeito: {rotulo: Suspeito, classe: erro}
+
+textos:
+  pagina: Pleito
+  hoje:
+    titulo: Hoje
+    eventos: Emails de hoje
+    pendencias: Pendências abertas
+    sem_eventos: Nenhum email de candidatura hoje.
+    sem_pendencias: Nenhuma pendência aberta.
+  candidaturas:
+    titulo: Candidaturas
+    vazio: Nenhuma candidatura em andamento. As vagas aparecem aqui depois do primeiro envio.
+    sem_evento: Ainda sem email
+    ultimo_evento: "Último email"
+  comum:
+    sem_vaga: Sem vaga ligada
+    sem_empresa: Empresa não informada
+    nao_autenticado: Não autenticado
+    ficticio: "Dados fictícios: este painel não está ligado ao banco."
+    navegacao: Telas do painel
+  erro:
+    titulo: Não consegui ler o banco
+    corpo: "Confira se o Postgres está no ar (make banco-status) e recarregue a página."
