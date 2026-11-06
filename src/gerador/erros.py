@@ -27,3 +27,7 @@ class TemplateInvalido(ValueError):
 
 class IdiomaNaoSuportado(ValueError):
     pass
+
+
+class RespostaDescartada(ValueError):
+    pass
