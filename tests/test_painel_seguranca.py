@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import WebSocket
@@ -13,15 +15,17 @@ from src.painel import app as modulo_app
 from src.painel import seguranca
 from src.painel.app import criar_app
 from src.painel.renderizar import renderizar
+from src.painel.repositorio import RepositorioFicticio
 
 CONFIG = carregar("painel")
 PORTA = CONFIG["porta"]
 ORIGEM = f"http://127.0.0.1:{PORTA}"
 CABECALHO = CONFIG["csrf_cabecalho"]
+AGORA = datetime(2026, 11, 5, 18, 0, tzinfo=ZoneInfo(CONFIG["fuso"]))
 
 
 def montar():
-    aplicacao = criar_app()
+    aplicacao = criar_app(repositorio=RepositorioFicticio.de_dados({}, AGORA))
     acoes = []
 
     @aplicacao.post("/teste/acao")

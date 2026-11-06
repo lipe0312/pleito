@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
 from src.config import carregar
 from src.painel.app import criar_app
+from src.painel.repositorio import RepositorioFicticio
 
 ORIGEM = f"http://127.0.0.1:{carregar('painel')['porta']}"
+AGORA = datetime(2026, 11, 5, 18, 0, tzinfo=ZoneInfo(carregar("painel")["fuso"]))
 
 
-def test_painel_abre_uma_pagina_vazia_sem_operacoes():
-    cliente = TestClient(criar_app(), base_url=ORIGEM)
-    resposta = cliente.get("/")
+def test_painel_serve_o_htmx_local_e_as_telas_apontam_para_ele():
+    repositorio = RepositorioFicticio.de_dados({}, AGORA)
+    cliente = TestClient(criar_app(repositorio=repositorio), base_url=ORIGEM)
+    resposta = cliente.get("/hoje")
     assert resposta.status_code == 200
     assert "Pleito" in resposta.text
-    assert "Candidaturas" not in resposta.text
     assert "/assets/htmx.min.js" in resposta.text
     assert cliente.get("/assets/htmx.min.js").status_code == 200
 
