@@ -29,7 +29,11 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   interativa e o push no iPhone
 - [x] F4.1, coletor em `src/coletor/` gravando vagas no Postgres sem duplicar (migration
   `0003_vagas.sql` e policies `0004_coletor.sql` e `0005_coletor_sequencia_minima.sql`);
-  Gupy fora da coleta; funil e pontuação (F4.2) pendentes
+  Gupy fora da coleta
+- [x] F4.2, funil de triagem em `src/triagem/` (duplicata, filtros, pré-nota sem IA, pontuação final
+  só para as `vagas_pre_pontuadas_max` melhores acima de `pre_nota_minima_para_forte`, com cache por
+  hash); sem migration, o motivo do descarte e a nota ficam em `vaga.motivo_descarte` e `vaga.nota`;
+  prompt em `prompts/pontuar_vaga.md` para a F2.4 citar; ordem e limites em `docs/triagem.md`
 - [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em

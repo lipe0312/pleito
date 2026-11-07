@@ -17,6 +17,7 @@ eliminatorios:
   recusa_titulos_com: [senior, sr., staff, principal, lead, especialista, gerente, coordenador, head]
   recusa_se_exige_presencial_fora_de: [Salvador, Bahia, remoto]
   idade_maxima_dias: 30
+  funcoes_aceitas: [engenharia, dados, infra, qa]
 
 pontuacao:
   peso_stack: 35
