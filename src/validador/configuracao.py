@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import re
-from typing import Annotated
+from pathlib import Path
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field, StringConstraints, model_validator
 
 from src.config import carregar
 from src.conteudo.modelo import Estrito, Identificador
+from src.validador.resultado import REGRAS_DE_SEGURANCA, Nivel, Regra
 
 Simbolo = Annotated[str, StringConstraints(min_length=1, max_length=1)]
 Fragmento = Annotated[str, StringConstraints(min_length=1)]
@@ -204,13 +206,92 @@ class ConfiguracaoDeLayout(Estrito):
     por_idioma: dict[Identificador, LimitesDeLayout] = Field(min_length=1)
 
 
+Forca = Literal["forte", "fraca"]
+
+
+class ConfiguracaoDeTecnologias(Estrito):
+    exigir_caixa: list[Fragmento]
+    forca_por_origem: dict[Identificador, Forca] = Field(min_length=1)
+    forca_padrao: Forca
+
+
+class ArquivosDeDados(Estrito):
+    tecnologias: Fragmento
+    vocabulario: Fragmento
+
+    @model_validator(mode="after")
+    def _nomes_simples(self) -> ArquivosDeDados:
+        for nome in (self.tecnologias, self.vocabulario):
+            if Path(nome).name != nome:
+                raise ValueError(f"nome de arquivo invalido: {nome!r}")
+        if self.tecnologias == self.vocabulario:
+            raise ValueError("banco de tecnologias e vocabulario precisam de arquivos diferentes")
+        return self
+
+
+class ExtracaoDoVocabulario(Estrito):
+    ngrama_max: int = Field(ge=2)
+    sigla_min_chars: int = Field(ge=2)
+    termo_min_chars: int = Field(ge=1)
+
+
+class DadosDoCurriculo(Estrito):
+    arquivos: ArquivosDeDados
+    vocabulario: ExtracaoDoVocabulario
+
+
+FonteDeInjecao = Literal[
+    "proibidos_tecnologia", "proibidos_numero", "proibidos_palavra", "empresa", "anuncio"
+]
+
+
+class Injecao(Estrito):
+    fonte: FonteDeInjecao
+    modelo: dict[Identificador, Fragmento] = Field(min_length=1)
+    tipos: list[Identificador] = []
+    ignorar: list[Fragmento] = []
+
+    @model_validator(mode="after")
+    def _modelo_tem_o_termo(self) -> Injecao:
+        if any("{termo}" not in texto for texto in self.modelo.values()):
+            raise ValueError("modelo de injecao precisa de {termo}")
+        return self
+
+
+class MetasDaRegra(Estrito):
+    falso_positivo_max: float = Field(ge=0, le=1)
+    falso_negativo_max: float = Field(ge=0, le=1)
+
+
+class Calibracao(Estrito):
+    subpasta: Fragmento
+    metas: MetasDaRegra
+    por_regra: dict[Regra, MetasDaRegra] = {}
+    injecoes: dict[Regra, Injecao]
+
+
+def _regras_do_nivel(niveis: dict[Regra, Nivel]) -> dict[Regra, Nivel]:
+    faltando = sorted(r.value for r in set(Regra) - set(niveis))
+    if faltando:
+        raise ValueError(f"regra sem nivel: {faltando}")
+    rebaixadas = sorted(r.value for r in REGRAS_DE_SEGURANCA if niveis[r] is not Nivel.BLOQUEIA)
+    if rebaixadas:
+        raise ValueError(f"regra de seguranca precisa ficar em bloqueia: {rebaixadas}")
+    return niveis
+
+
 class ConfiguracaoValidador(Estrito):
     paginas_max: int = Field(gt=0)
+    niveis: Annotated[dict[Regra, Nivel], AfterValidator(_regras_do_nivel)]
     latex: ConfiguracaoLatex
     caracteres: ConfiguracaoCaracteres
     tecnologias_conhecidas: list[Fragmento]
+    dicionario_tecnologias: list[Fragmento] = []
+    tecnologias: ConfiguracaoDeTecnologias
+    dados: DadosDoCurriculo
     conteudo: ConfiguracaoDoConteudo
     layout: ConfiguracaoDeLayout
+    calibracao: Calibracao
 
     @model_validator(mode="after")
     def _layout_cobre_os_idiomas_do_conteudo(self) -> ConfiguracaoValidador:
@@ -219,7 +300,12 @@ class ConfiguracaoValidador(Estrito):
         return self
 
 
+def _achatar(dicionario: dict) -> list[str]:
+    return [nome for grupo in dicionario.values() for nome in grupo]
+
+
 def configuracao_validador(dados: dict | None = None) -> ConfiguracaoValidador:
-    return ConfiguracaoValidador.model_validate(
-        dados if dados is not None else carregar("validador")
-    )
+    bruto = dados if dados is not None else carregar("validador")
+    if "dicionario_tecnologias" not in bruto:
+        bruto = {**bruto, "dicionario_tecnologias": _achatar(carregar("tecnologias_conhecidas"))}
+    return ConfiguracaoValidador.model_validate(bruto)

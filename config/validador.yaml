@@ -1,5 +1,31 @@
 paginas_max: 1
 
+niveis:
+  paginas: bloqueia
+  tecnologia: bloqueia
+  travessao: bloqueia
+  latex: bloqueia
+  caractere_invisivel: bloqueia
+  alfabeto: bloqueia
+  preambulo: bloqueia
+  cabecalho: bloqueia
+  experiencias: bloqueia
+  experiencia_vazia: bloqueia
+  numero: bloqueia
+  empresa_da_vaga: bloqueia
+  copia_da_vaga: indicio
+  estrutura: bloqueia
+  projetos: bloqueia
+  escape: bloqueia
+  idioma: bloqueia
+  pontuacao: indicio
+  senioridade: bloqueia
+  compilacao: bloqueia
+  caixa_estourada: bloqueia
+  titulo_e_data: bloqueia
+  sobreposicao: bloqueia
+  limites_de_layout: bloqueia
+
 latex:
   comentario: "%"
   ambiente_do_corpo: document
@@ -101,6 +127,73 @@ tecnologias_conhecidas:
   - GraphQL
   - Kotlin
   - Scala
+
+tecnologias:
+  exigir_caixa:
+    - Go
+    - Swift
+    - Dart
+    - Ruby
+    - Express
+    - Spring
+    - Apache
+    - Oracle
+    - Phoenix
+    - Gin
+    - Babel
+    - Unity
+    - Unreal
+    - Cypress
+    - Puppet
+    - Vagrant
+    - Pulsar
+    - Elixir
+    - Groovy
+    - Hibernate
+    - Bootstrap
+    - Electron
+    - Prometheus
+  forca_por_origem:
+    inventario: forte
+    linguagem: forte
+    topic: forte
+    readme: fraca
+    pagina: fraca
+  forca_padrao: fraca
+
+dados:
+  arquivos:
+    tecnologias: tecnologias.yaml
+    vocabulario: vocabulario.yaml
+  vocabulario:
+    ngrama_max: 3
+    sigla_min_chars: 2
+    termo_min_chars: 4
+
+calibracao:
+  subpasta: validador/calibracao
+  metas:
+    falso_positivo_max: 0.05
+    falso_negativo_max: 0.1
+  por_regra: {}
+  injecoes:
+    tecnologia:
+      fonte: proibidos_tecnologia
+      modelo: {pt: "Experiência com {termo}.", en: "Experience with {termo}."}
+    numero:
+      fonte: proibidos_numero
+      modelo: {pt: "Entreguei {termo} de resultado.", en: "Delivered {termo} of results."}
+    senioridade:
+      fonte: proibidos_palavra
+      tipos: [senior_disfarcado]
+      ignorar: [lideran]
+      modelo: {pt: "{termo} o time.", en: "{termo} the team."}
+    empresa_da_vaga:
+      fonte: empresa
+      modelo: {pt: "Atuo pensando na {termo}.", en: "I work thinking of {termo}."}
+    copia_da_vaga:
+      fonte: anuncio
+      modelo: {pt: "{termo}", en: "{termo}"}
 
 conteudo:
   trecho_max_chars: 120
