@@ -6,9 +6,11 @@ from src.conteudo.modelo import Blocos, Inventario
 from src.gerador.configuracao import configuracao_gerador
 from src.gerador.travado import Travado
 from src.padroes.configuracao import ConfiguracaoPadroes
+from src.validador.banco import BancoTecnologias
 from src.validador.configuracao import ConfiguracaoValidador
 from src.validador.documento import Documento, Entrada, Secao, ler_documento
 from src.validador.texto import plano
+from src.validador.vocabulario import TermosDoIdioma, Vocabulario
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +27,12 @@ class ContextoConteudo:
     padroes: ConfiguracaoPadroes
     travado: Travado
     idioma: str
+    banco: BancoTecnologias | None = None
+    vocabulario: Vocabulario | None = None
+
+    @property
+    def termos_do_vocabulario(self) -> TermosDoIdioma | None:
+        return self.vocabulario.do_idioma(self.idioma) if self.vocabulario else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +44,10 @@ class Analise:
     formacao: Secao | None
     experiencias: Secao | None
     projetos: Secao | None
+
+    @property
+    def termos_do_vocabulario(self) -> TermosDoIdioma | None:
+        return self.contexto.termos_do_vocabulario
 
     @property
     def entradas_de_experiencia(self) -> tuple[Entrada, ...]:

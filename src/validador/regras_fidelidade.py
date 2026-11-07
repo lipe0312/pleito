@@ -5,7 +5,7 @@ import re
 from src.padroes.pontuacao import violacoes_de_pontuacao
 from src.validador.analise import Analise, ContextoConteudo
 from src.validador.configuracao import ConfiguracaoValidador
-from src.validador.resultado import Regra, Violacao
+from src.validador.resultado import Nivel, Regra, Violacao
 from src.validador.texto import (
     Palavra,
     ao_redor,
@@ -62,6 +62,7 @@ def validar_numeros(analise: Analise, config: ConfiguracaoValidador) -> list[Vio
                 f"numero fora dos blocos: {achado.group(0)}",
                 ao_redor(texto, achado.start(), achado.end(), config),
                 "tire o numero; so valem numeros que estao nos blocos",
+                evidencia="faltou: numero nos blocos, no cabecalho ou no inventario",
             )
         )
     return violacoes
@@ -109,6 +110,7 @@ def validar_empresa_da_vaga(analise: Analise, config: ConfiguracaoValidador) -> 
                 "nome da empresa da vaga no curriculo",
                 ao_redor(texto, formas[inicio].inicio, formas[janela[-1]].fim, config),
                 "tire o nome da empresa da vaga; descreva so o que esta nos blocos",
+                evidencia="faltou: nome so nos titulos e no cabecalho vindos dos blocos",
             )
         )
     return violacoes
@@ -123,24 +125,45 @@ def _janelas(formas: list[Palavra], tamanho: int) -> list[tuple[str, ...]]:
 def validar_copia_da_vaga(analise: Analise, config: ConfiguracaoValidador) -> list[Violacao]:
     tamanho = config.conteudo.copia_da_vaga.palavras
     anuncio = set(_janelas(palavras(analise.contexto.vaga.descricao), tamanho))
+    vocabulario = analise.termos_do_vocabulario
     violacoes = []
     for segmento in analise.segmentos(config):
         formas = palavras(segmento)
+        cobertas = vocabulario.cobertura(formas) if vocabulario else set()
         iguais = [i for i, janela in enumerate(_janelas(formas, tamanho)) if janela in anuncio]
         while iguais:
             primeiro = ultimo = iguais[0]
             while ultimo + 1 in iguais:
                 ultimo += 1
             iguais = [i for i in iguais if i > ultimo]
-            violacoes.append(
-                violacao(
-                    config,
-                    Regra.COPIA_DA_VAGA,
-                    f"trecho de {tamanho} palavras ou mais copiado do anuncio",
-                    segmento[formas[primeiro].inicio : formas[ultimo + tamanho - 1].fim],
-                    "reescreva com suas palavras, partindo do que esta nos blocos",
+            trecho = segmento[formas[primeiro].inicio : formas[ultimo + tamanho - 1].fim]
+            corrida = range(primeiro, ultimo + tamanho)
+            proprias = [i for i in corrida if i not in cobertas]
+            if len(proprias) >= tamanho:
+                violacoes.append(
+                    violacao(
+                        config,
+                        Regra.COPIA_DA_VAGA,
+                        f"trecho de {tamanho} palavras ou mais copiado do anuncio",
+                        trecho,
+                        "reescreva com suas palavras, partindo do que esta nos blocos",
+                        evidencia=f"faltou: {len(proprias)} de {len(corrida)} palavras fora do "
+                        "vocabulario do curriculo",
+                    )
                 )
-            )
+            else:
+                violacoes.append(
+                    violacao(
+                        config,
+                        Regra.COPIA_DA_VAGA,
+                        f"trecho igual ao anuncio coberto pelo vocabulario: {len(proprias)} "
+                        f"de {len(corrida)} palavras sao proprias",
+                        trecho,
+                        "",
+                        Nivel.OK,
+                        "salvou: vocabulario do curriculo cobre o trecho",
+                    )
+                )
     return violacoes
 
 
@@ -167,13 +190,28 @@ def validar_senioridade(analise: Analise, config: ConfiguracaoValidador) -> list
     termos = [*inflada.verbos[idioma], *inflada.expressoes[idioma]]
     base = [p.forma for p in palavras(" ".join(plano(t, config) for t in _fatos_livres(analise)))]
     base += [p.forma for p in palavras(" ".join(_fatos_fixos(analise.contexto, config)))]
+    vocabulario = analise.termos_do_vocabulario
     violacoes = []
     for termo in termos:
         sequencia = [p.forma for p in palavras(termo)]
         if ocorrencias([Palavra(f, 0, 0) for f in base], sequencia):
             continue
         for segmento in analise.segmentos(config):
-            if ocorrencias(palavras(segmento), sequencia):
+            if not ocorrencias(palavras(segmento), sequencia):
+                continue
+            if vocabulario and vocabulario.contem(termo):
+                violacoes.append(
+                    violacao(
+                        config,
+                        Regra.SENIORIDADE,
+                        f"termo de senioridade coberto pelo vocabulario do curriculo: {termo}",
+                        segmento,
+                        "",
+                        Nivel.OK,
+                        "salvou: termo esta no vocabulario do curriculo",
+                    )
+                )
+            else:
                 violacoes.append(
                     violacao(
                         config,
@@ -181,7 +219,8 @@ def validar_senioridade(analise: Analise, config: ConfiguracaoValidador) -> list
                         f"senioridade sem base nos blocos: {termo}",
                         segmento,
                         f"tire '{termo}'; o nivel vem dos blocos",
+                        evidencia="faltou: termo nos blocos e no vocabulario do curriculo",
                     )
                 )
-                break
+            break
     return violacoes

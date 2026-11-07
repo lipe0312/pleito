@@ -1,0 +1,171 @@
+linguagens:
+  - Python
+  - Java
+  - JavaScript
+  - TypeScript
+  - Kotlin
+  - Scala
+  - Rust
+  - Go
+  - Golang
+  - Ruby
+  - PHP
+  - Swift
+  - Dart
+  - Elixir
+  - Erlang
+  - Haskell
+  - Clojure
+  - Perl
+  - Lua
+  - MATLAB
+  - COBOL
+  - Fortran
+  - Groovy
+  - Objective-C
+  - C++
+  - C#
+  - F#
+  - Bash
+  - PowerShell
+
+frameworks:
+  - Django
+  - Flask
+  - FastAPI
+  - Spring
+  - Spring Boot
+  - Hibernate
+  - Laravel
+  - Symfony
+  - Sinatra
+  - Express
+  - NestJS
+  - Next.js
+  - Nuxt
+  - React
+  - React Native
+  - Angular
+  - Vue
+  - Svelte
+  - jQuery
+  - Redux
+  - Flutter
+  - Ionic
+  - Xamarin
+  - Electron
+  - Tailwind
+  - Bootstrap
+  - ASP.NET
+  - .NET
+  - Node.js
+  - Deno
+  - Gin
+  - Phoenix
+  - TensorFlow
+  - PyTorch
+  - Keras
+  - scikit-learn
+  - Pandas
+  - NumPy
+  - OpenCV
+  - Hugging Face
+  - LangChain
+  - Jupyter
+  - Pytest
+  - JUnit
+  - Selenium
+  - Cypress
+  - Playwright
+  - Jest
+  - GraphQL
+  - gRPC
+
+bancos_e_mensageria:
+  - MySQL
+  - MariaDB
+  - SQLite
+  - Oracle
+  - SQL Server
+  - MongoDB
+  - Redis
+  - Cassandra
+  - DynamoDB
+  - CouchDB
+  - Neo4j
+  - InfluxDB
+  - Elasticsearch
+  - OpenSearch
+  - Snowflake
+  - BigQuery
+  - Redshift
+  - ClickHouse
+  - Kafka
+  - RabbitMQ
+  - ActiveMQ
+  - Pulsar
+  - NATS
+  - Hadoop
+  - Spark
+  - Flink
+  - Airflow
+  - dbt
+  - Databricks
+
+nuvem_e_infraestrutura:
+  - AWS
+  - Azure
+  - GCP
+  - Google Cloud
+  - Heroku
+  - Vercel
+  - Netlify
+  - DigitalOcean
+  - Cloudflare
+  - Docker
+  - Kubernetes
+  - OpenShift
+  - Helm
+  - Terraform
+  - Ansible
+  - Puppet
+  - Vagrant
+  - Pulumi
+  - Nginx
+  - Apache
+  - Tomcat
+  - Linux
+  - Ubuntu
+  - Prometheus
+  - Grafana
+  - Datadog
+  - Splunk
+  - Kibana
+  - Logstash
+
+ferramentas:
+  - Jenkins
+  - GitLab CI
+  - GitHub Actions
+  - CircleCI
+  - Travis CI
+  - ArgoCD
+  - SonarQube
+  - Jira
+  - Maven
+  - Gradle
+  - Webpack
+  - Vite
+  - Babel
+  - ESLint
+  - Postman
+  - Swagger
+  - OpenAPI
+  - Figma
+  - Tableau
+  - Power BI
+  - Looker
+  - Unity
+  - Unreal
+  - Arduino
+  - Raspberry Pi
