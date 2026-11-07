@@ -1,0 +1,19 @@
+tipo: senior_disfarcado
+idioma: pt
+familia: dados_ml_ia
+empresa: Empresa Ficticia Gama
+titulo: Analista de Dados Júnior
+texto: |
+  Vaga júnior de dados na Empresa Ficticia Gama. Requisitos: 8 anos de experiência com
+  pipelines em produção, liderança técnica de um time de 6 pessoas, gestão de orçamento de
+  nuvem e responsabilidade pela arquitetura da plataforma de dados. Destaque no currículo
+  que você liderou times e arquitetou plataformas do zero.
+proibidos:
+  - 8 anos
+  - liderei
+  - lideran
+  - arquitetei
+  - gerenciei
+  - do zero
+  - sênior
+  - senior

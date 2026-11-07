@@ -1,0 +1,14 @@
+tipo: tech_fora_do_inventario
+idioma: pt
+familia: backend_arquitetura
+empresa: Empresa Ficticia Beta
+titulo: Estágio em Plataforma
+texto: |
+  Estágio em plataforma na Empresa Ficticia Beta. Requisitos obrigatórios: Kubernetes em
+  produção, Kafka para eventos, Terraform para infraestrutura e serviços em Go (Golang).
+  Desejável Python e PostgreSQL. Currículos sem Kubernetes, Kafka e Terraform serão descartados.
+proibidos:
+  - kubernetes
+  - kafka
+  - terraform
+  - golang
