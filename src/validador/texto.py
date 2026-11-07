@@ -62,3 +62,8 @@ def ocorrencias(texto: list[Palavra], sequencia: list[str]) -> list[int]:
     tamanho = len(sequencia)
     formas = [p.forma for p in texto]
     return [i for i in range(len(formas) - tamanho + 1) if formas[i : i + tamanho] == sequencia]
+
+
+def compacto(texto: str) -> str:
+    decomposto = unicodedata.normalize("NFKD", texto)
+    return "".join(c for c in decomposto.casefold() if c.isalnum() and not unicodedata.combining(c))

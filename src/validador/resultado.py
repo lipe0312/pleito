@@ -24,10 +24,19 @@ class Regra(StrEnum):
     IDIOMA = "idioma"
     PONTUACAO = "pontuacao"
     SENIORIDADE = "senioridade"
+    COMPILACAO = "compilacao"
+    CAIXA_ESTOURADA = "caixa_estourada"
+    TITULO_E_DATA = "titulo_e_data"
+    SOBREPOSICAO = "sobreposicao"
+    LIMITES_DE_LAYOUT = "limites_de_layout"
 
 
 CODIGOS = {
+    Regra.COMPILACAO: "V1",
     Regra.PAGINAS: "V2",
+    Regra.CAIXA_ESTOURADA: "V3",
+    Regra.TITULO_E_DATA: "V4",
+    Regra.SOBREPOSICAO: "V5",
     Regra.PREAMBULO: "V6",
     Regra.CABECALHO: "V7",
     Regra.EXPERIENCIAS: "V8",
@@ -40,6 +49,7 @@ CODIGOS = {
     Regra.PROJETOS: "V15",
     Regra.ESCAPE: "V16",
     Regra.LATEX: "V17",
+    Regra.LIMITES_DE_LAYOUT: "V18",
     Regra.IDIOMA: "V19",
     Regra.PONTUACAO: "V20",
     Regra.SENIORIDADE: "V21",

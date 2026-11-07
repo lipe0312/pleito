@@ -8,6 +8,7 @@ from src.validador.caracteres import validar_alfabeto, validar_invisiveis, valid
 from src.validador.configuracao import ConfiguracaoValidador, configuracao_validador
 from src.validador.conteudo import validar_conteudo
 from src.validador.latex import validar_latex
+from src.validador.layout import validar_layout
 from src.validador.paginas import texto_do_pdf, validar_paginas
 from src.validador.resultado import CurriculoInvalido, Regra, Resultado, Violacao
 from src.validador.tecnologias import validar_tecnologias, validar_tecnologias_no_texto
@@ -52,10 +53,12 @@ def validar_curriculo(
     pdf: Path | None = None,
     *,
     contexto: ContextoConteudo,
+    log: Path | None = None,
 ) -> Resultado:
     config = config or configuracao_validador()
     violacoes = list(validar_arquivos(tex, inventario, config, pdf).violacoes)
     violacoes += validar_conteudo(tex, inventario, contexto, config)
+    violacoes += validar_layout(tex, inventario, contexto, pdf, log, config)
     return Resultado(tuple(dict.fromkeys(violacoes)))
 
 
@@ -85,7 +88,8 @@ def exigir_valido(
     pdf: Path | None = None,
     *,
     contexto: ContextoConteudo,
+    log: Path | None = None,
 ) -> None:
-    resultado = validar_curriculo(tex, inventario, config, pdf, contexto=contexto)
+    resultado = validar_curriculo(tex, inventario, config, pdf, contexto=contexto, log=log)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)

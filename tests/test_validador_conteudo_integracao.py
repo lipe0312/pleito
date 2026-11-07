@@ -4,6 +4,7 @@ import pytest
 from apoio_validador import (
     contexto_rico,
     gravar_pdf,
+    gravar_pdf_das_entradas,
     inventario_rico,
     tex_rico,
 )
@@ -99,11 +100,10 @@ def test_template_real_passa_em_todas_as_regras(idioma):
 
 @pytest.mark.parametrize("idioma", ["pt", "en"])
 def test_validar_curriculo_com_contexto_aprova_o_template(tmp_path, idioma):
-    pdf = gravar_pdf(tmp_path, ["Pessoa Ficticia"])
+    tex = tex_rico(idioma)
+    pdf = gravar_pdf_das_entradas(tmp_path, tex)
 
-    resultado = validar_curriculo(
-        tex_rico(idioma), inventario_rico(), pdf=pdf, contexto=contexto_rico(idioma)
-    )
+    resultado = validar_curriculo(tex, inventario_rico(), pdf=pdf, contexto=contexto_rico(idioma))
 
     assert resultado.aprovado
 
