@@ -29,6 +29,7 @@ class PlataformaAlertas:
     separador_cartao: str
     cartao_campos: tuple[str, ...]
     cartao_minimo: tuple[str, ...]
+    limites_campos: dict[str, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,11 +67,16 @@ def _plataforma(nome: str, dados: dict) -> PlataformaAlertas:
         separador_cartao=dados["separador_cartao"],
         cartao_campos=tuple(dados["cartao_campos"]),
         cartao_minimo=tuple(dados["cartao_minimo"]),
+        limites_campos={nome: int(valor) for nome, valor in dados["limites_campos"].items()},
     )
     if plataforma.link_vaga.groups != 1 or "{id}" not in plataforma.link_canonico:
         raise AlertasMalConfigurado(f"{nome}: link_vaga com um grupo e link_canonico com {{id}}")
     if not set(plataforma.cartao_minimo) <= set(plataforma.cartao_campos):
         raise AlertasMalConfigurado(f"{nome}: cartao_minimo fora de cartao_campos")
+    if not set(plataforma.cartao_campos) <= set(plataforma.limites_campos):
+        raise AlertasMalConfigurado(f"{nome}: limites_campos sem todos os cartao_campos")
+    if any(limite <= 0 for limite in plataforma.limites_campos.values()):
+        raise AlertasMalConfigurado(f"{nome}: limites_campos precisa ser positivo")
     if not set(plataforma.caixas_mensagem_recrutador) <= set(plataforma.caixas_nunca_vaga):
         raise AlertasMalConfigurado(f"{nome}: caixa de recrutador fora de caixas_nunca_vaga")
     if set(plataforma.caixas_alerta) & set(plataforma.caixas_nunca_vaga):

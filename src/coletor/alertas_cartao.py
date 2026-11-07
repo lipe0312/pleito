@@ -10,10 +10,6 @@ from src.coletor.contratos import VagaBruta
 from src.email.regras import normalizar
 from src.triagem.regra import extrair_anos_experiencia, inferir_funcao
 
-LIMITE_TITULO = 200
-LIMITE_EMPRESA = 120
-LIMITE_LOCAL = 120
-
 
 @dataclass(frozen=True, slots=True)
 class Cartao:
@@ -95,15 +91,16 @@ def extrair_cartoes(
 def vaga_do_cartao(
     cartao: Cartao, plataforma: PlataformaAlertas, recebido_em: date | None
 ) -> VagaBruta:
+    limites = plataforma.limites_campos
     contexto = f"{cartao.titulo} {cartao.local}"
     return VagaBruta(
         fonte=plataforma.fonte,
         id_externo=cartao.id_vaga,
         url=plataforma.link_canonico.format(id=cartao.id_vaga),
-        titulo=cartao.titulo[:LIMITE_TITULO],
-        empresa=cartao.empresa[:LIMITE_EMPRESA],
+        titulo=cartao.titulo[: limites['titulo']],
+        empresa=cartao.empresa[: limites['empresa']],
         descricao="",
-        local=cartao.local[:LIMITE_LOCAL],
+        local=cartao.local[: limites['local']],
         pais=inferir_pais(cartao.local) or plataforma.pais_padrao,
         senioridade=inferir_senioridade(cartao.titulo),
         modelo=inferir_modelo(contexto),

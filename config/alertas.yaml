@@ -60,3 +60,7 @@ plataformas:
     separador_cartao: '---'
     cartao_campos: [titulo, empresa, local]
     cartao_minimo: [titulo, empresa, local]
+    limites_campos:
+      titulo: 200
+      empresa: 120
+      local: 120

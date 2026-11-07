@@ -264,3 +264,12 @@ def test_config_recusa_link_sem_id_da_vaga():
     ruim = {**bruto, "plataformas": {"linkedin": {**linkedin, "link_canonico": "https://x/y"}}}
     with pytest.raises(AlertasMalConfigurado):
         montar(ruim)
+
+
+def test_config_recusa_limite_de_campo_ausente_ou_nao_positivo():
+    bruto = _bruto()
+    linkedin = bruto["plataformas"]["linkedin"]
+    for limites in ({"titulo": 10, "empresa": 10}, {"titulo": 10, "empresa": 0, "local": 10}):
+        ruim = {**bruto, "plataformas": {"linkedin": {**linkedin, "limites_campos": limites}}}
+        with pytest.raises(AlertasMalConfigurado):
+            montar(ruim)

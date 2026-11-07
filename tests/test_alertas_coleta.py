@@ -288,3 +288,22 @@ def test_email_modelo_e_so_dado_nunca_comando(cfg):
     assert destino.vagas == []
     assert resumo.por_tipo == {TipoAlerta.ALERTA_VAZIO: 1}
     assert isinstance(Email("a", "b", "c"), Email)
+
+
+def test_registro_nasce_com_modo_0600_mesmo_sem_chmod_e_com_umask_aberta(tmp_path, monkeypatch):
+    anterior = os.umask(0)
+    monkeypatch.setattr("src.coletor.alertas_coleta.os.chmod", lambda *a, **k: None)
+    try:
+        caminho = tmp_path / "estado" / "lidos.jsonl"
+        RegistroLidos(caminho).gravar([{"id_mensagem": "a"}])
+    finally:
+        os.umask(anterior)
+    assert stat.S_IMODE(os.stat(caminho).st_mode) == 0o600
+
+
+def test_registro_ja_existente_com_modo_aberto_volta_para_0600(tmp_path):
+    caminho = tmp_path / "lidos.jsonl"
+    caminho.write_text("", encoding="utf-8")
+    os.chmod(caminho, 0o644)
+    RegistroLidos(caminho).gravar([{"id_mensagem": "a"}])
+    assert stat.S_IMODE(os.stat(caminho).st_mode) == 0o600
