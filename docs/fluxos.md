@@ -11,7 +11,7 @@ Legenda: ✅ implementado · ⏳ item pendente (issue) · 👤 manual do Filipe.
 
 ### U1. Dia típico
 
-✅ coleta (F4.1), gerador com e sem IA (F3.1) · ⏳ funil F4.2 (#24), resumo F1.5 (#15), agendamento
+✅ coleta (F4.1), funil de triagem (F4.2, `docs/triagem.md`), gerador com e sem IA (F3.1) · ⏳ resumo F1.5 (#15), agendamento
 F1.7 (#18), painel F1.6 (#17) e F5.2 (#27), aplicador F6.2 (#30) · 👤 launchd M3 (#40), push M2
 (#39), submit real M4 (#41).
 
@@ -19,13 +19,16 @@ F1.7 (#18), painel F1.6 (#17) e F5.2 (#27), aplicador F6.2 (#30) · 👤 launchd
 flowchart TD
   A["06:30 launchd acorda o Mac (pmset)"] --> B["coletor busca vagas nas fontes permitidas"]
   B --> C["deduplica e grava em vagas"]
-  C --> D{"filtros de config/triagem.yaml"}
-  D -- "fora do perfil" --> X["descartada sem token"]
-  D -- "passa" --> E["pré-nota com tier rápido, no máximo vagas_pre_pontuadas_max"]
+  C --> D0{"duplicata de vaga já vista?"}
+  D0 -- "sim" --> X
+  D0 -- "não" --> D{"filtros de config/filtros.yaml e config/triagem.yaml"}
+  D -- "fora do perfil" --> X["descartada sem token, com motivo gravado"]
+  D -- "passa" --> E["pré-nota 0 a 100 por palavras-chave contra o inventário, sem IA"]
   E --> F{"pré-nota acima de pre_nota_minima_para_forte?"}
   F -- "não" --> X
-  F -- "sim" --> G["nota final e slots do currículo com tier forte"]
-  G --> H["validador: uma página, inventário, sem travessão"]
+  F -- "sim, as vagas_pre_pontuadas_max melhores" --> G["nota final com tier forte (JSON estrito, cache por hash)"]
+  G --> G2["slots do currículo com tier forte"]
+  G2 --> H["validador: uma página, inventário, sem travessão"]
   H -- "recusa" --> Y["versão descartada com motivo"]
   H -- "aprova" --> I["fila de aprovação"]
   I --> J["07:45 email de resumo com o rótulo Candidaturas/Prontas"]
@@ -232,7 +235,7 @@ sequenceDiagram
   end
 ```
 
-### R5. Chamada ao roteador de LLM ✅ roteador e uso em F3.1, ⏳ uso em F4.2 (#24), 👤 M7 e M8
+### R5. Chamada ao roteador de LLM ✅ roteador, uso em F3.1 e na pontuação final da F4.2, 👤 M7 e M8
 
 ```mermaid
 sequenceDiagram
