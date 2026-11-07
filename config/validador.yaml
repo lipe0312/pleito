@@ -129,30 +129,25 @@ tecnologias_conhecidas:
   - Scala
 
 tecnologias:
-  exigir_caixa:
+  palavras_comuns:
     - Go
     - Swift
-    - Dart
-    - Ruby
-    - Express
     - Spring
-    - Apache
-    - Oracle
-    - Phoenix
+    - Express
     - Gin
-    - Babel
+    - Phoenix
     - Unity
     - Unreal
     - Cypress
     - Puppet
     - Vagrant
     - Pulsar
-    - Elixir
     - Groovy
     - Hibernate
     - Bootstrap
     - Electron
-    - Prometheus
+    - Babel
+  evidencias_mostradas: 3
   forca_por_origem:
     inventario: forte
     linguagem: forte
@@ -172,6 +167,8 @@ dados:
 
 calibracao:
   subpasta: validador/calibracao
+  palavras_extras_do_anuncio: 2
+  caracteres_fora_do_texto: '[^\w\s.,-]'
   metas:
     falso_positivo_max: 0.05
     falso_negativo_max: 0.1

@@ -6,7 +6,7 @@ from functools import cached_property
 
 from pydantic import RootModel
 
-from src.conteudo.modelo import Blocos, Estrito, Identificador
+from src.conteudo.modelo import Blocos, Estrito, Identificador, Inventario
 from src.validador.configuracao import ConfiguracaoValidador
 from src.validador.texto import Palavra, normalizar, palavras, plano
 
@@ -97,16 +97,44 @@ def _forma_do_nome(nome: str, config: ConfiguracaoValidador) -> str:
     return " ".join(p.forma for p in palavras(plano(nome, config)))
 
 
-def montar_vocabulario(blocos: Blocos, config: ConfiguracaoValidador) -> Vocabulario:
+def _tecnologias_do_dicionario(
+    config: ConfiguracaoValidador, inventario: Inventario | None
+) -> list[tuple[str, ...]]:
+    comuns = {normalizar(nome) for nome in config.tecnologias.palavras_comuns}
+    nomes = [*config.tecnologias_conhecidas, *config.dicionario_tecnologias]
+    nomes += [e.pedido for e in inventario.equivalencias] if inventario else []
+    sequencias = []
+    for nome in nomes:
+        sequencia = tuple(p.forma for p in palavras(nome))
+        if sequencia and normalizar(nome) not in comuns and len("".join(sequencia)) >= 2:
+            sequencias.append(sequencia)
+    return sequencias
+
+
+def _com_tecnologia(termo: str, tecnologias: list[tuple[str, ...]]) -> bool:
+    formas = tuple(p.forma for p in palavras(termo))
+    return any(formas[i : i + len(tec)] == tec for tec in tecnologias for i in range(len(formas)))
+
+
+def montar_vocabulario(
+    blocos: Blocos, config: ConfiguracaoValidador, inventario: Inventario | None = None
+) -> Vocabulario:
+    tecnologias = _tecnologias_do_dicionario(config, inventario)
     saida: dict[str, TermosDoIdioma] = {}
     for idioma in blocos.idiomas:
         bullets, corridos, nomes = _textos_do_idioma(blocos, idioma)
         vazias = set(config.conteudo.idioma.marcadores.get(idioma, []))
         frases = _frases([*bullets, *corridos], config)
+        candidatos = {
+            "verbos": _primeiras_palavras(_frases(bullets, config)),
+            "siglas": _siglas([*bullets, *corridos], config),
+            "termos": _termos(frases, vazias, config),
+            "projetos": {_forma_do_nome(nome, config) for nome in nomes if nome},
+        }
         saida[idioma] = TermosDoIdioma(
-            verbos=sorted(_primeiras_palavras(_frases(bullets, config))),
-            siglas=sorted(_siglas([*bullets, *corridos], config)),
-            termos=sorted(_termos(frases, vazias, config)),
-            projetos=sorted({_forma_do_nome(nome, config) for nome in nomes if nome}),
+            **{
+                grupo: sorted(t for t in termos if not _com_tecnologia(t, tecnologias))
+                for grupo, termos in candidatos.items()
+            }
         )
     return Vocabulario(saida)

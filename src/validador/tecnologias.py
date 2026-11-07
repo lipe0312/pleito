@@ -9,8 +9,7 @@ from src.validador.banco import BancoTecnologias, Evidencia, forca_da_evidencia
 from src.validador.configuracao import ConfiguracaoValidador
 from src.validador.latex import corpo_do_tex
 from src.validador.resultado import Nivel, Regra, Violacao
-from src.validador.texto import ao_redor, palavras
-from src.validador.vocabulario import TermosDoIdioma
+from src.validador.texto import ao_redor
 
 MARCADOR = re.compile(r"\\tech(?![A-Za-z])")
 DESTINO_DO_LINK = re.compile(r"\\href\s*\{[^{}]*\}")
@@ -19,15 +18,12 @@ SIMBOLO_DE_CONTROLE = re.compile(r"\\[^A-Za-z]", re.S)
 ESPACOS = re.compile(r"\s+")
 
 
-EVIDENCIAS_MOSTRADAS = 3
-
-
 def _violacao(detalhe: str) -> Violacao:
     return Violacao(Regra.TECNOLOGIA, detalhe)
 
 
-def _palavra(nome: str, exigir_caixa: bool = False) -> re.Pattern[str]:
-    return re.compile(rf"(?<!\w){re.escape(nome)}(?!\w)", 0 if exigir_caixa else re.IGNORECASE)
+def _palavra(nome: str) -> re.Pattern[str]:
+    return re.compile(rf"(?<!\w){re.escape(nome)}(?!\w)", re.IGNORECASE)
 
 
 def _normalizar(texto: str) -> str:
@@ -38,9 +34,10 @@ def _nomes_do_inventario(inventario: Inventario) -> list[str]:
     return sorted({_normalizar(item.tech) for item in inventario.techs}, key=len, reverse=True)
 
 
-def _descrever(evidencias: list[Evidencia]) -> str:
+def _descrever(evidencias: list[Evidencia], config: ConfiguracaoValidador) -> str:
     return "; ".join(
-        f"{e.origem} em {e.ref} ({e.fonte})" for e in evidencias[:EVIDENCIAS_MOSTRADAS]
+        f"{e.origem} em {e.ref} ({e.fonte})"
+        for e in evidencias[: config.tecnologias.evidencias_mostradas]
     )
 
 
@@ -65,7 +62,7 @@ def _classificar(
             trecho,
             "",
             Nivel.OK,
-            f"salvou: {_descrever(fortes)}",
+            f"salvou: {_descrever(fortes, config)}",
         )
     if evidencias:
         return Violacao(
@@ -74,7 +71,7 @@ def _classificar(
             trecho,
             f"confirme {nome} nos projetos ou tire do texto antes de enviar",
             Nivel.INDICIO,
-            f"faltou evidencia forte; so ha: {_descrever(evidencias)}",
+            f"faltou evidencia forte; so ha: {_descrever(evidencias, config)}",
         )
     faltou = "nenhuma evidencia no banco de tecnologias"
     if banco is None:
@@ -89,9 +86,15 @@ def _classificar(
     )
 
 
-def _coberta_pelo_vocabulario(inicio: int, fim: int, formas: list, cobertas: set[int]) -> bool:
-    indices = [i for i, p in enumerate(formas) if p.inicio < fim and p.fim > inicio]
-    return bool(indices) and all(i in cobertas for i in indices)
+def _palavra_comum_em_outra_caixa(nome: str, trecho: str) -> Violacao:
+    return Violacao(
+        Regra.TECNOLOGIA,
+        f"nome de tecnologia que tambem e palavra comum, fora da caixa do dicionario: {nome}",
+        trecho,
+        f"se for a tecnologia {nome}, cite pelo inventario com \\tech{{}}; se nao, ignore",
+        Nivel.INDICIO,
+        f"faltou: caixa exata do dicionario; {nome} tambem e palavra comum",
+    )
 
 
 def validar_tecnologias_no_texto(
@@ -99,44 +102,33 @@ def validar_tecnologias_no_texto(
     inventario: Inventario,
     config: ConfiguracaoValidador,
     banco: BancoTecnologias | None = None,
-    vocabulario: TermosDoIdioma | None = None,
 ) -> list[Violacao]:
     restante = ESPACOS.sub(" ", _normalizar(texto))
     for nome in _nomes_do_inventario(inventario):
         restante = _palavra(nome).sub(" ", restante)
-    pedidos = {_normalizar(e.pedido).casefold() for e in inventario.equivalencias}
-    caixa = {_normalizar(nome) for nome in config.tecnologias.exigir_caixa}
-    formas = palavras(restante)
-    cobertas = vocabulario.cobertura(formas) if vocabulario else set()
+    comuns = {_normalizar(nome) for nome in config.tecnologias.palavras_comuns}
     achadas = []
-    for chave, nome in _conhecidas(inventario, config).items():
-        achado = _palavra(nome, nome in caixa).search(restante)
-        if achado:
-            achadas.append((nome, chave, achado))
+    for nome in _conhecidas(inventario, config).values():
+        ocorrencias = list(_palavra(nome).finditer(restante))
+        if not ocorrencias:
+            continue
+        exatas = [o for o in ocorrencias if o.group(0) == nome]
+        if nome in comuns and not exatas:
+            achadas.append((nome, ocorrencias[0], False))
+        else:
+            achadas.append((nome, (exatas or ocorrencias)[0], True))
     violacoes = []
-    for nome, chave, achado in sorted(achadas, key=lambda item: item[0]):
+    for nome, achado, tecnologia in sorted(achadas, key=lambda item: item[0]):
         if any(
             outro.start() <= achado.start()
             and achado.end() <= outro.end()
-            and outro is not achado
             and (outro.end() - outro.start()) > (achado.end() - achado.start())
-            for _, _, outro in achadas
+            for _, outro, _ in achadas
         ):
             continue
         trecho = ao_redor(restante, achado.start(), achado.end(), config)
-        if chave not in pedidos and _coberta_pelo_vocabulario(
-            achado.start(), achado.end(), formas, cobertas
-        ):
-            violacoes.append(
-                Violacao(
-                    Regra.TECNOLOGIA,
-                    f"tecnologia dentro de termo do vocabulario do curriculo: {nome}",
-                    trecho,
-                    "",
-                    Nivel.OK,
-                    "salvou: vocabulario do curriculo cobre o termo",
-                )
-            )
+        if not tecnologia:
+            violacoes.append(_palavra_comum_em_outra_caixa(nome, trecho))
             continue
         evidencias = banco.evidencias_de(nome) if banco else []
         violacoes.append(_classificar(nome, trecho, evidencias, banco, config))
@@ -155,7 +147,6 @@ def validar_tecnologias(
     inventario: Inventario,
     config: ConfiguracaoValidador,
     banco: BancoTecnologias | None = None,
-    vocabulario: TermosDoIdioma | None = None,
 ) -> list[Violacao]:
     corpo = corpo_do_tex(tex, config)
     permitidas = {_normalizar(item.tech).casefold() for item in inventario.techs}
@@ -168,7 +159,5 @@ def validar_tecnologias(
         for nome in dict.fromkeys(marcadas)
         if nome.casefold() not in permitidas
     ]
-    violacoes += validar_tecnologias_no_texto(
-        _texto_visivel(corpo), inventario, config, banco, vocabulario
-    )
+    violacoes += validar_tecnologias_no_texto(_texto_visivel(corpo), inventario, config, banco)
     return violacoes

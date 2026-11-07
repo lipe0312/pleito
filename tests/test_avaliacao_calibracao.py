@@ -145,3 +145,28 @@ def test_gravar_relatorio_fora_de_dados_e_recusado(tmp_path):
 def test_comando_sai_com_zero_dentro_das_metas_e_um_fora(tmp_path, capsys):
     assert calibracao.executar(tmp_path) in (0, 1)
     assert "falso" in capsys.readouterr().out
+
+
+def _anuncio(config):
+    entrada = next(e for e in ENTRADAS if e.tipo == "prompt_injection")
+    return calibracao._termos_anuncio(entrada, CONTEUDO, config)[0]
+
+
+def test_palavras_extras_do_trecho_do_anuncio_vem_da_configuracao():
+    base = configuracao_validador()
+    mais = configuracao_com(calibracao__palavras_extras_do_anuncio=5)
+    esperado = base.conteudo.copia_da_vaga.palavras + base.calibracao.palavras_extras_do_anuncio
+
+    palavras_base = len(_anuncio(base).split())
+    palavras_mais = len(_anuncio(mais).split())
+
+    assert palavras_base == esperado
+    assert palavras_mais - palavras_base == 3
+
+
+def test_caracteres_fora_do_texto_vem_da_configuracao():
+    config = configuracao_com(calibracao__caracteres_fora_do_texto="[^a-z ]")
+
+    trecho = _anuncio(config)
+
+    assert set(trecho) <= set("abcdefghijklmnopqrstuvwxyz ")

@@ -19,7 +19,7 @@ from src.validador.vocabulario import Vocabulario, montar_vocabulario
 CONFIG = configuracao_validador()
 
 
-def _sugestao(tech, evidencias, status="pendente", projeto="proj_repositorio_ficticio"):
+def _sugestao(tech, evidencias, status="aprovada", projeto="proj_repositorio_ficticio"):
     return Sugestao(
         id=f"sug_{tech.lower()}",
         tipo="tecnologia_nova",
@@ -65,6 +65,30 @@ def test_banco_junta_as_ancoras_do_f27_com_origem_e_fonte_publica():
     assert [e.origem for e in docker.evidencias] == ["linguagem", "topic", "readme"]
     assert {e.fonte for e in docker.evidencias} == {"https://example.invalid/repo"}
     assert {e.ref for e in docker.evidencias} == {"proj_repositorio_ficticio"}
+
+
+@pytest.mark.parametrize("status", ["pendente", "rejeitada"])
+def test_so_sugestao_aprovada_vira_evidencia(status):
+    _, inventario = conteudo_rico()
+    sugestoes = _sugestoes(_sugestao("Docker", ["topic:docker"], status=status))
+
+    banco = montar_banco(inventario, sugestoes)
+
+    assert banco.evidencias_de("Docker") == []
+
+
+def test_sugestao_pendente_nao_salva_tecnologia_em_texto_puro():
+    from apoio_validador import inventario_ficticio, tex_com_corpo
+
+    from src.validador.resultado import Regra
+    from src.validador.validar import validar_fonte
+
+    inventario = inventario_ficticio()
+    banco = montar_banco(inventario, _sugestoes(_sugestao("Kafka", ["topic:kafka"], "pendente")))
+
+    resultado = validar_fonte(tex_com_corpo("Experiência com Kafka"), inventario, banco=banco)
+
+    assert Regra.TECNOLOGIA in resultado.regras_bloqueadas
 
 
 def test_sugestao_rejeitada_nao_vira_evidencia():
@@ -116,7 +140,27 @@ def test_vocabulario_separa_pt_e_en_com_verbos_siglas_termos_e_projetos():
     assert "projeto alfa beta" in pt.projetos
     assert "projeto gama" in pt.projetos
     assert any(" " in termo for termo in pt.termos)
-    assert "filas com rabbitmq" in pt.termos
+    assert "hardware de borda" in pt.termos
+
+
+def test_vocabulario_nao_guarda_sigla_nem_termo_com_tecnologia_do_dicionario():
+    blocos, _ = conteudo_rico()
+    base = blocos.blocos[1]
+    texto = {
+        "pt": "Integrei API Kafka com Docker Swarm e KAFKA em hardware de borda.",
+        "en": "Integrated API Kafka with Docker Swarm and KAFKA on edge hardware.",
+    }
+    bullet = base.bullets[0].model_copy(update={"redacao": texto})
+    alterado = base.model_copy(update={"bullets": [bullet, *base.bullets[1:]]})
+    novos = blocos.model_copy(update={"blocos": [blocos.blocos[0], alterado, *blocos.blocos[2:]]})
+
+    vocabulario = montar_vocabulario(novos, CONFIG)
+
+    for idioma, termos in vocabulario.root.items():
+        guardados = [*termos.siglas, *termos.termos, *termos.projetos]
+        assert guardados, idioma
+        assert not any("kafka" in t or "docker" in t for t in guardados), idioma
+    assert "api" in vocabulario.root["pt"].siglas
 
 
 def test_termos_de_dominio_nao_comecam_nem_terminam_em_palavra_vazia():

@@ -4,27 +4,34 @@ import pytest
 from apoio_validador import (
     banco_ficticio,
     configuracao_com,
+    contexto_com,
     gravar_pdf,
+    gravar_pdf_das_entradas,
     inventario_ficticio,
     inventario_rico,
     tex_com_corpo,
     tex_ficticio,
+    tex_rico,
     vocabulario_ficticio,
 )
 
 from src.validador.configuracao import configuracao_validador
 from src.validador.resultado import Nivel, Regra
 from src.validador.tecnologias import validar_tecnologias, validar_tecnologias_no_texto
-from src.validador.validar import exigir_fonte_valida, validar_arquivos, validar_fonte
+from src.validador.validar import (
+    exigir_fonte_valida,
+    validar_arquivos,
+    validar_curriculo,
+    validar_fonte,
+)
 
 
-def _achados(tex, banco=None, vocabulario=None, config=None, inventario=None):
+def _achados(tex, banco=None, config=None, inventario=None):
     return validar_tecnologias(
         tex,
         inventario or inventario_ficticio(),
         config or configuracao_validador(),
         banco=banco,
-        vocabulario=vocabulario,
     )
 
 
@@ -109,14 +116,56 @@ def test_dicionario_vazio_na_configuracao_nao_acha_tecnologia_nova():
     assert _achados(_com("Docker"), config=config) == []
 
 
-@pytest.mark.parametrize("texto", ["go", "swift", "ruby"])
-def test_nome_comum_em_minuscula_nao_vira_tecnologia(texto):
-    assert _achados(tex_com_corpo(f"Vou {texto} para casa")) == []
+@pytest.mark.parametrize(
+    "texto", ["elixir", "Elixir", "ruby", "Ruby", "RUBY", "oracle", "ORACLE", "prometheus"]
+)
+def test_nome_que_nao_e_palavra_comum_casa_em_qualquer_caixa(texto):
+    achados = _achados(tex_com_corpo(f"Vou usar {texto} no projeto"))
+
+    assert [v.nivel for v in achados] == [Nivel.BLOQUEIA]
 
 
-@pytest.mark.parametrize("nome", ["Go", "Swift", "Ruby"])
-def test_nome_comum_exige_a_caixa_do_dicionario(nome):
+@pytest.mark.parametrize("texto", ["go", "GO", "swift", "spring", "express"])
+def test_palavra_comum_fora_da_caixa_exata_vira_indicio_e_nunca_ok(texto):
+    achados = _achados(tex_com_corpo(f"Vou {texto} para casa"))
+
+    assert [v.nivel for v in achados] == [Nivel.INDICIO]
+    assert "palavra comum" in achados[0].evidencia
+    assert achados[0].trecho and achados[0].sugestao
+
+
+@pytest.mark.parametrize("texto", ["go", "swift", "spring", "express"])
+def test_palavra_comum_fora_da_caixa_exata_nao_e_salva_nem_pelo_banco(texto):
+    banco = banco_ficticio(**{texto.capitalize(): ["topic"]})
+
+    achados = _achados(tex_com_corpo(f"Vou {texto} para casa"), banco)
+
+    assert [v.nivel for v in achados] == [Nivel.INDICIO]
+
+
+@pytest.mark.parametrize("nome", ["Go", "Swift", "Spring", "Express"])
+def test_palavra_comum_na_caixa_do_dicionario_e_tecnologia(nome):
     assert [v.nivel for v in _achados(_com(nome))] == [Nivel.BLOQUEIA]
+    assert [v.nivel for v in _achados(_com(nome), banco_ficticio(**{nome: ["topic"]}))] == [
+        Nivel.OK
+    ]
+
+
+def test_palavras_comuns_vem_da_configuracao():
+    config = configuracao_com(tecnologias__palavras_comuns=[])
+
+    assert [v.nivel for v in _achados(tex_com_corpo("Vou go para casa"), config=config)] == [
+        Nivel.BLOQUEIA
+    ]
+
+
+def test_evidencias_mostradas_vem_da_configuracao():
+    banco = banco_ficticio(Docker=["topic", "linguagem", "readme"])
+    config = configuracao_com(tecnologias__evidencias_mostradas=1)
+
+    achados = _achados(_com("Docker"), banco, config=config)
+
+    assert achados[0].evidencia.count("proj_repositorio_ficticio") == 1
 
 
 def test_tecnologia_marcada_com_tech_fora_do_inventario_bloqueia_mesmo_com_evidencia_forte():
@@ -131,36 +180,47 @@ def test_tecnologia_do_inventario_continua_sem_registro():
     assert _achados(tex_com_corpo("Usei \\tech{Python} e PostgreSQL.")) == []
 
 
-def test_pedido_de_equivalencia_nunca_e_salvo_pelo_vocabulario():
-    vocabulario = vocabulario_ficticio(pt={"termos": ["kubernetes", "kafka"]})
-
-    achados = _achados(_com("Kubernetes e Kafka"), vocabulario=vocabulario.root["pt"])
-
-    assert {v.nivel for v in achados} == {Nivel.BLOQUEIA}
-    assert len(achados) == 2
+def _curriculo(tmp_path, sobre, vocabulario):
+    tex = tex_rico().replace("Estudante de exemplo", f"Estudante de exemplo {sobre}")
+    pdf = gravar_pdf_das_entradas(tmp_path, tex)
+    contexto = contexto_com(vocabulario=vocabulario)
+    return validar_curriculo(tex, inventario_rico(), None, pdf, contexto=contexto)
 
 
-def test_nome_de_projeto_do_vocabulario_com_tecnologia_dentro_nao_vira_tecnologia_nova():
+@pytest.mark.parametrize(
+    ("sobre", "vocabulario"),
+    [
+        ("Docker Dash", {"projetos": ["Docker Dash"]}),
+        ("usando Docker Swarm", {"termos": ["usando docker swarm", "docker swarm"]}),
+        ("com Docker", {"siglas": ["docker"]}),
+        ("com Rust", {"verbos": ["rust"], "termos": ["com rust"]}),
+    ],
+)
+def test_vocabulario_nunca_salva_tecnologia_do_dicionario(tmp_path, sobre, vocabulario):
+    resultado = _curriculo(tmp_path, sobre, vocabulario_ficticio(pt=vocabulario))
+
+    assert Regra.TECNOLOGIA in resultado.regras_bloqueadas
+
+
+def test_pedido_de_equivalencia_nunca_e_salvo_pelo_vocabulario(tmp_path):
+    vocabulario = vocabulario_ficticio(pt={"termos": ["kubernetes", "kafka"], "siglas": ["kafka"]})
+
+    resultado = _curriculo(tmp_path, "com Kubernetes e Kafka", vocabulario)
+
+    bloqueadas = [v for v in resultado.bloqueios if v.regra is Regra.TECNOLOGIA]
+    assert len(bloqueadas) == 2
+
+
+def test_tecnologia_do_dicionario_so_vira_ok_com_evidencia_no_banco(tmp_path):
     vocabulario = vocabulario_ficticio(pt={"projetos": ["Docker Dash"]})
-    tex = tex_com_corpo("Mantive o Docker Dash.")
+    tex = tex_rico().replace("Estudante de exemplo", "Estudante de exemplo Docker Dash")
+    pdf = gravar_pdf_das_entradas(tmp_path, tex)
+    contexto = contexto_com(vocabulario=vocabulario, banco=banco_ficticio(Docker=["topic"]))
 
-    com = _achados(tex, vocabulario=vocabulario.root["pt"])
-    sem = _achados(tex)
+    resultado = validar_curriculo(tex, inventario_rico(), None, pdf, contexto=contexto)
 
-    assert [v.nivel for v in com] == [Nivel.OK]
-    assert "vocabulario" in com[0].evidencia
-    assert [v.nivel for v in sem] == [Nivel.BLOQUEIA]
-
-
-def test_vocabulario_so_cobre_quando_todas_as_palavras_da_tecnologia_estao_nele():
-    vocabulario = vocabulario_ficticio(pt={"termos": ["google cloud"]})
-
-    achados = _achados(_com("Google Cloud e Docker"), vocabulario=vocabulario.root["pt"])
-
-    por_nome = {
-        nome: v.nivel for v in achados for nome in ("Docker", "Google Cloud") if nome in v.detalhe
-    }
-    assert por_nome == {"Docker": Nivel.BLOQUEIA, "Google Cloud": Nivel.OK}
+    assert resultado.aprovado
+    assert [v.nivel for v in resultado.salvos if v.regra is Regra.TECNOLOGIA] == [Nivel.OK]
 
 
 def test_tecnologia_no_texto_do_pdf_usa_o_banco_de_evidencias(tmp_path):

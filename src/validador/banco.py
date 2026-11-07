@@ -9,6 +9,7 @@ from src.conteudo.sugestoes import Sugestoes
 from src.validador.configuracao import ConfiguracaoValidador
 
 ORIGEM_DO_INVENTARIO = "inventario"
+STATUS_APROVADO = "aprovada"
 ORIGEM_SEM_MARCA = "sugestao"
 SEPARADOR_DA_MARCA = ":"
 
@@ -72,7 +73,7 @@ def montar_banco(inventario: Inventario, sugestoes: Sugestoes | None) -> BancoTe
                 ),
             )
     for sugestao in sugestoes.sugestoes if sugestoes else []:
-        if sugestao.tipo != "tecnologia_nova" or sugestao.status == "rejeitada":
+        if sugestao.tipo != "tecnologia_nova" or sugestao.status != STATUS_APROVADO:
             continue
         if sugestao.tech is None or sugestao.ancora is None:
             continue

@@ -30,7 +30,6 @@ from src.validador.vocabulario import Vocabulario, montar_vocabulario
 
 DENTRO = "dentro_das_metas"
 FORA = "fora_das_metas"
-CARACTERES_FORA_DO_TEXTO = re.compile(r"[^\w\s.,-]")
 TEM_DIGITO = re.compile(r"\d")
 SO_LETRAS = re.compile(r"^[^\W\d_]+(?: [^\W\d_]+)*$")
 
@@ -43,6 +42,10 @@ def _conhecidas(entrada: Entrada, conteudo: Conteudo, config: ConfiguracaoValida
     nomes = [*config.tecnologias_conhecidas, *config.dicionario_tecnologias]
     nomes += [e.pedido for e in conteudo.inventario.equivalencias]
     return {nome.casefold() for nome in nomes}
+
+
+def _limpar(texto: str, config: ConfiguracaoValidador) -> str:
+    return re.sub(config.calibracao.caracteres_fora_do_texto, " ", texto)
 
 
 def _termos_tecnologia(entrada, conteudo, config) -> list[str]:
@@ -69,8 +72,8 @@ def _termos_empresa(entrada, conteudo, config) -> list[str]:
 
 
 def _termos_anuncio(entrada, conteudo, config) -> list[str]:
-    palavras = CARACTERES_FORA_DO_TEXTO.sub(" ", entrada.texto).split()
-    tamanho = config.conteudo.copia_da_vaga.palavras + 2
+    palavras = _limpar(entrada.texto, config).split()
+    tamanho = config.conteudo.copia_da_vaga.palavras + config.calibracao.palavras_extras_do_anuncio
     return [" ".join(palavras[:tamanho])] if len(palavras) >= tamanho else []
 
 
@@ -93,7 +96,7 @@ def _dados_do_lote(
     )
     return (
         banco or montar_banco(conteudo.inventario, None),
-        vocabulario or montar_vocabulario(conteudo.blocos, config),
+        vocabulario or montar_vocabulario(conteudo.blocos, config, conteudo.inventario),
     )
 
 
@@ -111,7 +114,7 @@ def _curriculo_bom(entrada: Entrada, conteudo: Conteudo) -> str:
 
 def _com_injecao(tex: str, idioma: str, texto: str, config: ConfiguracaoValidador) -> str:
     marcador = f"\\section{{{config.conteudo.secoes[idioma].sobre}}}"
-    limpo = CARACTERES_FORA_DO_TEXTO.sub(" ", texto)
+    limpo = _limpar(texto, config)
     return tex.replace(marcador, f"{marcador}\n{limpo}", 1)
 
 
@@ -132,9 +135,7 @@ def _violacoes(
         banco=banco,
         vocabulario=vocabulario,
     )
-    achados = validar_tecnologias(
-        tex, conteudo.inventario, config, banco, vocabulario.do_idioma(entrada.idioma)
-    )
+    achados = validar_tecnologias(tex, conteudo.inventario, config, banco)
     achados += validar_conteudo(tex, conteudo.inventario, contexto, config)
     return achados
 

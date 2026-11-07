@@ -55,7 +55,7 @@ Toda regra tem um nível em `niveis` de `config/validador.yaml`, e a ausência d
 
 - O nível da configuração é um teto: a regra pode decidir um nível menor (tecnologia com evidência fraca é `indicio`, com evidência forte é `ok`), nunca maior. Regra em `ok` na configuração registra o achado com a evidência "regra em ok na configuracao".
 - Segurança nunca desce: `REGRAS_DE_SEGURANCA` (`src/validador/resultado.py`: página, LaTeX, alfabeto, caractere invisível, cabeçalho, empresa da vaga, compilação e escape) fica em `bloqueia`. Config que rebaixa uma delas não carrega (`ValidationError`), e `aplicar_niveis` força `bloqueia` mesmo se a regra pedir menos. Os dois têm teste (`tests/test_validador_niveis.py`).
-- Começam em `indicio` só as regras de estilo e de semelhança: V13 (cópia da vaga) e V20 (pontuação). Senioridade (V21), número (V11) e as demais ficam em `bloqueia`; mudar isso é decisão de produto e mexe no teste da tabela de níveis.
+- Começam em `indicio` só as regras de estilo e de semelhança: V13 (cópia da vaga) e V20 (pontuação). Senioridade (V21), número (V11), tecnologia (V10) e as demais ficam em `bloqueia` por configuração, não por trava no código: a configuração pode rebaixá-las, a tabela de níveis do repositório é fixada por teste (`test_niveis_do_repositorio_sao_os_combinados`) e mudar isso é decisão de produto.
 - Resultado: `violacoes` traz tudo; `bloqueios`, `indicios` e `salvos` separam por nível; `regras_bloqueadas` é o que o laço do F3.3 corrige. Cada `Violacao` tem `codigo`, `nivel`, `trecho`, `regra`, `sugestao` e `evidencia` (o que faltou ou o que salvou).
 - O runner do F2.4 só conta `bloqueia` como falha de regra.
 
@@ -63,21 +63,21 @@ Toda regra tem um nível em `niveis` de `config/validador.yaml`, e a ausência d
 
 | Evidência | Fonte | Gerado por |
 | --- | --- | --- |
-| tecnologia com âncora | `dados/conteudo/tecnologias.yaml`: cada tecnologia do inventário aprovado (origem `inventario`, âncora e fonte) e cada tecnologia sugerida pelo F2.7 que não foi rejeitada (origem `linguagem`, `topic`, `readme` ou `pagina`, projeto e URL pública) | `make validador-dados` |
-| vocabulário do currículo | `dados/conteudo/vocabulario.yaml`, `pt` e `en` separados: verbos de abertura de bullet, siglas, termos de domínio (n-gramas dos blocos sem palavra vazia nas pontas) e nomes de projeto | `make validador-dados` |
+| tecnologia com âncora | `dados/conteudo/tecnologias.yaml`: cada tecnologia do inventário aprovado (origem `inventario`, âncora e fonte) e cada tecnologia sugerida pelo F2.7 que o Filipe aprovou (`status: aprovada`; pendente e rejeitada não contam; origem `linguagem`, `topic`, `readme` ou `pagina`, projeto e URL pública) | `make validador-dados` |
+| vocabulário do currículo | `dados/conteudo/vocabulario.yaml`, `pt` e `en` separados: verbos de abertura de bullet, siglas, termos de domínio (n-gramas dos blocos sem palavra vazia nas pontas) e nomes de projeto; termo ou sigla que é ou contém nome do dicionário de tecnologias nunca entra | `make validador-dados` |
 
 `make validador-dados` lê `dados/conteudo/blocos.yaml` e `inventario.yaml` (rode `make conteudo` antes) e, quando existir, `sugestoes.yaml`. Os dois arquivos ficam em `dados/`, com permissão 0600, e nunca entram no git; os testes usam fixture fictícia. A força de cada origem (`forte` ou `fraca`) e o tamanho do n-grama estão em `tecnologias.forca_por_origem` e `dados.vocabulario`.
 
 Tecnologia citada em texto puro (V10):
 
 1. nome do inventário aprovado: passa sem registro;
-2. nome dentro de termo do vocabulário (nome de projeto, por exemplo): `ok`, exceto pedido de equivalência do inventário, que nunca é salvo;
-3. evidência forte no banco: `ok`; só evidência fraca: `indicio`; nenhuma ou banco ausente: `bloqueia`;
+2. evidência forte no banco: `ok`; só evidência fraca: `indicio`; nenhuma ou banco ausente: `bloqueia`;
+3. o vocabulário nunca salva tecnologia do dicionário: só o banco de evidências a libera, mesmo que o nome apareça num nome de projeto, sigla ou termo do vocabulário;
 4. `\tech{}` fora do inventário bloqueia sempre, com ou sem evidência.
 
-O dicionário amplo (`config/tecnologias_conhecidas.yaml`, por categoria) soma-se a `tecnologias_conhecidas`; nome que também é palavra comum (Go, Swift, Ruby...) só vale com a caixa do dicionário (`tecnologias.exigir_caixa`). O gerador (F3.1) continua sem banco e por isso recusa tecnologia do dicionário citada em texto puro.
+O dicionário amplo (`config/tecnologias_conhecidas.yaml`, por categoria) soma-se a `tecnologias_conhecidas` e casa sem diferenciar caixa (falha fechada). Só os nomes de `tecnologias.palavras_comuns` (Go, Spring, Express e outros que são palavra comum em pt ou en) saem da regra: na caixa exata do dicionário valem como tecnologia; em outra caixa viram `indicio` ("palavra comum"), nunca `ok`, nem com evidência no banco. `tecnologias.evidencias_mostradas` limita quantas evidências aparecem no campo `evidencia`. O gerador (F3.1) continua sem banco e por isso recusa tecnologia do dicionário citada em texto puro.
 
-V13 e V21 com vocabulário: palavras cobertas por termo do vocabulário do idioma do documento não contam para as N palavras da cópia (só recusa quando sobram N palavras próprias), e termo de senioridade que está no vocabulário vira `ok`. Verbo que falta no vocabulário e nos blocos (`liderei`) continua bloqueando.
+V13 e V21 com vocabulário: palavras cobertas por termo do vocabulário do idioma do documento não contam para as N palavras da cópia (só recusa quando sobram N palavras próprias), e termo de senioridade que está no vocabulário vira `ok`. Tecnologia não entra nessa exceção (acima). Verbo que falta no vocabulário e nos blocos (`liderei`) continua bloqueando.
 
 ### Relatório de calibração
 
@@ -85,7 +85,7 @@ V13 e V21 com vocabulário: palavras cobertas por termo do vocabulário do idiom
 
 - Falso positivo por regra: o currículo de referência de cada entrada (blocos sem alteração) não pode acusar nada. Taxa = amostras acusadas por `bloqueia` ou `indicio` dividido pelas amostras boas.
 - Falso negativo por regra: para cada regra de `calibracao.injecoes`, o termo ruim da entrada (proibido de tecnologia, número ou palavra, empresa da vaga, ou o começo do anúncio) é injetado no Sobre; a regra que não acusa (ou só registra `ok`) é falso negativo.
-- Metas em `calibracao.metas` (`falso_positivo_max` e `falso_negativo_max`), com `calibracao.por_regra` para regra específica. `calibracao.injecoes.<regra>.ignorar` tira da conta um termo que não é afirmação sozinha (por exemplo o fragmento `lideran`, que só serve de verificação de saída).
+- Metas em `calibracao.metas` (`falso_positivo_max` e `falso_negativo_max`), com `calibracao.por_regra` para regra específica. `calibracao.palavras_extras_do_anuncio` e `calibracao.caracteres_fora_do_texto` ajustam o trecho do anúncio injetado; `calibracao.injecoes.<regra>.ignorar` tira da conta um termo que não é afirmação sozinha (por exemplo o fragmento `lideran`, que só serve de verificação de saída).
 - Regra sem injeção (layout, LaTeX, alfabeto, cabeçalho e as demais) aparece em `sem_injecao`: o falso negativo dela não é medido aqui.
 - Como ler: `regras.<nome>.falso_positivo` e `falso_negativo` trazem `erros`, `total`, `taxa`, `meta` e `dentro_da_meta`; `fora_da_meta` lista as regras que estouraram e `veredito` é `dentro_das_metas` ou `fora_das_metas`. Falso positivo alto pede rebaixar a regra para `indicio` ou ampliar o vocabulário; falso negativo alto pede ampliar dicionário ou lista de verbos.
 - Achado do conjunto atual: "sênior" e "senior" ficam fora de `senioridade_inflada` (`config/padroes_curriculo.yaml`, F3.0), então V21 não pega a palavra solta e o falso negativo de senioridade passa da meta.

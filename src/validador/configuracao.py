@@ -210,7 +210,8 @@ Forca = Literal["forte", "fraca"]
 
 
 class ConfiguracaoDeTecnologias(Estrito):
-    exigir_caixa: list[Fragmento]
+    palavras_comuns: list[Fragmento]
+    evidencias_mostradas: int = Field(ge=1)
     forca_por_origem: dict[Identificador, Forca] = Field(min_length=1)
     forca_padrao: Forca
 
@@ -265,6 +266,10 @@ class MetasDaRegra(Estrito):
 
 class Calibracao(Estrito):
     subpasta: Fragmento
+    palavras_extras_do_anuncio: int = Field(ge=0)
+    caracteres_fora_do_texto: Annotated[
+        Fragmento, AfterValidator(lambda p: _regexes_compilam([p])[0])
+    ]
     metas: MetasDaRegra
     por_regra: dict[Regra, MetasDaRegra] = {}
     injecoes: dict[Regra, Injecao]

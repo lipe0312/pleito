@@ -57,7 +57,7 @@ def executar(pasta_dados: Path) -> int:
         return 2
     sugestoes = carregar_sugestoes(pasta_dados, conteudo, configuracao_sincronizacao())
     banco = montar_banco(inventario, sugestoes)
-    vocabulario = montar_vocabulario(blocos, config)
+    vocabulario = montar_vocabulario(blocos, config, inventario)
     destino = destino_conteudo(pasta_dados, conteudo)
     destino.mkdir(parents=True, exist_ok=True)
     caminho_banco = caminho_do_banco(pasta_dados, config)
