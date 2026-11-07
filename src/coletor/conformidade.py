@@ -14,6 +14,10 @@ class DominioNaoPermitido(Exception):
     pass
 
 
+class TermosNaoPermitem(Exception):
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class DecisaoRobots:
     url: str
@@ -28,9 +32,26 @@ def dominios_permitidos() -> frozenset[str]:
     return frozenset(
         dominio
         for fonte in fontes.values()
+        if fonte.get("ativa") is not False
         for dominio in fonte.get("dominios", [])
         if isinstance(dominio, str)
     )
+
+
+def exigir_termos_permitidos(slug: str) -> dict:
+    config = carregar("fontes")
+    fonte = config.get("fontes", {}).get(slug)
+    if fonte is None:
+        raise TermosNaoPermitem(f"{slug} nao esta em config/fontes.yaml")
+    if fonte.get("ativa") is False:
+        raise TermosNaoPermitem(f"{slug} esta desativada em config/fontes.yaml")
+    termos = fonte.get("termos") or {}
+    if not termos.get("revisado_em"):
+        raise TermosNaoPermitem(f"{slug} sem termos.revisado_em em config/fontes.yaml")
+    veredito = termos.get("veredito")
+    if veredito not in config.get("vereditos_coletaveis", []):
+        raise TermosNaoPermitem(f"{slug} com veredito de termos {veredito!r}")
+    return termos
 
 
 def host_permitido(host: str, permitidos: frozenset[str]) -> bool:
@@ -110,8 +131,10 @@ __all__ = [
     "DecisaoRobots",
     "DominioNaoPermitido",
     "Limitador",
+    "TermosNaoPermitem",
     "consultar_robots",
     "dominios_permitidos",
     "exigir_dominio_permitido",
+    "exigir_termos_permitidos",
     "host_permitido",
 ]

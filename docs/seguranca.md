@@ -136,6 +136,13 @@ gate é o hook de pre-commit local (`make testes`, `make lint` e `make testes-ba
 só sai com "aprovado merge" do Filipe na sessão dele. Quando houver CI, ligar os checks
 obrigatórios neste mesmo JSON e reaplicar com o comando acima.
 
+## Coleta fora do permitido
+
+Fonte só é coletada com `termos.revisado_em` e veredito `permite` ou `permite_com_condicao` em
+`config/fontes.yaml` (`src/coletor/conformidade.py`, `exigir_termos_permitidos`). Fonte sem termos
+ou com `proibe` volta `tos_proibe` sem nenhuma requisição, e `ativa: false` tira o domínio da
+allowlist. A leitura dos termos está em `docs/fontes-termos.md`; fonte nova só entra depois dela.
+
 ## Quando rodar o quê
 
 | Momento | O que rodar |
