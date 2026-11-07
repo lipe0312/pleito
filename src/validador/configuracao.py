@@ -166,12 +166,57 @@ class ConfiguracaoDoConteudo(Estrito):
         return self
 
 
+class LayoutDoLog(Estrito):
+    tamanho_max_bytes: int = Field(gt=0)
+    erros_max: int = Field(ge=1)
+    linhas_do_erro: int = Field(ge=1)
+    caixas_max: int = Field(ge=1)
+    linhas_da_caixa: int = Field(ge=1)
+    defasagem_max_s: float = Field(ge=0)
+    overfull_max_pt: float = Field(ge=0)
+    underfull_badness_max: int = Field(ge=0)
+    overfull_vbox_max_pt: float = Field(ge=0)
+    underfull_vbox_badness_max: int = Field(ge=0)
+
+
+class LayoutDoPdf(Estrito):
+    tolerancia_de_linha_pt: float = Field(ge=0)
+    ascendente_em: float = Field(gt=0)
+    descendente_em: float = Field(ge=0)
+    sobreposicao_x_min_pt: float = Field(ge=0)
+    sobreposicao_y_min_pt: float = Field(ge=0)
+    sobreposicoes_max: int = Field(ge=1)
+    largura_sem_metrica_em: float = Field(gt=0)
+    caixas_max: int = Field(ge=1)
+
+
+class LimitesDeLayout(Estrito):
+    fonte_min_pt: float = Field(gt=0)
+    linespread_min: float = Field(gt=0)
+    margem_min_mm: float = Field(ge=0)
+
+
+class ConfiguracaoDeLayout(Estrito):
+    fonte_padrao_pt: float = Field(gt=0)
+    chaves_de_margem: list[Identificador] = Field(min_length=1)
+    log: LayoutDoLog
+    pdf: LayoutDoPdf
+    por_idioma: dict[Identificador, LimitesDeLayout] = Field(min_length=1)
+
+
 class ConfiguracaoValidador(Estrito):
     paginas_max: int = Field(gt=0)
     latex: ConfiguracaoLatex
     caracteres: ConfiguracaoCaracteres
     tecnologias_conhecidas: list[Fragmento]
     conteudo: ConfiguracaoDoConteudo
+    layout: ConfiguracaoDeLayout
+
+    @model_validator(mode="after")
+    def _layout_cobre_os_idiomas_do_conteudo(self) -> ConfiguracaoValidador:
+        if set(self.layout.por_idioma) != set(self.conteudo.secoes):
+            raise ValueError("layout.por_idioma precisa dos mesmos idiomas das secoes")
+        return self
 
 
 def configuracao_validador(dados: dict | None = None) -> ConfiguracaoValidador:

@@ -35,5 +35,14 @@ def texto_do_pdf(pdf: Path) -> str:
         return ""
     try:
         return "\n".join(pagina.extract_text() or "" for pagina in leitor.pages)
-    except (PyPdfError, ValueError):
+    except (
+        PyPdfError,
+        ValueError,
+        KeyError,
+        TypeError,
+        IndexError,
+        AttributeError,
+        ArithmeticError,
+        RecursionError,
+    ):
         return ""

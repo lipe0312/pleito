@@ -16,6 +16,8 @@ from src.gerador.renderizar import renderizar
 from src.padroes.configuracao import configuracao_padroes
 from src.validador.configuracao import ConfiguracaoValidador, configuracao_validador
 from src.validador.conteudo import ContextoConteudo, Vaga
+from src.validador.documento import ler_documento
+from src.validador.texto import plano
 
 VAGA_FICTICIA = Vaga(
     empresa="Acme Ltda",
@@ -148,3 +150,71 @@ def contexto_rico(idioma: str = "pt", vaga: Vaga = VAGA_FICTICIA) -> ContextoCon
 
 def inventario_rico():
     return conteudo_rico()[1]
+
+
+def pdf_posicionado(linhas: list[tuple[float, float, str]], tamanho: float = 10) -> bytes:
+    operacoes = b""
+    for x, y, texto in linhas:
+        escapado = texto.encode("cp1252", "replace").replace(b"(", b"\\(").replace(b")", b"\\)")
+        operacoes += f"BT /F1 {tamanho} Tf {x} {y} Td (".encode() + escapado + b") Tj ET\n"
+    objetos = {
+        1: b"<< /Type /Catalog /Pages 2 0 R >>",
+        2: b"<< /Type /Pages /Kids [4 0 R] /Count 1 >>",
+        3: b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+        4: (
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+            b"/Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>"
+        ),
+        5: f"<< /Length {len(operacoes)} >>\nstream\n".encode() + operacoes + b"endstream",
+    }
+    saida = bytearray(b"%PDF-1.4\n")
+    posicoes = {}
+    for numero in sorted(objetos):
+        posicoes[numero] = len(saida)
+        saida += f"{numero} 0 obj\n".encode() + objetos[numero] + b"\nendobj\n"
+    inicio = len(saida)
+    saida += f"xref\n0 {len(objetos) + 1}\n".encode() + b"0000000000 65535 f \n"
+    for numero in sorted(objetos):
+        saida += f"{posicoes[numero]:010d} 00000 n \n".encode()
+    saida += f"trailer\n<< /Size {len(objetos) + 1} /Root 1 0 R >>\n".encode()
+    saida += f"startxref\n{inicio}\n%%EOF\n".encode()
+    return bytes(saida)
+
+
+def gravar_pdf_posicionado(pasta: Path, linhas: list[tuple[float, float, str]]) -> Path:
+    caminho = pasta / "cv.pdf"
+    caminho.write_bytes(pdf_posicionado(linhas))
+    if not (pasta / "cv.log").exists():
+        gravar_log(pasta)
+    return caminho
+
+
+def gravar_pdf_das_entradas(pasta: Path, tex: str, desloca_data: float = 0) -> Path:
+    config = configuracao_validador()
+    linhas = []
+    y = 780.0
+    for secao in ler_documento(tex, config).secoes:
+        for entrada in secao.entradas():
+            if not entrada.fim:
+                continue
+            titulo = plano(f"{entrada.titulo} {entrada.complemento}", config)
+            linhas.append((40, y, titulo))
+            linhas.append((400, y - desloca_data, plano(entrada.fim, config)))
+            y -= 30
+    return gravar_pdf_posicionado(pasta, linhas)
+
+
+def log_ficticio(*linhas: str) -> str:
+    return "\n".join(("This is pdfTeX, Version fictici", *linhas, "Output written on cv.pdf.", ""))
+
+
+def gravar_log(pasta: Path, *linhas: str) -> Path:
+    caminho = pasta / "cv.log"
+    caminho.write_text(log_ficticio(*linhas), encoding="utf-8")
+    return caminho
+
+
+def pdf_com_operacoes(operacoes: bytes) -> bytes:
+    fonte = b"/F1 10 Tf "
+    base = pdf_posicionado([(40, 780, "x")])
+    return base.replace(b"BT /F1 10 Tf 40 780 Td (x) Tj ET", b"BT " + fonte + operacoes + b" ET")
