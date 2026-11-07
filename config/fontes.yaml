@@ -1,8 +1,14 @@
+vereditos_coletaveis: [permite, permite_com_condicao]
+
 fontes:
   greenhouse:
     tipo: api_publica_por_empresa
     dominios: [boards-api.greenhouse.io, boards.greenhouse.io, job-boards.greenhouse.io]
     verificar_robots: true
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://docs.greenhouse.io/job-board.html
     boards: [stone, xpinc, c6bank, quintoandar, gympass, ebanx, vtex, stripe, datadog,
              elastic, canonical, gitlab, airbnb, dropbox,
              databricks, mongodb, cloudflare, fivetran, remotecom, grafanalabs, vercel,
@@ -12,11 +18,20 @@ fontes:
     tipo: api_publica_por_empresa
     dominios: [api.lever.co, jobs.lever.co]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://www.lever.co/legal/terms-of-service
     empresas: [swile, zippi, metabase]
   ashby:
     tipo: api_publica_por_empresa
     dominios: [api.ashbyhq.com, jobs.ashbyhq.com]
     verificar_robots: true
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://developers.ashbyhq.com/docs/public-job-posting-api
     boards: [openai, ramp, notion, cursor, perplexity, vanta, replit, supabase, render,
              linear, posthog,
              snowflake, clickhouse, sentry, astronomer, confluent, percona, airbyte, zapier,
@@ -25,49 +40,99 @@ fontes:
     tipo: agregador_api_publica
     dominios: [remotive.com]
     verificar_robots: true
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://remotive.com/remote-jobs/api
   arbeitnow:
     tipo: agregador_api_publica
     dominios: [www.arbeitnow.com, arbeitnow.com]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://www.arbeitnow.com/terms
   himalayas:
     tipo: agregador_api_publica
     dominios: [himalayas.app]
     verificar_robots: true
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://himalayas.app/api
   remoteok:
     tipo: agregador_api_publica
     dominios: [remoteok.com, remoteok.io]
     verificar_robots: true
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://remoteok.com/legal
     atribuicao_exigida: true
   jobicy:
     tipo: agregador_api_publica
     dominios: [jobicy.com]
     verificar_robots: true
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://jobicy.com/terms-and-conditions
   weworkremotely:
     tipo: rss_remoto
     dominios: [weworkremotely.com, www.weworkremotely.com]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://weworkremotely.com/terms
   jobspresso:
     tipo: rss_remoto
     dominios: [jobspresso.co, www.jobspresso.co]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://jobspresso.co/terms-and-conditions/
   workingnomads:
     tipo: agregador_api_publica
     dominios: [www.workingnomads.com, workingnomads.com]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://www.workingnomads.com/terms-and-conditions
   hackernews:
     tipo: texto_livre
     dominios: [hn.algolia.com]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://hn.algolia.com/api
     observacao: thread mensal Who is hiring, comentario sem campo estruturado
   solides:
     tipo: portal_investigacao
     dominios: [vagas.solides.com.br, solides.com.br]
     verificar_robots: true
+    ativa: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: proibe
+      link: https://solides.com.br/termos-de-uso/
     tos: https://solides.com.br/termos-de-uso/
   linkedin_alertas:
     tipo: email_alerta
     dominios: []
     verificar_robots: false
+    termos:
+      revisado_em: "2026-11-07"
+      veredito: permite_com_condicao
+      link: https://www.linkedin.com/legal/user-agreement
     observacao: site nunca automatizado, entrada apenas por email de alerta no Gmail
 
 descobertas_pendentes:

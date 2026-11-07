@@ -33,17 +33,18 @@ def test_dominio_do_yaml_passa():
 
 
 def test_subdominio_de_dominio_permitido_passa():
-    assert exigir_dominio_permitido("https://eu.jobs.lever.co/abc") == "eu.jobs.lever.co"
+    host = exigir_dominio_permitido("https://eu.boards.greenhouse.io/abc")
+    assert host == "eu.boards.greenhouse.io"
 
 
 def test_dominio_que_apenas_termina_igual_e_bloqueado():
     with pytest.raises(DominioNaoPermitido):
-        exigir_dominio_permitido("https://malicioso-jobs.lever.co/abc")
+        exigir_dominio_permitido("https://malicioso-boards.greenhouse.io/abc")
 
 
 def test_sufixo_nao_vale_sem_ponto():
     with pytest.raises(DominioNaoPermitido):
-        exigir_dominio_permitido("https://fakejobs.lever.co/abc")
+        exigir_dominio_permitido("https://fakeboards.greenhouse.io/abc")
 
 
 def test_linkedin_nunca_entra_nos_dominios_permitidos():
