@@ -34,6 +34,13 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   só para as `vagas_pre_pontuadas_max` melhores acima de `pre_nota_minima_para_forte`, com cache por
   hash); sem migration, o motivo do descarte e a nota ficam em `vaga.motivo_descarte` e `vaga.nota`;
   prompt em `prompts/pontuar_vaga.md` para a F2.4 citar; ordem e limites em `docs/triagem.md`
+- [x] F4.3, `make coletar-alertas` (`src/coletor/alertas_*.py`, `config/alertas.yaml`): gatilho de 7
+  regras em ordem fixa separa alerta de vaga do resto dos emails do LinkedIn; só `alerta_vaga` gera
+  vaga (uma por cartão completo, URL canônica sem rastreio), mensagem de recrutador vira
+  `mensagem_recrutador`, ambíguo nunca vira vaga; cada email lido grava tipo, regra e cartões em
+  `dados/estado/alertas_lidos.jsonl`; cursor próprio, rotina em `config/limites.yaml`, sem
+  rótulo nem arquivamento e sem acesso ao site; sem migration; tabela do gatilho em
+  `docs/alertas-email.md`; contagem no resumo diário fica para o item do resumo
 - [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
