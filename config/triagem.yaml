@@ -130,3 +130,59 @@ limites:
   descricao_anos_max_chars: 4000
   anos_experiencia_min_detectavel: 1
   anos_experiencia_max_detectavel: 20
+
+normalizacao:
+  parametros_rastreio_prefixos: [utm_]
+  parametros_rastreio: [ref, source, src, gh_src, lever-source, fbclid, gclid]
+
+pre_nota:
+  senioridade: {estagio: 1.0, junior: 1.0, indefinida: 0.5, pleno: 0.0, senior: 0.0}
+  modelo: {remoto: 1.0, hibrido: 0.8, presencial: 0.5, indefinido: 0.5}
+  pais: {BR: 1.0, remoto_global: 0.8}
+  pais_outro: 0.4
+  pais_ausente: 0.5
+  recencia_sem_data: 0.5
+  equivalente_peso: 0.5
+  techs_para_nota_cheia: 3
+  techs_fora_do_inventario:
+    - Kafka
+    - AWS
+    - Azure
+    - GCP
+    - Terraform
+    - Ansible
+    - Jenkins
+    - Spark
+    - Hadoop
+    - Airflow
+    - Snowflake
+    - BigQuery
+    - TensorFlow
+    - PyTorch
+    - Angular
+    - Vue
+    - Ruby
+    - Rails
+    - Scala
+    - Rust
+    - .NET
+
+pontuacao_final:
+  tarefa: pontuacao_final
+  tier: forte
+  prompt: prompts/pontuar_vaga.md
+  titulo_max_chars: 200
+  techs_max: 20
+  tech_max_chars: 60
+  requisitos_max: 10
+  requisito_max_chars: 120
+  justificativa_max_chars: 400
+  alertas: [possivel_golpe, exige_visto, senioridade_acima, texto_suspeito]
+  alerta_texto_suspeito: texto_suspeito
+  padroes_injecao:
+    - '\bignor(e|ar|em)\b'
+    - '\b(disregard|forget|override)\b'
+    - '\b(instru[cç][oõ]es|instructions?|system prompt)\b'
+    - '\b(execute|executar|rode|run|curl|wget|sudo)\b'
+    - '\b(senha|password|token|segredo|secret|\.env|api[ _-]?key)\b'
+    - '\b(voc[eê] deve|you must|you are now)\b'
