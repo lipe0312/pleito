@@ -98,6 +98,16 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `ARGS=--real` e orçamento do roteador; relatório em `dados/avaliacao/relatorios/` com data, versão
   do conjunto e do prompt, modelo, taxa por regra, falhas por armadilha, custo e veredito; teste
   barra `habilitado: true` sem avaliação aprovada; ligar o tier é o M8 (`docs/avaliacao.md`)
+- [x] F2.8, validador com três níveis por regra (`bloqueia`, `indicio`, `ok`) em
+  `config/validador.yaml` (chave `niveis`): `exigir_valido` só recusa por `bloqueia`, indício sai no
+  resultado com código, nível, trecho, regra e a evidência que faltou ou salvou; regras de
+  segurança (LaTeX, página, alfabeto, caractere invisível, cabeçalho, empresa da vaga, compilação,
+  escape) travadas em `bloqueia` no código e por teste; dicionário amplo de tecnologias em
+  `config/tecnologias_conhecidas.yaml`; `make validador-dados` gera `dados/conteudo/tecnologias.yaml`
+  (inventário e âncoras do F2.7, com a fonte) e `dados/conteudo/vocabulario.yaml` (pt e en, dos
+  blocos), nunca versionados; termo do vocabulário não vira cópia, tecnologia nova nem senioridade
+  inflada; `make validador-calibrar` mede falso positivo e falso negativo por regra sobre o
+  conjunto do F2.4 contra as metas de `calibracao` (detalhes em `docs/validador.md`)
 - [x] F3.0, padrões escritos do currículo em `config/padroes_curriculo.yaml` (validado por pydantic,
   `src/padroes/`) e `docs/curriculo-padroes.md`; `prompts/gerar_slots.md` versionado, montado a
   partir do yaml (versão e hash graváveis por tentativa, vaga só dentro da marcação de dado não
