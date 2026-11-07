@@ -5,7 +5,12 @@ from dataclasses import dataclass
 
 from src.coletor.contratos import ModeloTrabalho, Senioridade
 from src.db.auditoria import registrar_auditoria
-from src.triagem.contratos import SEPARADOR_DETALHE, VagaAguardando, VagaTriagem
+from src.triagem.contratos import (
+    SEPARADOR_DETALHE,
+    TransicaoRecusada,
+    VagaAguardando,
+    VagaTriagem,
+)
 
 ATOR = "triagem"
 ACAO_PONTUACAO = "pontuacao_final"
@@ -68,10 +73,6 @@ SELECT split_part(motivo_descarte, %s, 1) AS codigo, count(*)
 FROM vaga WHERE motivo_descarte IS NOT NULL
 GROUP BY codigo ORDER BY count(*) DESC, codigo
 """
-
-
-class TransicaoRecusada(RuntimeError):
-    pass
 
 
 @dataclass(frozen=True, slots=True)

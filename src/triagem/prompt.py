@@ -13,7 +13,6 @@ from src.triagem.configuracao import ConfiguracaoTriagem
 from src.triagem.contratos import VagaTriagem
 
 SEPARADOR_DE_LISTA = ", "
-IDIOMA_DOS_FOCOS = "pt"
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,9 +39,9 @@ def _equivalencias(inventario: Inventario) -> str:
     return "\n".join(linhas) if linhas else "- nenhuma"
 
 
-def _familias(padroes: ConfiguracaoPadroes) -> str:
+def _familias(padroes: ConfiguracaoPadroes, idioma: str) -> str:
     return "\n".join(
-        f"- {nome}: {SEPARADOR_DE_LISTA.join(focos[IDIOMA_DOS_FOCOS])}"
+        f"- {nome}: {SEPARADOR_DE_LISTA.join(focos[idioma])}"
         for nome, focos in padroes.foco_sobre.items()
     )
 
@@ -58,7 +57,7 @@ def _valores(
     return {
         "inventario": SEPARADOR_DE_LISTA.join(item.tech for item in inventario.techs),
         "equivalencias": _equivalencias(inventario),
-        "familias": _familias(padroes),
+        "familias": _familias(padroes, regras.idioma_dos_focos),
         "marca_abre": marcacao.abre,
         "marca_fecha": marcacao.fecha,
         "marca_neutra": marcacao.neutro,

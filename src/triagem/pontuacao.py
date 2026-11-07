@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from typing import Annotated, Literal, Protocol
@@ -15,7 +16,10 @@ from src.triagem.prompt import montar_prompt_de_pontuacao
 
 ORIGEM_MODELO = "modelo"
 ORIGEM_CACHE = "cache"
-NOTA_MAXIMA = 100
+
+
+class PontuacaoAdiada(RuntimeError):
+    pass
 
 
 class PontuacaoInvalida(ValueError):
@@ -59,14 +63,17 @@ def esquema_da_pontuacao(
         __base__=Estrito,
         familia=(Literal[tuple(padroes.foco_sobre)], ...),
         idioma=(Literal[tuple(padroes.idiomas)], ...),
-        nota_aderencia=(Annotated[int, Field(ge=0, le=NOTA_MAXIMA)], ...),
+        nota_aderencia=(Annotated[int, Field(ge=0, le=config.nota_maxima)], ...),
         techs_cobertas=(techs, ...),
         techs_equivalentes=(
             Annotated[list[equivalente], Field(max_length=regras.techs_max)],
             ...,
         ),
         requisitos_descobertos=(requisitos, ...),
-        alertas=(Annotated[list[Literal[tuple(regras.alertas)]], Field(max_length=10)], ...),
+        alertas=(
+            Annotated[list[Literal[tuple(regras.alertas)]], Field(max_length=regras.alertas_max)],
+            ...,
+        ),
         justificativa=(_texto(regras.justificativa_max_chars), ...),
     )
 
@@ -116,8 +123,10 @@ def pontuar_vaga(
         versao = f"pontuar_vaga_v{prompt.versao}_{prompt.sha256_modelo[:12]}"
         try:
             resposta = roteador.chamar(regras.tarefa, regras.tier, prompt.texto, esquema, versao)
-        except ValueError as erro:
+        except (ValidationError, json.JSONDecodeError) as erro:
             raise PontuacaoInvalida("resposta_invalida", chamou_modelo=True) from erro
+        except ValueError as erro:
+            raise PontuacaoAdiada(type(erro).__name__) from erro
         try:
             dados = _validar(esquema, resposta.model_dump(), inventario)
         except PontuacaoInvalida as erro:

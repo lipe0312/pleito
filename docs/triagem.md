@@ -37,6 +37,8 @@ nova em `uso_llm`.
 | modelo desabilitado, orçamento esgotado ou erro de rede | a rodada para; o resto fica `triada`, sem descarte |
 | flag `sistema_ativo` desligada | `SistemaDesativado` sobe depois de gravar a parte sem modelo |
 | resposta fora do schema, família fora da lista, tech fora do inventário | vaga descartada com `pontuacao_invalida` e nunca reavaliada |
+| erro do provedor (corpo quebrado, recusa, resposta sem tokens) | a vaga continua `triada` e entra na rodada seguinte; a rodada segue para a próxima |
+| `TransicaoRecusada` (o estado da vaga mudou por fora) | registrada em `transicoes_recusadas`; só aquela vaga é pulada |
 
 ## Onde cada limite mora
 
@@ -72,12 +74,21 @@ FROM pleito.vaga WHERE motivo_descarte IS NOT NULL GROUP BY 1 ORDER BY 2 DESC;
 
 Em código: `listar_descartes` e `contar_descartes_por_motivo` em `src/triagem/repositorio.py`.
 
+## Custo conhecido e item futuro
+
+`SQL_VISTAS` lê todas as vagas já vistas a cada rodada, e `SQL_CACHE` varre `auditoria` por
+`depois ->> 'hash_entrada'`. Nenhum dos dois tem índice. Com milhares de vagas e poucas rodadas por
+dia o custo é desprezível; quando pesar, o item é um índice em `auditoria` sobre esse campo e uma
+janela de datas nas vistas. Exige migration, por isso ficou fora da F4.2.
+
 ## Segurança
 
 Texto de vaga é dado. O prompt delimita o texto, troca marcações falsas, não habilita ferramenta e
 não leva empresa, local nem URL. A resposta só vale se a família, o idioma e os alertas estiverem
 nas listas do config, as techs estiverem no inventário e as equivalências na tabela do inventário.
-Padrão típico de injeção no texto soma o alerta `texto_suspeito`; não muda nota nem família.
+Padrão típico de injeção no texto soma o alerta `texto_suspeito`. É só um alerta: a nota e a
+família não mudam e a vaga não é barrada. Quem lê o alerta é a aprovação no painel (F4.9). Os
+padrões são compilados ao carregar o config; padrão inválido impede a rodada de começar.
 Egress não existe nesta etapa.
 
 ## Para a F2.4

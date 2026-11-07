@@ -9,6 +9,10 @@ from src.coletor.contratos import ModeloTrabalho, Senioridade
 SEPARADOR_DETALHE = ": "
 
 
+class TransicaoRecusada(RuntimeError):
+    pass
+
+
 class Motivo(StrEnum):
     DUPLICATA = "duplicata"
     FUNCAO = "funcao_fora_do_escopo"

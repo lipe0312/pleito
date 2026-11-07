@@ -7,8 +7,6 @@ from src.conteudo.modelo import Inventario
 from src.triagem.configuracao import ConfiguracaoTriagem
 from src.triagem.contratos import VagaTriagem
 
-NOTA_MAXIMA = 100
-
 
 def _aparece(termo: str, texto: str) -> bool:
     return re.search(rf"(?<!\w){re.escape(termo)}(?!\w)", texto, re.IGNORECASE) is not None
@@ -62,4 +60,4 @@ def calcular_pre_nota(
     )
     total_pesos = sum(peso for peso, _ in parcelas)
     pontos = sum(peso * fracao for peso, fracao in parcelas)
-    return round(NOTA_MAXIMA * pontos / total_pesos)
+    return round(config.nota_maxima * pontos / total_pesos)

@@ -13,7 +13,7 @@ from apoio_triagem import (
 
 from src.coletor.contratos import Senioridade
 from src.triagem.configuracao import configuracao_triagem
-from src.triagem.contratos import Motivo, VagaTriagem, codigo_do_motivo
+from src.triagem.contratos import Motivo, TransicaoRecusada, VagaTriagem, codigo_do_motivo
 from src.triagem.funil import executar_funil
 
 CONFIG = configuracao_triagem()
@@ -278,3 +278,88 @@ def test_sistema_desativado_propaga_depois_de_gravar_a_parte_deterministica():
 
     assert 2 in repositorio.descartes
     assert 1 in repositorio.aguardando_lista
+
+
+def test_erro_transitorio_do_provedor_deixa_a_vaga_aguardando_e_segue_para_a_proxima():
+    from src.llm.roteador import Roteador
+
+    chamadas = []
+
+    def transporte(pedido):
+        chamadas.append(1)
+        if len(chamadas) == 1:
+            raise ValueError("provedor recusou a solicitacao")
+        from src.llm.roteador import RespostaTransporte
+
+        return RespostaTransporte(texto=texto_resposta(), tokens_entrada=1, tokens_saida=1)
+
+    from apoio_geracao import modelos_com_tier
+
+    roteador = Roteador(
+        configuracao=modelos_com_tier(True),
+        transporte=transporte,
+        reservar=lambda **dados: 1,
+        finalizar=lambda *args: None,
+        falhar=lambda *args: None,
+        verificar_ativo=lambda: None,
+    )
+    repositorio = RepositorioMemoria(
+        [vaga(1, titulo="Estagio Backend A"), vaga(2, titulo="Estagio Backend B")]
+    )
+
+    resumo = _funil(repositorio, roteador)
+
+    assert 1 not in repositorio.descartes
+    assert [item.vaga.id for item in repositorio.aguardando()] == [1]
+    assert set(repositorio.pontuadas) == {2}
+    assert resumo.adiadas == 1 and resumo.invalidas == 0
+
+
+class RepositorioQueRecusa(RepositorioMemoria):
+    def __init__(self, vagas, recusadas):
+        super().__init__(vagas)
+        self.recusadas = recusadas
+
+    def descartar(self, vaga_id, motivo, nota=None):
+        if vaga_id in self.recusadas:
+            raise TransicaoRecusada("estado mudou")
+        super().descartar(vaga_id, motivo, nota)
+
+    def triar(self, vaga_id, pre_nota):
+        if vaga_id in self.recusadas:
+            raise TransicaoRecusada("estado mudou")
+        super().triar(vaga_id, pre_nota)
+
+
+def test_transicao_recusada_numa_vaga_nao_desfaz_o_lote():
+    lote = [
+        vaga(1, titulo="Executivo de Vendas"),
+        vaga(2, titulo="Estagio Backend B"),
+        vaga(3, titulo="Gerente Comercial"),
+        vaga(4, titulo="Estagio Backend D"),
+    ]
+    repositorio = RepositorioQueRecusa(lote, recusadas={1, 2})
+    roteador, rastro = roteador_falso(texto_resposta())
+
+    resumo = _funil(repositorio, roteador)
+
+    assert resumo.transicoes_recusadas == 2
+    assert 3 in repositorio.descartes
+    assert set(repositorio.pontuadas) == {4}
+    assert 1 not in repositorio.descartes and 2 not in repositorio.aguardando_lista
+
+
+def test_transicao_recusada_ao_pontuar_nao_para_a_rodada():
+    class Recusa(RepositorioMemoria):
+        def pontuar(self, vaga_id, nota, registro, origem):
+            if vaga_id == 1:
+                raise TransicaoRecusada("estado mudou")
+            super().pontuar(vaga_id, nota, registro, origem)
+
+    repositorio = Recusa([vaga(1, titulo="Estagio Backend A"), vaga(2, titulo="Estagio Backend B")])
+    roteador, _ = roteador_falso(texto_resposta())
+
+    resumo = _funil(repositorio, roteador)
+
+    assert set(repositorio.pontuadas) == {2}
+    assert resumo.transicoes_recusadas == 1

@@ -216,3 +216,66 @@ def test_modelo_desabilitado_e_orcamento_esgotado_propagam_sem_virar_pontuacao_i
     roteador, _ = roteador_falso(texto_resposta(), reserva=sem_orcamento)
     with pytest.raises(OrcamentoEsgotado):
         pontuar_vaga(vaga(), INVENTARIO, roteador, RepositorioMemoria(), CONFIG, PADROES)
+
+
+def _roteador_com_transporte(transporte):
+    from apoio_geracao import modelos_com_tier
+
+    from src.llm.roteador import Roteador
+
+    return Roteador(
+        configuracao=modelos_com_tier(True),
+        transporte=transporte,
+        reservar=lambda **dados: 1,
+        finalizar=lambda *args: None,
+        falhar=lambda *args: None,
+        verificar_ativo=lambda: None,
+    )
+
+
+@pytest.mark.parametrize(
+    "erro",
+    [
+        ValueError("provedor recusou a solicitacao"),
+        ValueError("resposta da OpenAI sem contagem de tokens"),
+        ValueError("resposta estruturada vazia"),
+    ],
+)
+def test_erro_transitorio_do_provedor_adia_e_nao_vira_pontuacao_invalida(erro):
+    from src.triagem.pontuacao import PontuacaoAdiada
+
+    def transporte(pedido):
+        raise erro
+
+    roteador = _roteador_com_transporte(transporte)
+    with pytest.raises(PontuacaoAdiada):
+        pontuar_vaga(vaga(), INVENTARIO, roteador, RepositorioMemoria(), CONFIG, PADROES)
+
+
+def test_so_a_falha_de_schema_da_resposta_descarta():
+    roteador, _ = roteador_falso("{nao e json")
+    with pytest.raises(PontuacaoInvalida):
+        pontuar_vaga(vaga(), INVENTARIO, roteador, RepositorioMemoria(), CONFIG, PADROES)
+
+
+def test_teto_da_nota_e_dos_alertas_vem_do_config():
+    pequeno = CONFIG.model_copy(
+        update={
+            "nota_maxima": 50,
+            "pontuacao_final": CONFIG.pontuacao_final.model_copy(update={"alertas_max": 1}),
+        }
+    )
+    props = esquema_da_pontuacao(pequeno, PADROES).model_json_schema()["properties"]
+    assert props["nota_aderencia"]["maximum"] == 50
+    assert props["alertas"]["maxItems"] == 1
+
+
+def test_idioma_dos_focos_vem_do_config():
+    ingles = CONFIG.model_copy(
+        update={
+            "pontuacao_final": CONFIG.pontuacao_final.model_copy(update={"idioma_dos_focos": "en"})
+        }
+    )
+    prompt = montar_prompt_de_pontuacao(vaga(), INVENTARIO, ingles, PADROES).texto
+    assert "relational data" in prompt
+    assert "dados relacionais" not in prompt

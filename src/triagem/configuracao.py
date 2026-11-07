@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from pathlib import PurePosixPath
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from src.coletor.contratos import Funcao, ModeloTrabalho, Senioridade
 from src.config import carregar
 from src.conteudo.modelo import Estrito
-
-PASTA_DOS_PROMPTS = "prompts"
+from src.padroes.configuracao import PASTA_DOS_PROMPTS
 
 
 class Tolerante(BaseModel):
@@ -35,7 +35,7 @@ class Eliminatorios(Tolerante):
     exige_anos_experiencia_max: int
     recusa_titulos_com: list[str]
     recusa_se_exige_presencial_fora_de: list[str]
-    idade_maxima_dias: int
+    idade_maxima_dias: int = Field(gt=0)
     funcoes_aceitas: list[Funcao]
 
 
@@ -81,9 +81,21 @@ class PontuacaoFinal(Estrito):
     requisitos_max: int = Field(gt=0)
     requisito_max_chars: int = Field(gt=0)
     justificativa_max_chars: int = Field(gt=0)
+    alertas_max: int = Field(gt=0)
+    idioma_dos_focos: str
     alertas: list[str] = Field(min_length=1)
     alerta_texto_suspeito: str
     padroes_injecao: list[str]
+
+    @field_validator("padroes_injecao")
+    @classmethod
+    def _padroes_compilam(cls, padroes: list[str]) -> list[str]:
+        for padrao in padroes:
+            try:
+                re.compile(padrao)
+            except re.error as erro:
+                raise ValueError(f"padrao de injecao invalido: {erro}") from erro
+        return padroes
 
     @model_validator(mode="after")
     def _prompt_na_pasta_e_alerta_declarado(self) -> PontuacaoFinal:
@@ -101,8 +113,15 @@ class ConfiguracaoTriagem(Estrito):
     pre_nota: PreNota
     pontuacao_final: PontuacaoFinal
     pre_pontuadas_max: int = Field(gt=0)
-    pre_nota_minima: int = Field(ge=0, le=100)
+    nota_maxima: int = Field(gt=0)
+    pre_nota_minima: int = Field(ge=0)
     descricao_max_chars: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def _minimo_cabe_na_escala(self) -> ConfiguracaoTriagem:
+        if self.pre_nota_minima > self.nota_maxima:
+            raise ValueError("pre_nota_minima maior que a nota maxima")
+        return self
 
 
 @lru_cache(maxsize=1)
@@ -114,6 +133,7 @@ def configuracao_triagem() -> ConfiguracaoTriagem:
         normalizacao=Normalizacao.model_validate(triagem["normalizacao"]),
         pre_nota=PreNota.model_validate(triagem["pre_nota"]),
         pontuacao_final=PontuacaoFinal.model_validate(triagem["pontuacao_final"]),
+        nota_maxima=triagem["nota_maxima"],
         pre_pontuadas_max=limites["diarios"]["vagas_pre_pontuadas_max"],
         pre_nota_minima=limites["llm"]["pre_nota_minima_para_forte"],
         descricao_max_chars=limites["llm"]["descricao_max_chars"],

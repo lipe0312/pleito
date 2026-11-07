@@ -167,6 +167,8 @@ pre_nota:
     - Rust
     - .NET
 
+nota_maxima: 100
+
 pontuacao_final:
   tarefa: pontuacao_final
   tier: forte
@@ -177,6 +179,8 @@ pontuacao_final:
   requisitos_max: 10
   requisito_max_chars: 120
   justificativa_max_chars: 400
+  alertas_max: 10
+  idioma_dos_focos: pt
   alertas: [possivel_golpe, exige_visto, senioridade_acima, texto_suspeito]
   alerta_texto_suspeito: texto_suspeito
   padroes_injecao:

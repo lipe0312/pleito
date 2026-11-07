@@ -11,10 +11,22 @@ from src.llm.orcamento import OrcamentoEsgotado
 from src.llm.roteador import ModeloIndisponivel, Roteador
 from src.padroes.configuracao import ConfiguracaoPadroes, configuracao_padroes
 from src.triagem.configuracao import ConfiguracaoTriagem, configuracao_triagem
-from src.triagem.contratos import Motivo, VagaAguardando, VagaTriagem, texto_do_motivo
+from src.triagem.contratos import (
+    Motivo,
+    TransicaoRecusada,
+    VagaAguardando,
+    VagaTriagem,
+    texto_do_motivo,
+)
 from src.triagem.deduplicacao import Deduplicador
 from src.triagem.filtros import motivo_de_descarte
-from src.triagem.pontuacao import ORIGEM_MODELO, PontuacaoInvalida, pontuar_vaga
+from src.triagem.pontuacao import (
+    ORIGEM_MODELO,
+    PontuacaoAdiada,
+    PontuacaoInvalida,
+    ResultadoDaPontuacao,
+    pontuar_vaga,
+)
 from src.triagem.pre_nota import calcular_pre_nota
 
 
@@ -48,6 +60,34 @@ class ResumoDoFunil:
     invalidas: int = 0
     adiadas: int = 0
     aguardando: int = 0
+    transicoes_recusadas: int = 0
+
+
+def _triar_uma(
+    vaga: VagaTriagem,
+    original: int | None,
+    repositorio: RepositorioDoFunil,
+    inventario: Inventario,
+    config: ConfiguracaoTriagem,
+    hoje: date,
+    resumo: ResumoDoFunil,
+) -> None:
+    if original is not None:
+        repositorio.descartar(vaga.id, texto_do_motivo(Motivo.DUPLICATA, f"vaga {original}"))
+        resumo.duplicadas += 1
+        return
+    eliminada = motivo_de_descarte(vaga, config.filtros, hoje)
+    if eliminada is not None:
+        repositorio.descartar(vaga.id, texto_do_motivo(*eliminada))
+        resumo.descartadas_por_filtro += 1
+        return
+    nota = calcular_pre_nota(vaga, inventario, config, hoje)
+    if nota < config.pre_nota_minima:
+        repositorio.descartar(vaga.id, texto_do_motivo(Motivo.PRE_NOTA, str(nota)), nota)
+        resumo.descartadas_por_pre_nota += 1
+        return
+    repositorio.triar(vaga.id, nota)
+    resumo.triadas += 1
 
 
 def _triar_novas(
@@ -64,23 +104,24 @@ def _triar_novas(
         resumo.recebidas += 1
         original = deduplicador.duplicada_de(vaga)
         deduplicador.registrar(vaga)
-        if original is not None:
-            resumo.duplicadas += 1
-            repositorio.descartar(vaga.id, texto_do_motivo(Motivo.DUPLICATA, f"vaga {original}"))
-            continue
-        eliminada = motivo_de_descarte(vaga, config.filtros, hoje)
-        if eliminada is not None:
-            resumo.descartadas_por_filtro += 1
-            repositorio.descartar(vaga.id, texto_do_motivo(*eliminada))
-            continue
-        nota = calcular_pre_nota(vaga, inventario, config, hoje)
-        if nota < config.pre_nota_minima:
-            resumo.descartadas_por_pre_nota += 1
-            repositorio.descartar(vaga.id, texto_do_motivo(Motivo.PRE_NOTA, str(nota)), nota)
-            continue
-        resumo.triadas += 1
-        repositorio.triar(vaga.id, nota)
+        try:
+            _triar_uma(vaga, original, repositorio, inventario, config, hoje, resumo)
+        except TransicaoRecusada:
+            resumo.transicoes_recusadas += 1
     repositorio.confirmar()
+
+
+def _gravar_pontuacao(
+    repositorio: RepositorioDoFunil,
+    item: VagaAguardando,
+    resultado: ResultadoDaPontuacao,
+    resumo: ResumoDoFunil,
+) -> None:
+    repositorio.pontuar(item.vaga.id, resultado.nota, resultado.registro, resultado.origem)
+    if resultado.origem == ORIGEM_MODELO:
+        resumo.chamadas_ao_modelo += 1
+    else:
+        resumo.do_cache += 1
 
 
 def _pontuar_melhores(
@@ -95,24 +136,25 @@ def _pontuar_melhores(
     fila = ordem[: config.pre_pontuadas_max]
     for posicao, item in enumerate(fila):
         try:
-            resultado = pontuar_vaga(item.vaga, inventario, roteador, repositorio, config, padroes)
-        except PontuacaoInvalida as erro:
-            resumo.invalidas += 1
-            resumo.chamadas_ao_modelo += int(erro.chamou_modelo)
-            repositorio.descartar(
-                item.vaga.id, texto_do_motivo(Motivo.PONTUACAO_INVALIDA, erro.codigo)
-            )
-            repositorio.confirmar()
-            continue
-        except (ModeloIndisponivel, OrcamentoEsgotado, httpx.HTTPError):
-            resumo.adiadas = len(fila) - posicao
-            return
-        repositorio.pontuar(item.vaga.id, resultado.nota, resultado.registro, resultado.origem)
+            try:
+                resultado = pontuar_vaga(
+                    item.vaga, inventario, roteador, repositorio, config, padroes
+                )
+            except PontuacaoInvalida as erro:
+                resumo.invalidas += 1
+                resumo.chamadas_ao_modelo += int(erro.chamou_modelo)
+                motivo = texto_do_motivo(Motivo.PONTUACAO_INVALIDA, erro.codigo)
+                repositorio.descartar(item.vaga.id, motivo)
+            except PontuacaoAdiada:
+                resumo.adiadas += 1
+            except (ModeloIndisponivel, OrcamentoEsgotado, httpx.HTTPError):
+                resumo.adiadas += len(fila) - posicao
+                return
+            else:
+                _gravar_pontuacao(repositorio, item, resultado, resumo)
+        except TransicaoRecusada:
+            resumo.transicoes_recusadas += 1
         repositorio.confirmar()
-        if resultado.origem == ORIGEM_MODELO:
-            resumo.chamadas_ao_modelo += 1
-        else:
-            resumo.do_cache += 1
 
 
 def executar_funil(
