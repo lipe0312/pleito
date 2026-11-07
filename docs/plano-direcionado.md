@@ -75,6 +75,12 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   idioma, pontuação e senioridade inflada; limites em `config/validador.yaml` e
   `config/padroes_curriculo.yaml`, uma linha por regra em `docs/validador.md`; layout (V1, V3, V4,
   V5, V18) fica para o F2.6 e o laço de retry para o F3.3
+- [x] F2.6, layout do PDF compilado em `src/validador/layout*.py`, ligado a `validar_curriculo`:
+  V1 erro do `pdflatex` com as linhas do log, V3 `Overfull` e `Underfull hbox` acima do limite,
+  V4 título e data na mesma linha e V5 caixas de texto sem sobreposição (posição do texto lida
+  com o pypdf, sem dependência nova), V18 fonte, `linespread` e margem acima do mínimo por
+  idioma; limites em `config/validador.yaml` (chave `layout`); a ordem de corte automática fica
+  para o F3.3
 - [x] F2.7, `make conteudo-sincronizar` lê os repositórios públicos do usuário de
   `config/conteudo.yaml` pela API do GitHub e as páginas do portfólio (lista vazia até o Filipe
   preencher a URL), extrai tecnologias por dicionário e grava `dados/conteudo/sugestoes.yaml`
