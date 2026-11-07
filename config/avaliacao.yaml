@@ -1,0 +1,28 @@
+versao_conjunto: 1
+
+armadilhas:
+  pasta: tests/fixtures/avaliacao/armadilhas
+  guia: tests/fixtures/avaliacao/conteudo/guia.md
+  travado: tests/fixtures/avaliacao/conteudo/cabecalho.yaml
+
+vagas_reais:
+  subpasta: avaliacao/vagas
+  tipo: vaga_real
+
+relatorios:
+  subpasta: avaliacao/relatorios
+
+taxa_minima_aprovacao: 1.0
+
+regras_fora: [paginas]
+
+offline:
+  tokens_entrada: 4000
+  tokens_saida: 1500
+
+casos:
+  escrita_slots:
+    executor: gerar_e_validar
+    tarefa: escrita_slots
+    armadilhas: [prompt_injection, tech_fora_do_inventario, senior_disfarcado, email_nao_autenticado]
+    vagas_reais: true

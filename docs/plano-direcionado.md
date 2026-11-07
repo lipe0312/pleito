@@ -81,6 +81,13 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   sem tocar blocos nem inventário; `make conteudo-aprovar` grava o bloco ou a âncora com quem e
   quando (`docs/inventario-projetos.md`); entrada semanal em `config/limites.yaml`, sem instalar o
   plist; tela de aprovação fica no F3.4
+- [x] F2.4, `make avaliar TIER=<tier>` (`src/avaliacao/`, `config/avaliacao.yaml`) roda os casos de
+  prompt do tier sobre as armadilhas fictícias de `tests/fixtures/avaliacao/` (injeção, tecnologia
+  fora do inventário, sênior disfarçada de júnior, email falso de entrevista) e as vagas de
+  `dados/avaliacao/vagas/` quando existem; offline com cliente falso por padrão, chamada real só com
+  `ARGS=--real` e orçamento do roteador; relatório em `dados/avaliacao/relatorios/` com data, versão
+  do conjunto e do prompt, modelo, taxa por regra, falhas por armadilha, custo e veredito; teste
+  barra `habilitado: true` sem avaliação aprovada; ligar o tier é o M8 (`docs/avaliacao.md`)
 - [x] F3.0, padrões escritos do currículo em `config/padroes_curriculo.yaml` (validado por pydantic,
   `src/padroes/`) e `docs/curriculo-padroes.md`; `prompts/gerar_slots.md` versionado, montado a
   partir do yaml (versão e hash graváveis por tentativa, vaga só dentro da marcação de dado não
