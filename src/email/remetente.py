@@ -34,6 +34,18 @@ def dominio_de(remetente: str) -> str:
     return _partes(endereco_de(remetente))[1]
 
 
+def caixa_de(remetente: str) -> str:
+    return _partes(endereco_de(remetente))[0]
+
+
+def dominio_exato_da_plataforma(
+    remetente: str, plataforma: str, configuradas: Regras | None = None
+) -> bool:
+    configuradas = configuradas or regras()
+    dominio = dominio_de(remetente)
+    return bool(dominio) and dominio in configuradas.plataformas[plataforma].dominios
+
+
 def plataforma_de(remetente: str, configuradas: Regras | None = None) -> str | None:
     configuradas = configuradas or regras()
     caixa, dominio = _partes(endereco_de(remetente))
