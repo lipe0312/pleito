@@ -27,12 +27,16 @@ class DecisaoRobots:
     detalhe: str
 
 
+def fonte_ativa(fonte: dict) -> bool:
+    return fonte.get("ativa", True) is True
+
+
 def dominios_permitidos() -> frozenset[str]:
     fontes = carregar("fontes").get("fontes", {})
     return frozenset(
         dominio
         for fonte in fontes.values()
-        if fonte.get("ativa") is not False
+        if fonte_ativa(fonte)
         for dominio in fonte.get("dominios", [])
         if isinstance(dominio, str)
     )
@@ -43,8 +47,8 @@ def exigir_termos_permitidos(slug: str) -> dict:
     fonte = config.get("fontes", {}).get(slug)
     if fonte is None:
         raise TermosNaoPermitem(f"{slug} nao esta em config/fontes.yaml")
-    if fonte.get("ativa") is False:
-        raise TermosNaoPermitem(f"{slug} esta desativada em config/fontes.yaml")
+    if not fonte_ativa(fonte):
+        raise TermosNaoPermitem(f"{slug} desativada ou com ativa invalido no yaml")
     termos = fonte.get("termos") or {}
     if not termos.get("revisado_em"):
         raise TermosNaoPermitem(f"{slug} sem termos.revisado_em em config/fontes.yaml")

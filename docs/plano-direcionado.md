@@ -32,7 +32,7 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   Gupy fora da coleta
 - [x] F4.4, termos de uso das fontes lidos e registrados em `docs/fontes-termos.md` e em `termos`
   de `config/fontes.yaml`; o coletor recusa fonte sem `revisado_em` ou com `proibe`;
-  `weworkremotely`, `jobspresso`, `hackernews` e `solides` saíram da coleta (`ativa: false`)
+  `weworkremotely`, `jobspresso`, `hackernews`, `solides`, `lever`, `arbeitnow` e `workingnomads` saíram da coleta (`ativa: false`)
 - [x] F4.2, funil de triagem em `src/triagem/` (duplicata, filtros, pré-nota sem IA, pontuação final
   só para as `vagas_pre_pontuadas_max` melhores acima de `pre_nota_minima_para_forte`, com cache por
   hash); sem migration, o motivo do descarte e a nota ficam em `vaga.motivo_descarte` e `vaga.nota`;

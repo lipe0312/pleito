@@ -18,9 +18,10 @@ fontes:
     tipo: api_publica_por_empresa
     dominios: [api.lever.co, jobs.lever.co]
     verificar_robots: true
+    ativa: false
     termos:
       revisado_em: "2026-11-07"
-      veredito: permite_com_condicao
+      veredito: proibe
       link: https://www.lever.co/legal/terms-of-service
     empresas: [swile, zippi, metabase]
   ashby:
@@ -47,9 +48,10 @@ fontes:
     tipo: agregador_api_publica
     dominios: [www.arbeitnow.com, arbeitnow.com]
     verificar_robots: true
+    ativa: false
     termos:
       revisado_em: "2026-11-07"
-      veredito: permite_com_condicao
+      veredito: proibe
       link: https://www.arbeitnow.com/terms
   himalayas:
     tipo: agregador_api_publica
@@ -98,9 +100,10 @@ fontes:
     tipo: agregador_api_publica
     dominios: [www.workingnomads.com, workingnomads.com]
     verificar_robots: true
+    ativa: false
     termos:
       revisado_em: "2026-11-07"
-      veredito: permite_com_condicao
+      veredito: proibe
       link: https://www.workingnomads.com/terms-and-conditions
   hackernews:
     tipo: texto_livre

@@ -98,6 +98,7 @@ def test_revisado_em_ausente_recusa(monkeypatch, coletor):
 def test_veredito_desconhecido_recusa(monkeypatch, coletor):
     resultado, chamadas = _coletar(monkeypatch, coletor, _config(**_termos("talvez")))
     assert chamadas == 0
+    assert MotivoNoGo.TOS_PROIBE in resultado.motivos
 
 
 def test_fonte_desativada_nao_e_coletada(monkeypatch, coletor):
@@ -105,6 +106,24 @@ def test_fonte_desativada_nao_e_coletada(monkeypatch, coletor):
         monkeypatch, coletor, _config(ativa=False, **_termos("permite"))
     )
     assert chamadas == 0
+    assert MotivoNoGo.TOS_PROIBE in resultado.motivos
+
+
+@pytest.mark.parametrize("ativa", ["false", "no", "nao", 0, None, "true"])
+def test_ativa_nao_booleano_recusa(monkeypatch, coletor, ativa):
+    resultado, chamadas = _coletar(
+        monkeypatch, coletor, _config(ativa=ativa, **_termos("permite"))
+    )
+    assert chamadas == 0
+    assert MotivoNoGo.TOS_PROIBE in resultado.motivos
+
+
+@pytest.mark.parametrize("ativa", ["false", "no", 0, None])
+def test_ativa_nao_booleano_sai_da_allowlist_de_dominios(monkeypatch, ativa):
+    monkeypatch.setattr(
+        conformidade, "carregar", lambda nome: _config(ativa=ativa, **_termos("permite"))
+    )
+    assert "fonte-ficticia.example.net" not in dominios_permitidos()
 
 
 def test_fonte_fora_do_yaml_recusa(monkeypatch):
@@ -134,6 +153,14 @@ def test_yaml_real_nenhuma_fonte_ativa_proibe():
     for slug, fonte in fontes.items():
         if fonte["termos"]["veredito"] == "proibe":
             assert fonte.get("ativa") is False, slug
+        if fonte.get("ativa") is False:
+            assert fonte["termos"]["veredito"] == "proibe", slug
+
+
+def test_yaml_real_ativa_so_booleano():
+    for slug, fonte in carregar("fontes")["fontes"].items():
+        assert fonte.get("ativa", True) in (True, False), slug
+        assert isinstance(fonte.get("ativa", True), bool), slug
 
 
 def test_yaml_real_fonte_ativa_passa_na_regra():
