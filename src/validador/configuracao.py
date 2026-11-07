@@ -172,8 +172,11 @@ class LayoutDoLog(Estrito):
     linhas_do_erro: int = Field(ge=1)
     caixas_max: int = Field(ge=1)
     linhas_da_caixa: int = Field(ge=1)
+    defasagem_max_s: float = Field(ge=0)
     overfull_max_pt: float = Field(ge=0)
     underfull_badness_max: int = Field(ge=0)
+    overfull_vbox_max_pt: float = Field(ge=0)
+    underfull_vbox_badness_max: int = Field(ge=0)
 
 
 class LayoutDoPdf(Estrito):
@@ -184,6 +187,7 @@ class LayoutDoPdf(Estrito):
     sobreposicao_y_min_pt: float = Field(ge=0)
     sobreposicoes_max: int = Field(ge=1)
     largura_sem_metrica_em: float = Field(gt=0)
+    caixas_max: int = Field(ge=1)
 
 
 class LimitesDeLayout(Estrito):

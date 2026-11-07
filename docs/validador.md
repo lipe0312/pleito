@@ -35,13 +35,13 @@ Fora da lista V<n>, o F2.3 também recusa travessão, caractere invisível e alf
 
 ## Layout do PDF (V1, V3, V4, V5, V18)
 
-`validar_curriculo` recebe também `log` (o `.log` do `pdflatex`); sem ele, o validador usa `cv.log` ao lado do PDF, se existir. Sem log nenhum, V1 e V3 não têm o que ler e não disparam; informar um `log` que não existe recusa por V1. Cada regra é uma função em `REGRAS_DE_LAYOUT` (`src/validador/layout.py`) e tem teste que falha sem ela (`tests/test_validador_layout.py`, e com `pdflatex` real em `tests/test_validador_layout_real.py`, marcador `latex`). Todos os limites ficam na chave `layout` de `config/validador.yaml`.
+`validar_curriculo` recebe também `log` (o `.log` do `pdflatex`); sem ele, o validador usa `cv.log` ao lado do PDF. Havendo PDF, o log é obrigatório: ausente, ilegível, maior que o limite ou mais velho que o PDF (diferença acima de `layout.log.defasagem_max_s`, sinal de log de outra compilação) recusa por V1. V3 lê também `Overfull` e `Underfull \vbox`, com limites próprios. Cada regra é uma função em `REGRAS_DE_LAYOUT` (`src/validador/layout.py`) e tem teste que falha sem ela (`tests/test_validador_layout.py`, e com `pdflatex` real em `tests/test_validador_layout_real.py`, marcador `latex`). Todos os limites ficam na chave `layout` de `config/validador.yaml`.
 
 - O log é dado, nunca instrução: lido com no máximo `layout.log.tamanho_max_bytes`, decodificado com substituição, sem executar nada; texto de comando LaTeX dentro dele é só texto. No máximo `erros_max` erros e `caixas_max` caixas por validação.
 - V4 e V5 leem o PDF com o pypdf. V4 acha a entrada (título, complemento e data de cada `\hfill`) no texto do PDF ignorando espaço, acento e pontuação, e recusa se as linhas diferem mais que a tolerância (título que quebrou em duas linhas empurra a data para baixo). Entrada que não aparece no PDF também recusa, para PDF e fonte não divergirem em silêncio.
 - V5 mede cada trecho de texto pelas larguras de glifo da fonte do PDF (`/Widths`), com a largura média de `largura_sem_metrica_em` quando a fonte não traz medida. A altura da caixa vem de `ascendente_em` e `descendente_em`. O pypdf entrega a posição horizontal só no começo de cada linha; por isso o código acompanha `Td`, `Tm`, `Tf`, `Tj` e `TJ` e soma as larguras. Quebras de linha do próprio TeX nunca se tocam (o TeX impõe o `\lineskip`), então V5 pega sobreposição criada por espaço negativo ou por PDF fora do pdflatex.
 - V18 lê o preâmbulo do `.tex`: tamanho da classe (`fonte_padrao_pt` quando a classe não traz), `\linespread` e as chaves de margem do `geometry` (`chaves_de_margem`), convertidas para mm pela tabela `latex.medidas.unidades_mm`. Os mínimos são por idioma em `layout.por_idioma`.
-- PDF ilegível ou ausente não dispara V4 nem V5 (V2 já recusa); PDF legível cujo conteúdo o pypdf não consegue medir recusa.
+- PDF ilegível ou ausente não dispara V4 nem V5 (V2 já recusa). PDF legível cujo conteúdo não dá para medir recusa: coordenada infinita ou `nan`, estouro numérico, recursão e mais de `layout.pdf.caixas_max` caixas. O PDF é lido uma vez por validação, para V4 e V5.
 
 ## Decisões
 

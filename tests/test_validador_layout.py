@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pytest
 from apoio_validador import (
     configuracao_com,
@@ -9,6 +11,7 @@ from apoio_validador import (
     gravar_pdf_das_entradas,
     gravar_pdf_posicionado,
     inventario_rico,
+    pdf_com_operacoes,
     tex_rico,
 )
 
@@ -92,8 +95,60 @@ def test_log_ao_lado_do_pdf_e_lido_sem_ser_informado(tmp_path):
     assert "V3" in codigos(tex_rico(), pdf_coerente(tmp_path))
 
 
-def test_sem_log_nenhuma_regra_de_log_dispara(tmp_path):
-    assert codigos(tex_rico(), pdf_coerente(tmp_path)) == set()
+def test_pdf_sem_log_e_recusado_por_v1(tmp_path):
+    pdf = pdf_coerente(tmp_path)
+    (tmp_path / "cv.log").unlink()
+
+    achados = violacoes_de("V1", tex_rico(), pdf)
+
+    assert len(achados) == 1
+    assert "log do pdflatex ausente" in achados[0].detalhe
+
+
+def test_pdf_sem_log_nao_passa_nem_com_o_resto_perfeito(tmp_path):
+    pdf = pdf_coerente(tmp_path)
+    (tmp_path / "cv.log").unlink()
+
+    assert codigos(tex_rico(), pdf) == {"V1"}
+
+
+def test_log_mais_velho_que_o_pdf_nao_vale_e_e_recusado_por_v1(tmp_path):
+    pdf = pdf_coerente(tmp_path)
+    log = tmp_path / "cv.log"
+    velho = pdf.stat().st_mtime - configuracao_validador().layout.log.defasagem_max_s - 60
+    os.utime(log, (velho, velho))
+
+    achados = violacoes_de("V1", tex_rico(), pdf)
+
+    assert len(achados) == 1
+    assert "mais velho" in achados[0].detalhe
+
+
+def test_log_de_outra_compilacao_nao_esconde_erro_do_pdf_novo(tmp_path):
+    log = gravar_log(tmp_path)
+    velho = log.stat().st_mtime - 3600
+    os.utime(log, (velho, velho))
+
+    assert "V1" in codigos(tex_rico(), pdf_coerente(tmp_path), log)
+
+
+def test_log_com_pouca_diferenca_de_hora_para_o_pdf_vale(tmp_path):
+    pdf = pdf_coerente(tmp_path)
+    log = tmp_path / "cv.log"
+    quase = pdf.stat().st_mtime - 1
+    os.utime(log, (quase, quase))
+
+    assert codigos(tex_rico(), pdf) == set()
+
+
+def test_defasagem_maxima_do_log_vem_da_configuracao(tmp_path):
+    pdf = pdf_coerente(tmp_path)
+    log = tmp_path / "cv.log"
+    velho = pdf.stat().st_mtime - 60
+    os.utime(log, (velho, velho))
+    config = configuracao_com(layout__log__defasagem_max_s=120)
+
+    assert codigos(tex_rico(), pdf, config=config) == set()
 
 
 def test_v3_overfull_acima_do_limite_e_recusado_com_pagina_e_trecho(tmp_path):
@@ -499,3 +554,103 @@ def test_desligar_a_regra_faz_o_caso_ruim_passar(tmp_path, monkeypatch, codigo):
     monkeypatch.setattr(layout, "REGRAS_DE_LAYOUT", sobraram)
 
     assert codigo not in codigos(tex, pdf, log)
+
+
+def test_v3_vbox_overfull_e_underfull_acima_do_limite_sao_recusados(tmp_path):
+    log = gravar_log(
+        tmp_path,
+        "Overfull \\vbox (7.00pt too high) has occurred while \\output is active",
+        "Underfull \\vbox (badness 10000) has occurred while \\output is active",
+    )
+
+    achados = violacoes_de("V3", tex_rico(), pdf_coerente(tmp_path), log)
+
+    assert len(achados) == 2
+    assert all("vbox" in v.detalhe for v in achados)
+
+
+def test_v3_vbox_dentro_do_limite_passa_e_o_limite_vem_da_configuracao(tmp_path):
+    log = gravar_log(
+        tmp_path,
+        "Overfull \\vbox (0.50pt too high) has occurred while \\output is active",
+        "Underfull \\vbox (badness 1200) has occurred while \\output is active",
+    )
+    rigida = configuracao_com(
+        layout__log__overfull_vbox_max_pt=0, layout__log__underfull_vbox_badness_max=0
+    )
+    pdf = pdf_coerente(tmp_path)
+
+    assert "V3" not in codigos(tex_rico(), pdf, log)
+    assert len(violacoes_de("V3", tex_rico(), pdf, log, config=rigida)) == 2
+
+
+def _pdf_hostil(tmp_path, operacoes):
+    caminho = tmp_path / "cv.pdf"
+    caminho.write_bytes(pdf_com_operacoes(operacoes))
+    gravar_log(tmp_path)
+    return caminho
+
+
+COORDENADAS_HOSTIS = {
+    "inteiro_gigante": "1 0 0 1 " + "9" * 400 + " 700 Tm (x) Tj",
+    "overflow_no_produto": (
+        "1"
+        + "0" * 200
+        + " 0 0 1"
+        + "0" * 200
+        + " 0 0 Tm 1"
+        + "0" * 200
+        + " 1"
+        + "0" * 200
+        + " Td (x) Tj"
+    ),
+    "tamanho_gigante": "/F1 1" + "0" * 300 + " Tf 1 0 0 1 40 700 Tm (x) Tj",
+}
+
+
+@pytest.mark.parametrize("nome", list(COORDENADAS_HOSTIS))
+def test_coordenada_fora_do_intervalo_recusa_em_vez_de_comparar_errado(tmp_path, nome):
+    pdf = _pdf_hostil(tmp_path, COORDENADAS_HOSTIS[nome].encode())
+
+    achados = [v for v in violacoes_de("V5", tex_rico(), pdf)]
+
+    assert len(achados) == 1
+    assert "posicao do texto nao conferida" in achados[0].detalhe
+
+
+def test_coordenada_nao_finita_na_geometria_vira_pdf_ilegivel():
+    from src.validador import geometria
+
+    with pytest.raises(geometria.PdfIlegivel):
+        geometria._numeros([float("inf"), 1], 2)
+    with pytest.raises(geometria.PdfIlegivel):
+        geometria._numeros([float("nan")], 1)
+
+
+def test_pdf_com_estrutura_aninhada_sem_fim_nao_derruba_o_validador(tmp_path):
+    pdf = _pdf_hostil(tmp_path, b"[" * 20000 + b" TJ")
+
+    assert isinstance(codigos(tex_rico(), pdf), set)
+
+
+def test_pdf_com_mais_caixas_que_o_teto_e_recusado(tmp_path):
+    linhas = [(40, 780 - 12 * n, f"Linha {n}") for n in range(30)]
+    pdf = gravar_pdf_posicionado(tmp_path, linhas)
+    config = configuracao_com(layout__pdf__caixas_max=10)
+
+    assert "V5" in codigos(tex_rico(), pdf, config=config)
+    assert "V5" not in codigos(tex_rico(), pdf)
+    achados = violacoes_de("V5", tex_rico(), pdf, config=config)
+    assert "10 caixas" in achados[0].detalhe
+
+
+def test_geometria_e_lida_uma_vez_para_v4_e_v5(tmp_path, monkeypatch):
+    from src.validador import layout as modulo
+
+    chamadas = []
+    original = modulo.ler_geometria
+    monkeypatch.setattr(modulo, "ler_geometria", lambda *a: chamadas.append(1) or original(*a))
+
+    codigos(tex_rico(), pdf_coerente(tmp_path))
+
+    assert len(chamadas) == 1

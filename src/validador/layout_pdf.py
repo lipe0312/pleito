@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from itertools import combinations
 
 from src.validador.configuracao import ConfiguracaoValidador
-from src.validador.geometria import Caixa, Leitura, PdfIlegivel, ler_geometria
+from src.validador.geometria import Caixa, Leitura
 from src.validador.layout_entrada import EntradaDeLayout
 from src.validador.resultado import Regra, Violacao
 from src.validador.texto import compacto, plano, violacao
@@ -13,14 +12,10 @@ from src.validador.texto import compacto, plano, violacao
 def _ler(entrada: EntradaDeLayout, regra: Regra, config: ConfiguracaoValidador):
     if entrada.pdf is None:
         return None, []
-    try:
-        return ler_geometria(entrada.pdf, config), []
-    except PdfIlegivel as erro:
-        return None, [
-            violacao(
-                config, regra, f"{erro}, posicao do texto nao conferida", "", "compile de novo"
-            )
-        ]
+    if entrada.geometria is None:
+        detalhe = f"{entrada.falha_da_geometria}, posicao do texto nao conferida"
+        return None, [violacao(config, regra, detalhe, "", "compile de novo")]
+    return entrada.geometria, []
 
 
 def _cadeia(leitura: Leitura) -> tuple[str, list[float], list[int]]:
@@ -103,20 +98,24 @@ def validar_sobreposicao(entrada: EntradaDeLayout, config: ConfiguracaoValidador
     leitura, falhas = _ler(entrada, Regra.SOBREPOSICAO, config)
     if leitura is None:
         return falhas
+    opcoes = config.layout.pdf
     achados: list[Violacao] = []
     ordenadas = sorted(leitura.caixas, key=lambda c: (c.pagina, c.x0))
-    for a, b in combinations(ordenadas, 2):
-        if b.pagina == a.pagina and b.x0 - a.x1 > config.layout.pdf.sobreposicao_x_min_pt:
-            continue
-        if not _sobrepoe(a, b, config):
-            continue
-        achados.append(
-            violacao(
-                config,
-                Regra.SOBREPOSICAO,
-                f"pagina {a.pagina}, caixas de texto sobrepostas",
-                f"{_texto_da_linha(leitura, a, config)} | {_texto_da_linha(leitura, b, config)}",
-                "aumente o espaco entre as linhas ou reduza o conteudo",
+    for posicao, a in enumerate(ordenadas):
+        for b in ordenadas[posicao + 1 :]:
+            if b.pagina != a.pagina or b.x0 - a.x1 > opcoes.sobreposicao_x_min_pt:
+                break
+            if not _sobrepoe(a, b, config):
+                continue
+            achados.append(
+                violacao(
+                    config,
+                    Regra.SOBREPOSICAO,
+                    f"pagina {a.pagina}, caixas de texto sobrepostas",
+                    " | ".join(_texto_da_linha(leitura, c, config) for c in (a, b)),
+                    "aumente o espaco entre as linhas ou reduza o conteudo",
+                )
             )
-        )
-    return list(dict.fromkeys(achados))[: config.layout.pdf.sobreposicoes_max]
+        if len(achados) >= opcoes.sobreposicoes_max:
+            break
+    return list(dict.fromkeys(achados))[: opcoes.sobreposicoes_max]

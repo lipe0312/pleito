@@ -61,8 +61,8 @@ def _produto(a: tuple[float, ...], b: tuple[float, ...]) -> tuple[float, ...]:
 
 def _numeros(valores: list, total: int) -> list[float]:
     achados = [float(v) for v in valores[:total]]
-    if len(achados) != total:
-        raise PdfIlegivel("operador de texto sem operandos")
+    if len(achados) != total or not all(math.isfinite(v) for v in achados):
+        raise PdfIlegivel("operador de texto sem operandos validos")
     return achados
 
 
@@ -100,6 +100,8 @@ class Medidor:
         if not texto.strip():
             return
         y = tm[4] * cm[2] + tm[5] * cm[3] + cm[5]
+        if not math.isfinite(y):
+            raise PdfIlegivel("coordenada de texto fora do intervalo")
         self.fragmentos.append(Fragmento(texto, y, self.indice))
 
     def antes(self, operador: bytes, operandos: list, cm: list[float], _tm) -> None:
@@ -171,16 +173,19 @@ class Medidor:
         x0 = m[4] + inicio * self.tamanho / MILESIMO * escala_x
         x1 = m[4] + fim * self.tamanho / MILESIMO * escala_x
         corpo = self.tamanho * escala_y
-        self.caixas.append(
-            Caixa(
-                x0,
-                x1,
-                m[5] - pdf.descendente_em * corpo,
-                m[5] + pdf.ascendente_em * corpo,
-                m[5],
-                self.indice,
-            )
+        caixa = Caixa(
+            x0,
+            x1,
+            m[5] - pdf.descendente_em * corpo,
+            m[5] + pdf.ascendente_em * corpo,
+            m[5],
+            self.indice,
         )
+        if not all(math.isfinite(v) for v in (caixa.x0, caixa.x1, caixa.y0, caixa.y1)):
+            raise PdfIlegivel("coordenada de texto fora do intervalo")
+        if len(self.caixas) >= pdf.caixas_max:
+            raise PdfIlegivel(f"pdf com mais de {pdf.caixas_max} caixas de texto")
+        self.caixas.append(caixa)
 
 
 def ler_geometria(pdf: Path, config: ConfiguracaoValidador) -> Leitura:
@@ -195,6 +200,18 @@ def ler_geometria(pdf: Path, config: ConfiguracaoValidador) -> Leitura:
             pagina.extract_text(visitor_operand_before=medidor.antes, visitor_text=medidor.texto)
             fragmentos += medidor.fragmentos
             caixas += medidor.caixas
-    except (PyPdfError, ValueError, KeyError, TypeError, IndexError, AttributeError) as erro:
+    except PdfIlegivel:
+        raise
+    except (
+        PyPdfError,
+        ValueError,
+        KeyError,
+        TypeError,
+        IndexError,
+        AttributeError,
+        OverflowError,
+        RecursionError,
+        ZeroDivisionError,
+    ) as erro:
         raise PdfIlegivel("pdf com conteudo ilegivel") from erro
     return Leitura(tuple(fragmentos), tuple(caixas))

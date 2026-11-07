@@ -184,6 +184,8 @@ def pdf_posicionado(linhas: list[tuple[float, float, str]], tamanho: float = 10)
 def gravar_pdf_posicionado(pasta: Path, linhas: list[tuple[float, float, str]]) -> Path:
     caminho = pasta / "cv.pdf"
     caminho.write_bytes(pdf_posicionado(linhas))
+    if not (pasta / "cv.log").exists():
+        gravar_log(pasta)
     return caminho
 
 
@@ -210,3 +212,9 @@ def gravar_log(pasta: Path, *linhas: str) -> Path:
     caminho = pasta / "cv.log"
     caminho.write_text(log_ficticio(*linhas), encoding="utf-8")
     return caminho
+
+
+def pdf_com_operacoes(operacoes: bytes) -> bytes:
+    fonte = b"/F1 10 Tf "
+    base = pdf_posicionado([(40, 780, "x")])
+    return base.replace(b"BT /F1 10 Tf 40 780 Td (x) Tj ET", b"BT " + fonte + operacoes + b" ET")

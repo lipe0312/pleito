@@ -139,8 +139,11 @@ layout:
     linhas_do_erro: 4
     caixas_max: 5
     linhas_da_caixa: 2
+    defasagem_max_s: 5
     overfull_max_pt: 1.0
     underfull_badness_max: 5000
+    overfull_vbox_max_pt: 1.0
+    underfull_vbox_badness_max: 5000
   pdf:
     tolerancia_de_linha_pt: 1.5
     ascendente_em: 0.7
@@ -149,6 +152,7 @@ layout:
     sobreposicao_y_min_pt: 1.0
     sobreposicoes_max: 5
     largura_sem_metrica_em: 0.5
+    caixas_max: 2000
   por_idioma:
     pt: {fonte_min_pt: 10, linespread_min: 0.88, margem_min_mm: 10}
     en: {fonte_min_pt: 10, linespread_min: 0.90, margem_min_mm: 10}

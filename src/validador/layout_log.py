@@ -8,9 +8,17 @@ from src.validador.resultado import Regra, Violacao
 from src.validador.texto import recorte, violacao
 
 ERRO = "!"
-OVERFULL = re.compile(r"^Overfull \\hbox \(([0-9.]+)pt too wide\)(.*)")
-UNDERFULL = re.compile(r"^Underfull \\hbox \(badness ([0-9.]+)\)(.*)")
+OVERFULL = re.compile(r"^Overfull \\([hv])box \(([0-9.]+)pt too (?:wide|high)\)(.*)")
+UNDERFULL = re.compile(r"^Underfull \\([hv])box \(badness ([0-9.]+)\)(.*)")
 PAGINA_IMPRESSA = re.compile(r"\[[0-9]+[{\]]")
+
+
+def _limite_de_estouro(eixo: str, opcoes) -> float:
+    return opcoes.overfull_max_pt if eixo == "h" else opcoes.overfull_vbox_max_pt
+
+
+def _limite_de_folga(eixo: str, opcoes) -> int:
+    return opcoes.underfull_badness_max if eixo == "h" else opcoes.underfull_vbox_badness_max
 
 
 def _numero(texto: str) -> float:
@@ -73,19 +81,22 @@ def validar_caixas(entrada: EntradaDeLayout, config: ConfiguracaoValidador) -> l
         paginas_impressas += bool(PAGINA_IMPRESSA.search(linha))
         estouro = OVERFULL.match(linha)
         folga = UNDERFULL.match(linha)
-        if estouro and _numero(estouro[1]) > opcoes.overfull_max_pt:
-            medida = f"{estouro[1]}pt a mais, limite {opcoes.overfull_max_pt}pt"
-            origem, tipo = estouro[2], "Overfull"
-        elif folga and _numero(folga[1]) > opcoes.underfull_badness_max:
-            medida = f"badness {folga[1]}, limite {opcoes.underfull_badness_max}"
-            origem, tipo = folga[2], "Underfull"
+        if estouro and _numero(estouro[2]) > _limite_de_estouro(estouro[1], opcoes):
+            limite = _limite_de_estouro(estouro[1], opcoes)
+            medida = f"{estouro[2]}pt a mais, limite {limite}pt"
+            origem, tipo, eixo = estouro[3], "Overfull", estouro[1]
+        elif folga and _numero(folga[2]) > _limite_de_folga(folga[1], opcoes):
+            medida = f"badness {folga[2]}, limite {_limite_de_folga(folga[1], opcoes)}"
+            origem, tipo, eixo = folga[3], "Underfull", folga[1]
         else:
             continue
         achados.append(
             violacao(
                 config,
                 Regra.CAIXA_ESTOURADA,
-                recorte(f"pagina {paginas_impressas + 1}, {tipo} hbox, {medida}{origem}", config),
+                recorte(
+                    f"pagina {paginas_impressas + 1}, {tipo} {eixo}box, {medida}{origem}", config
+                ),
                 _contexto_da_caixa(linhas, posicao, opcoes.linhas_da_caixa),
                 "encurte ou reescreva o trecho da linha que nao cabe",
             )
