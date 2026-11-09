@@ -23,7 +23,6 @@ from src.painel.telas_curriculos import rota_do_curriculo, secao
 
 SEPARADOR = ", "
 CLASSE_ATENCAO = "atencao"
-CLASSE_OK = "ok"
 
 
 def _origem(origem: str) -> HtmlSeguro:
@@ -45,10 +44,18 @@ def _usado_em(projeto: ProjetoDoBloco, curriculos: list[Curriculo]) -> HtmlSegur
     return HtmlSeguro(SEPARADOR.join(_link(c) for c in usam))
 
 
-def _endereco(projeto: ProjetoDoBloco) -> HtmlSeguro | str:
+def _linha_de_origem(valor: HtmlSeguro | str) -> HtmlSeguro:
+    if not valor:
+        return HtmlSeguro("")
+    rotulo = carregar("painel")["textos"]["projetos"]["origem"]
+    return renderizar(modelo("linha_origem.html"), rotulo=rotulo, valor=valor)
+
+
+def _endereco(projeto: ProjetoDoBloco) -> HtmlSeguro:
     if projeto.link_clicavel:
-        return renderizar(modelo("link_externo.html"), url=projeto.link, texto=projeto.link)
-    return projeto.link
+        link = renderizar(modelo("link_externo.html"), url=projeto.link, texto=projeto.link)
+        return _linha_de_origem(link)
+    return _linha_de_origem(projeto.link)
 
 
 def _item_projeto(projeto: ProjetoDoBloco, curriculos: list[Curriculo]) -> HtmlSeguro:
@@ -92,7 +99,7 @@ def item_sugestao(sugestao: SugestaoPendente, erro: str = "") -> HtmlSeguro:
         id=sugestao.id,
         titulo=_titulo_da_sugestao(sugestao),
         descricao=sugestao.descricao or textos["sem_descricao"],
-        url=sugestao.url,
+        url=_linha_de_origem(sugestao.url),
         rotulo_evidencias=textos["evidencias"],
         evidencias=SEPARADOR.join(sugestao.evidencias),
         efeito=textos.get(f"efeito_{sugestao.tipo}", ""),

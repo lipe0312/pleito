@@ -19,7 +19,7 @@ Fonte de verdade visual do painel local (`src/painel/`), do HTML do email de res
 | `--superficie` | `#ffffff` | `#1f2226` | linha, cartão, tabela |
 | `--borda` | `#d7dbe0` | `#33373d` | divisória |
 | `--apoio` | `#5b636e` | `#9aa1ab` | texto secundário, rótulo |
-| `--marca` | `#2f6f4f` | `#6fcf97` | ação primária, foco |
+| `--marca` | `#1f4f8f` | `#8db6ee` | ação primária, foco |
 | `--ok` | `#047857` | `#34d399` | aprovada, autenticado |
 | `--atencao` | `#b45309` | `#fbbf24` | classificar, orçamento perto do teto |
 | `--erro` | `#b91c1c` | `#f87171` | falha, recusa do validador |
@@ -84,7 +84,7 @@ Gradiente, glassmorphism, emoji como ícone, sombra pesada, texto centralizado e
   `POST /sugestoes/<id>/aprovar` e `/rejeitar`. Os dados vêm de arquivos em `dados/`
   (`src/painel/curriculos.py`, `src/painel/conteudo.py`), nunca do banco; o painel só lê, e a
   única escrita é a das sugestões, pelas funções de `src/conteudo/aprovar.py`.
-- **Selo "Funcional":** só quando há versão publicada, `validacao.json` existe, nenhuma violação
+- **Selo "Sem bloqueio":** só quando há versão publicada, `validacao.json` existe, nenhuma violação
   tem nível de `curriculos.niveis_que_negam_selo` (hoje `bloqueia`) e o PDF existe. Sem validação
   não ganha selo; indício não tira o selo porque o laço do F3.3 também aprova com indício.
   Os outros estados saem em texto: Com bloqueio, Sem validação, Sem PDF, Sem versão publicada.

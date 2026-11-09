@@ -158,3 +158,73 @@ def test_historico_fora_do_formato_levanta_erro_de_valor(tmp_path, repositorio):
     gravar_json(pasta_da_vaga(tmp_path, "7") / "historico.json", {"versoes": [{"sem": "campos"}]})
     with pytest.raises(ValueError):
         repositorio.curriculos()
+
+
+def test_raiz_de_vagas_que_e_link_simbolico_nao_e_seguida(tmp_path, repositorio):
+    externa = tmp_path / "externa"
+    gravar_versao(externa / "7")
+    destino = pasta_da_vaga(tmp_path, "7").parent
+    destino.symlink_to(externa, target_is_directory=True)
+    assert repositorio.curriculos() == []
+    assert repositorio.pdf("vaga", "7") is None
+
+
+def test_raiz_de_familias_que_e_link_simbolico_nao_e_seguida(tmp_path, repositorio):
+    externa = tmp_path / "externa"
+    gravar_versao(externa / "backend_pt")
+    pasta_da_familia(tmp_path, "x").parent.symlink_to(externa, target_is_directory=True)
+    assert repositorio.curriculos() == []
+
+
+def test_pasta_de_tentativas_que_e_link_simbolico_nao_conta_nem_soma_custo(tmp_path, repositorio):
+    externa = tmp_path / "externa"
+    gravar_versao(externa, custos=("9.0000", "9.0000"), publicada=False)
+    pasta = pasta_da_vaga(tmp_path, "7")
+    gravar_versao(pasta)
+    tentativas = pasta / "tentativas"
+    for filho in tentativas.iterdir():
+        for arquivo in filho.iterdir():
+            arquivo.unlink()
+        filho.rmdir()
+    tentativas.rmdir()
+    tentativas.symlink_to(externa / "tentativas", target_is_directory=True)
+    curriculo = vaga(repositorio)
+    assert curriculo.tentativas == 0
+    assert curriculo.custo_usd == Decimal(0)
+
+
+def test_tentativa_que_e_link_simbolico_nao_conta_nem_soma_custo(tmp_path, repositorio):
+    externa = tmp_path / "externa"
+    gravar_versao(externa, custos=("9.0000",), publicada=False)
+    pasta = pasta_da_vaga(tmp_path, "7")
+    gravar_versao(pasta, custos=("0.0100",))
+    (pasta / "tentativas" / "2").symlink_to(externa / "tentativas" / "1", target_is_directory=True)
+    curriculo = vaga(repositorio)
+    assert curriculo.tentativas == 1
+    assert curriculo.custo_usd == Decimal("0.0100")
+
+
+def test_pdf_que_e_link_simbolico_nao_e_servido_e_tira_o_selo(tmp_path, repositorio):
+    pasta = pasta_da_vaga(tmp_path, "7")
+    gravar_versao(pasta, violacoes=[violacao("ok")], pdf=False)
+    segredo = tmp_path / "segredo.pdf"
+    segredo.write_bytes(b"%PDF-1.4 segredo")
+    (pasta / "cv.pdf").symlink_to(segredo)
+    assert repositorio.pdf("vaga", "7") is None
+    assert vaga(repositorio).funcional is False
+
+
+@pytest.mark.parametrize("arquivo", ["validacao.json", "historico.json"])
+def test_json_que_e_link_simbolico_nao_e_lido(tmp_path, repositorio, arquivo):
+    pasta = pasta_da_vaga(tmp_path, "7")
+    gravar_versao(pasta, violacoes=[violacao("ok")])
+    externo = tmp_path / "externo.json"
+    externo.write_text((pasta / arquivo).read_text(encoding="utf-8"), encoding="utf-8")
+    (pasta / arquivo).unlink()
+    (pasta / arquivo).symlink_to(externo)
+    assert vaga_ou_nada(repositorio) is False
+
+
+def vaga_ou_nada(repositorio) -> bool:
+    achados = [c for c in repositorio.curriculos() if c.id == "7"]
+    return bool(achados) and achados[0].funcional

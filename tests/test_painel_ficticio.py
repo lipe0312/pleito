@@ -10,6 +10,9 @@ from src.painel import __main__ as painel
 from src.painel import repositorio as modulo_repositorio
 
 FIXTURE = Path("tests/fixtures/painel_ficticio.yaml")
+PADRAO_TELEFONE = (
+    r"(?<!\d)(?:\+?\d{2}[\s.-]?)?\(?\d{2}\)?[\s.-]?9?\d{4}[\s.-]?\d{4}(?!\d)"
+)
 
 
 def test_alvo_do_makefile_sobe_o_painel_com_a_fixture_ficticia():
@@ -76,6 +79,19 @@ def test_fixture_ficticia_nao_tem_dado_pessoal_nem_dominio_real():
     texto = FIXTURE.read_text(encoding="utf-8")
     for endereco in re.findall(r"[\w.+-]+@([\w.-]+)", texto):
         assert endereco.endswith(".example")
+    for endereco in re.findall(r"https?://([\w.-]+)", texto):
+        assert endereco.endswith(".example")
+
+
+def test_fixture_ficticia_nao_tem_telefone():
+    texto = FIXTURE.read_text(encoding="utf-8")
+    assert not re.search(PADRAO_TELEFONE, texto)
+    assert not re.search(r"\+\d{1,3}[\s.-]?\d", texto)
+
+
+def test_checagem_de_telefone_pega_telefone_de_verdade():
+    assert re.search(PADRAO_TELEFONE, "ligue (11) 91234-5678")
+    assert re.search(PADRAO_TELEFONE, "tel 11912345678")
 
 
 def test_sem_argumento_o_painel_usa_o_banco(monkeypatch):

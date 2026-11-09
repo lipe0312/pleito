@@ -2,7 +2,7 @@
   <div class="corpo">
     <p class="titulo">{{titulo}}</p>
     <p class="detalhe">{{descricao}}</p>
-    <p class="meta">{{url}}</p>
+    {{url}}
     <p class="meta"><span class="rotulo">{{rotulo_evidencias}}</span> {{evidencias}}</p>
     <p class="efeito">{{efeito}}</p>
     <form class="decisao" hx-post="{{rota_aprovar}}" hx-target="closest li" hx-swap="outerHTML">

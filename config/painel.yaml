@@ -61,6 +61,17 @@ status_da_decisao:
   projeto_nao_aprovado: 409
   inexistente: 404
 corpo_max_bytes: 4096
+http:
+  tipo_pdf: application/pdf
+  status_corpo_grande: 413
+  mensagens:
+    pdf_indisponivel: pdf nao disponivel
+    pdf_nao_encontrado: pdf nao encontrado
+    corpo_grande: corpo grande demais
+classe_da_decisao:
+  aprovada: ok
+  rejeitada: neutro
+  recusada: atencao
 motivo_max_chars: 500
 aprovador: Filipe
 
@@ -68,6 +79,7 @@ curriculos:
   pasta_familias: familias
   padrao_id: '^[A-Za-z0-9_-]+$'
   json_max_bytes: 1000000
+  esquema_publico: https
   pdf_max_bytes: 5000000
   niveis_que_negam_selo: [bloqueia]
   casas_custo: 4
@@ -138,9 +150,9 @@ textos:
     titulo: Currículos
     familias: Famílias
     vagas: Versões por vaga
-    sem_familias: "Nenhuma família em dados/familias ainda. As oito variantes chegam quando a geração das famílias rodar."
+    sem_familias: "Nenhuma família em dados/familias ainda. Elas chegam quando a geração das famílias rodar."
     sem_vagas: "Nenhum currículo gerado para vaga. Gere um com make gerar VAGA=ID FAMILIA=F IDIOMA=pt."
-    funcional: Funcional
+    funcional: Sem bloqueio
     com_bloqueio: Com bloqueio
     sem_validacao: Sem validação
     sem_pdf: Sem PDF
@@ -156,13 +168,13 @@ textos:
     pdf: PDF
     titulo_pdf: "Pré-visualização do PDF de {titulo}"
     abrir_pdf: Abrir o PDF em outra aba
-    sem_pdf: "Esta versão não tem PDF. O laço só publica o PDF depois de a fonte passar no validador."
+    sem_pdf: "Esta versão não tem PDF. O PDF só é gerado depois que a fonte passa no validador."
     regras: Regras do validador
     sem_violacoes: Nenhuma regra acusou problema na última validação.
     sem_validacao: "Sem validação gravada para esta versão. Rode make gerar de novo."
     nivel_bloqueia: Bloqueia
     nivel_indicio: Indício
-    nivel_ok: Salvo pela evidência
+    nivel_ok: Sem problema
     sugestao: Sugestão
     diff: O que mudou
     base_familia: "Comparado com a família {base}."
@@ -191,18 +203,19 @@ textos:
     tipo_projeto_arquivado: Projeto arquivado
     tipo_projeto_sumido: Projeto sumido
     efeito_projeto_novo: "Aprovar cria o bloco do projeto em dados/conteudo/blocos.yaml."
-    efeito_tecnologia_nova: "Aprovar grava a âncora da tecnologia em dados/conteudo/inventario.yaml."
+    efeito_tecnologia_nova: "Aprovar grava a tecnologia em dados/conteudo/inventario.yaml."
     efeito_projeto_arquivado: "Aprovar só registra que você viu."
     efeito_projeto_sumido: "Aprovar só registra que você viu."
-    efeito_rejeitar: "Rejeitar cala esta sugestão: ela não volta."
+    efeito_rejeitar: "Rejeitar tira esta sugestão da lista e ela não volta."
     aprovar: Aprovar
     rejeitar: Rejeitar com motivo
     motivo: Motivo da rejeição
     evidencias: Evidências
     techs: Techs ancoradas
-    sem_techs: Nenhuma tech ancorada neste projeto.
+    sem_techs: Nenhuma tech ancorada ainda.
     usado_em: Usado em
-    nao_usado: Nenhuma família nem versão usa este projeto ainda.
+    nao_usado: Ainda não usado em nenhuma família nem versão.
+    origem: Origem
     sem_descricao: Sem descrição
     selo_aprovada: Aprovada
     selo_rejeitada: Rejeitada

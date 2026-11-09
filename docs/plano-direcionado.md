@@ -152,7 +152,7 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   corte ainda recusados por V17 (allowlist do preâmbulo) e reaproveitar o PDF da família fica para
   depois
 - [x] F3.4, `/curriculos` e `/projetos` no painel (`src/painel/curriculos.py`, `conteudo.py`,
-  `telas_curriculos.py`, `telas_projetos.py`): famílias e versões por vaga com selo "Funcional" só
+  `telas_curriculos.py`, `telas_projetos.py`): famílias e versões por vaga com selo "Sem bloqueio" só
   quando há PDF e nenhuma regra bloqueia na última validação, tentativas e custo do F3.3; detalhe
   com PDF embutido em `iframe` same-origin (CSP só ganha `frame-src 'self'`, e só a rota
   `/pdf/...` aceita ser embutida, ADR 0026), violações e diff contra a família ou a versão

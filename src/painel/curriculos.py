@@ -123,6 +123,10 @@ def diferenca_de_slots(base: dict, atual: dict) -> tuple[LinhaDeDiff, ...]:
     return tuple(linha for linha in achados if linha is not None)
 
 
+def _diretorio_real(caminho: Path) -> bool:
+    return caminho.is_dir() and not caminho.is_symlink()
+
+
 def _momento(texto: object) -> datetime | None:
     try:
         return datetime.fromisoformat(str(texto))
@@ -153,12 +157,12 @@ class RepositorioArquivosCurriculos:
 
     def _pastas(self, tipo: str) -> dict[str, Path]:
         raiz = self._raizes[tipo]
-        if not raiz.is_dir():
+        if not _diretorio_real(raiz):
             return {}
         achadas = (
             pasta
             for pasta in raiz.iterdir()
-            if self._padrao.fullmatch(pasta.name) and pasta.is_dir() and not pasta.is_symlink()
+            if self._padrao.fullmatch(pasta.name) and _diretorio_real(pasta)
         )
         return {pasta.name: pasta for pasta in sorted(achadas, key=lambda p: (len(p.name), p.name))}
 
@@ -223,9 +227,11 @@ class RepositorioArquivosCurriculos:
 
     def _tentativas(self, pasta: Path) -> list[Path]:
         raiz = pasta / self._gerador.laco.pasta_tentativas
-        if not raiz.is_dir():
+        if not _diretorio_real(raiz):
             return []
-        numeradas = [p for p in raiz.iterdir() if p.is_dir() and re.fullmatch("[0-9]+", p.name)]
+        numeradas = [
+            p for p in raiz.iterdir() if _diretorio_real(p) and re.fullmatch("[0-9]+", p.name)
+        ]
         return sorted(numeradas, key=lambda p: int(p.name))
 
     def _custo(self, tentativas: list[Path]) -> Decimal:
@@ -238,10 +244,11 @@ class RepositorioArquivosCurriculos:
     def _slots(self, pasta: Path, versoes: tuple[VersaoPublicada, ...]) -> dict:
         if not versoes:
             return {}
-        arquivos = self._gerador.laco
-        return self._objeto(
-            pasta / arquivos.pasta_tentativas / str(versoes[-1].tentativa) / arquivos.arquivos.slots
-        )
+        laco = self._gerador.laco
+        tentativa = pasta / laco.pasta_tentativas / str(versoes[-1].tentativa)
+        if not _diretorio_real(pasta / laco.pasta_tentativas) or not _diretorio_real(tentativa):
+            return {}
+        return self._objeto(tentativa / laco.arquivos.slots)
 
     def _base_da_familia(self, versoes: tuple[VersaoPublicada, ...]) -> tuple[str, dict] | None:
         if not versoes:

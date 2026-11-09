@@ -30,8 +30,6 @@ from src.painel.telas_projetos import (
 ESTATICOS = Path(__file__).resolve().parent / "static"
 FALHAS_DE_LEITURA = (psycopg.Error, ConfiguracaoBancoInvalida)
 FALHAS_DE_DADOS = (OSError, ValueError, KeyError, TypeError, yaml.YAMLError)
-TIPO_PDF = "application/pdf"
-CORPO_GRANDE = 413
 
 
 class CorpoGrande(Exception):
@@ -68,6 +66,8 @@ def criar_app(
     aplicacao = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     aplicacao.mount("/assets", StaticFiles(directory=ESTATICOS), name="assets")
     textos_projetos = configuracao["textos"]["projetos"]
+    mensagens = configuracao["http"]["mensagens"]
+    classes = configuracao["classe_da_decisao"]
 
     def contexto() -> Contexto:
         return Contexto(
@@ -125,10 +125,10 @@ def criar_app(
         try:
             conteudo_do_pdf = dados_de_curriculos.pdf(tipo, ident)
         except FALHAS_DE_DADOS:
-            return PlainTextResponse("pdf indisponivel", status_code=503)
+            return PlainTextResponse(mensagens["pdf_indisponivel"], status_code=503)
         if conteudo_do_pdf is None:
-            return PlainTextResponse("pdf nao encontrado", status_code=404)
-        return Response(conteudo_do_pdf, media_type=TIPO_PDF)
+            return PlainTextResponse(mensagens["pdf_nao_encontrado"], status_code=404)
+        return Response(conteudo_do_pdf, media_type=configuracao["http"]["tipo_pdf"])
 
     @aplicacao.get("/projetos", response_class=HTMLResponse)
     def projetos() -> HTMLResponse:
@@ -145,7 +145,9 @@ def criar_app(
         corpo = (
             item_sugestao(pendente, texto)
             if pendente is not None and chave in {"motivo_vazio", "motivo_longo"}
-            else item_decidido(pendente, ident, texto, "atencao", chave_para_rotulo(chave))
+            else item_decidido(
+                pendente, ident, texto, classes["recusada"], chave_para_rotulo(chave)
+            )
         )
         return HTMLResponse(corpo, status_code=configuracao["status_da_decisao"][chave])
 
@@ -160,10 +162,11 @@ def criar_app(
             return recusar(ident, erro.chave)
         except FALHAS_DE_DADOS:
             return recusar(ident, "invalida")
-        classe = "ok" if status == "aprovada" else "neutro"
         resultado = texto_da_decisao(status, configuracao["aprovador"], agora(), motivo)
         return HTMLResponse(
-            item_decidido(pendente, ident, resultado, classe, textos_projetos[f"selo_{status}"])
+            item_decidido(
+                pendente, ident, resultado, classes[status], textos_projetos[f"selo_{status}"]
+            )
         )
 
     @aplicacao.post("/sugestoes/{ident}/aprovar", response_class=HTMLResponse)
@@ -180,7 +183,9 @@ def criar_app(
         try:
             campos = await _campos(requisicao, configuracao["corpo_max_bytes"])
         except CorpoGrande:
-            return PlainTextResponse("corpo grande demais", status_code=CORPO_GRANDE)
+            return PlainTextResponse(
+                mensagens["corpo_grande"], status_code=configuracao["http"]["status_corpo_grande"]
+            )
         motivo = campos.get("motivo", "").strip()
         if not motivo:
             return recusar(ident, "motivo_vazio")

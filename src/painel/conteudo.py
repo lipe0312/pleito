@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import urlparse
 
-from src.config import ambiente
+from src.config import ambiente, carregar
 from src.conteudo.aprovar import (
     JaDecidida,
     ProjetoNaoAprovado,
@@ -25,7 +25,6 @@ TIPO_ANCORA_PROJETO = "projeto"
 TIPO_BLOCO_PROJETO = "projeto"
 STATUS_PENDENTE = "pendente"
 STATUS_APROVADA = "aprovada"
-ESQUEMA_PUBLICO = "https"
 
 
 class DecisaoRecusada(Exception):
@@ -114,7 +113,8 @@ class RepositorioArquivosConteudo:
                 continue
             link = _texto(bloco, "link", idiomas)
             origem = self._origem(bloco, link, aprovadas)
-            publico = urlparse(link).scheme == ESQUEMA_PUBLICO and origem != ORIGEM_GUIA
+            esquema = carregar("painel")["curriculos"]["esquema_publico"]
+            publico = urlparse(link).scheme == esquema and origem != ORIGEM_GUIA
             projetos.append(
                 ProjetoDoBloco(
                     id=bloco.id,
