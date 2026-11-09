@@ -7,6 +7,12 @@ cartão completo entra no funil de vagas. Tudo o mais é contado e nunca vira va
 Decisão do Filipe: email ambíguo nunca vira vaga e só entra na contagem. Não existe vaga de baixa
 confiança.
 
+Gupy e Solides entram pelo mesmo gatilho (F4.5, issue #69). A Solides monta a página no cliente, então
+o email é o único caminho para ela; a coleta direta da Gupy é o F4.7. Cada plataforma é uma entrada em
+`config/alertas.yaml`; confirmação de candidatura, teste técnico, convite de entrevista, pesquisa e
+marketing da mesma plataforma nunca geram vaga. A confirmação continua indo para o F1.2 (`retorno`) e
+só atualiza a vaga existente.
+
 ## Como rodar
 
 - `make coletar-alertas` (ou `ARGS=--forcar`) lê o Gmail, grava as vagas e imprime a contagem por tipo.
@@ -18,6 +24,24 @@ confiança.
 - Nenhum acesso ao `linkedin.com`: o link do email nunca é aberto. A URL da vaga é montada pelo
   `link_canonico` do config a partir do id, sem `/comm/` nem parâmetros de rastreio. Teste de
   arquitetura em `tests/test_alertas_arquitetura.py`.
+
+## Plataformas cobertas
+
+| Plataforma | Caixa de alerta | Formato do cartão | Fonte gravada |
+|---|---|---|---|
+| `linkedin` | `jobs-noreply`, `jobalerts-noreply`, `jobs-listings`, `jobs-noreply-comm` | `trio_antes_do_link` | `linkedin_alertas` |
+| `gupy` | `no-reply` | `trio_antes_do_link` | `gupy` |
+| `solides` | `system` | `bloco_rotulado` | `solides` |
+
+O domínio exato e a lista de caixas vêm do F1.2 (`config/emails.yaml`). Gupy e Solides gravam na fonte
+`gupy` e `solides` que já existem no banco (sem migration). A deduplicação com a coleta direta da Gupy
+fica para o F4.7.
+
+InHire, Indeed, Glassdoor, Catho, Vagas.com e InfoJobs ficam fora até haver amostra real: email de
+plataforma que não está em `config/alertas.yaml` é ignorado sem registro.
+
+As caixas, os assuntos e os formatos da Gupy e da Solides foram desenhados com fixtures fictícias.
+Antes de confiar neles, calibrar com amostra real anonimizada em `dados/` (depende do M1).
 
 ## Gatilho em ordem fixa
 
@@ -56,6 +80,37 @@ Cartão incompleto é descartado com motivo: `titulo_ausente`, `empresa_ausente`
 `titulo_ruido`. O mesmo id de vaga no mesmo email vale uma vez. A vaga carrega só título, empresa,
 local e a URL canônica; a descrição completa é da F4.8.
 
+## Extrator por formato
+
+`src/coletor/alertas/` tem um extrator por formato de email, escolhido pela chave `formato` da
+plataforma. Todos devolvem cartões completos, e `extrair_vagas` os transforma em `VagaBruta` com a URL
+canônica, sem descrição.
+
+| Formato | Como acha o cartão | Usado por |
+|---|---|---|
+| `trio_antes_do_link` | as três linhas imediatamente antes da linha do link, na ordem de `cartao_campos` | LinkedIn, Gupy |
+| `bloco_rotulado` | linhas `Rótulo: valor` (`rotulos_campos`) desde o último separador ou link, fechadas pela linha do link | Solides |
+
+Nos dois, o campo que falta descarta o cartão com `<campo>_ausente`; o extrator nunca completa campo com
+o cartão vizinho nem devolve vaga incompleta. Sem cartão completo o gatilho devolve `alerta_vazio`.
+
+O `link_vaga` precisa de um grupo nomeado `id` e, se a URL canônica precisa de mais pedaços (a Gupy usa
+o subdomínio da empresa), de um grupo nomeado por pedaço. O `link_canonico` só pode citar esses nomes,
+então a URL gravada nunca leva rastreio nem texto livre do email.
+
+## Como acrescentar outra plataforma
+
+1. Confirmar que a plataforma existe em `config/emails.yaml` (marcas, domínio exato, caixas).
+2. Copiar uma entrada de `config/alertas.yaml`: `fonte` (precisa existir na tabela `fonte`), `formato`,
+   `caixas_alerta` (só as já conhecidas do F1.2), `caixas_nunca_vaga`, `assunto_nunca_vaga`,
+   `link_vaga` com grupo `id`, `link_canonico`, `rotulos_link`, `cartao_minimo` e limites.
+3. Se o email não cabe nos formatos acima, escrever um módulo em `src/coletor/alertas/` com
+   `extrair(corpo, plataforma, corpo_max_chars)` e registrá-lo em `EXTRATORES`. O gatilho não muda.
+4. Criar `tests/fixtures/alertas_<plataforma>.yaml` com alerta, alerta vazio, confirmação, teste,
+   convite, marketing, remetente forjado e injeção no corpo, e rodar os testes de
+   `tests/test_alertas_plataformas.py` sobre ela.
+5. Acrescentar o domínio na `consulta_inicial` do config, que só vale na primeira leitura.
+
 ## O que fica registrado
 
 `dados/estado/alertas_lidos.jsonl` (modo 0600, fora do git), uma linha por email lido de uma
@@ -72,6 +127,12 @@ resumo é o item que cuida do email de resumo).
 Email do Gmail que não cita a plataforma (pessoal, outras empresas) é ignorado sem registro.
 
 ## Fixtures e testes
+
+`tests/fixtures/alertas_gupy.yaml` e `tests/fixtures/alertas_solides.yaml` têm o mesmo roteiro, todos
+fictícios: alerta com 2 vagas, alerta vazio, confirmação de candidatura, teste técnico, convite de
+entrevista, marketing e pesquisa com vaga em destaque, caixa de marketing, remetente `.golpe.io`,
+`dmarc=fail`, nome de exibição forjado, injeção no corpo e cartão incompleto. Os testes estão em
+`tests/test_alertas_plataformas.py`; cada regra tem um teste que falha sem ela.
 
 `tests/fixtures/alertas_linkedin.yaml` tem um caso por tipo, todos fictícios: alerta com 3 vagas,
 recomendação, alerta sem vaga, candidatura vista, retorno, convite, mensagem de recrutador com
