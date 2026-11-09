@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import time
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Protocol
 
 import httpx
@@ -114,6 +116,21 @@ def inferir_modelo(texto: str) -> ModeloTrabalho:
     return ModeloTrabalho.INDEFINIDO
 
 
+def _segundos_retry_after(bruto: str | None) -> float | None:
+    if not bruto:
+        return None
+    bruto = bruto.strip()
+    if bruto.isdigit():
+        return float(bruto)
+    try:
+        data = parsedate_to_datetime(bruto)
+    except (TypeError, ValueError):
+        return None
+    if data.tzinfo is None:
+        data = data.replace(tzinfo=UTC)
+    return max((data - datetime.now(UTC)).total_seconds(), 0.0)
+
+
 class ColetorHttp:
     slug = "base"
     verificar_robots = True
@@ -132,7 +149,28 @@ class ColetorHttp:
         if self._proprio and not self._client.is_closed:
             self._client.close()
 
+    def _dormir(self, segundos: float) -> None:
+        time.sleep(segundos)
+
+    def _espera_429(self, resposta: httpx.Response, tentativa: int) -> float:
+        cfg = carregar("fontes")["backoff_429"]
+        teto = float(cfg["max_s"])
+        espera = min(float(cfg["base_s"]) * 2**tentativa, teto)
+        pedido = _segundos_retry_after(resposta.headers.get("retry-after"))
+        if pedido is not None:
+            espera = max(espera, min(pedido, teto))
+        return espera
+
     def _buscar(self, url: str) -> httpx.Response:
+        tentativas = int(carregar("limites")["rede"]["tentativas"])
+        for tentativa in range(tentativas):
+            resposta = self._buscar_uma_vez(url)
+            if resposta.status_code != 429 or tentativa == tentativas - 1:
+                return resposta
+            self._dormir(self._espera_429(resposta, tentativa))
+        return resposta
+
+    def _buscar_uma_vez(self, url: str) -> httpx.Response:
         limite = int(carregar("limites")["rede"]["redirecionamentos_max"])
         atual = url
         for salto in range(limite + 1):
