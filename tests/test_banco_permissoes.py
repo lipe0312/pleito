@@ -299,8 +299,12 @@ def test_candidatura_requer_aprovacao_consumida(banco):
 def test_candidatura_requer_hash_aprovado_igual_ao_pdf(banco):
     psycopg = pytest.importorskip("psycopg")
     try:
-        vaga_id, versao_id, aprovacao_id = _preparar_aprovacao(banco, b"x" * 32)
+        vaga_id, versao_id, aprovacao_id = _preparar_aprovacao(banco)
         with banco.cursor() as cursor:
+            cursor.execute(
+                "UPDATE pleito.aprovacao SET hash_aprovado = %s WHERE id = %s",
+                (b"x" * 32, aprovacao_id),
+            )
             cursor.execute("SET LOCAL ROLE pleito_app")
             cursor.execute(
                 "UPDATE pleito.aprovacao SET consumida_em = now() WHERE id = %s",

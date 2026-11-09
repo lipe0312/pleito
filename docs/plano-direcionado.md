@@ -164,6 +164,18 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   (#38 a #49); fluxo de desenvolvimento, segurança e fluxos de uso e de requisição em
   `docs/fluxo-de-desenvolvimento.md`, `docs/seguranca.md` e `docs/fluxos.md` (ADR 0022). Itens
   novos da revisão: F0.1, F0.2, F1.8, F1.9 e FM.2
+- [x] F5.1, `versao_curriculo` por vaga no banco (migration `0005_versao_curriculo.sql`, policies
+  `0008_versao_curriculo.sql`, módulo `src/db/versao_curriculo.py`): número sequencial por vaga, hash
+  do PDF, versão do prompt, modelo, resultado das regras e origem (`gerada`, `refeita`, `chat`);
+  versão imutável (só `nivel` e `protegida` mudam); nova versão invalida a aprovação ainda não
+  consumida e devolve a vaga `aprovada` para `aguardando_aprovacao`; aprovação só nasce para a última
+  versão e com o hash dela; transições de estado da vaga (plano 4.11) validadas no banco pela tabela
+  `transicao_estado_vaga`, com `aprovada` exigindo aprovação não consumida da última versão e
+  `aplicada_*` exigindo candidatura; candidatura só da última versão; gravar versão, candidatura e
+  mudar estado se serializam por vaga (lock de linha); papel `pleito_chat` escreve versão com
+  origem `chat` (só em vaga aguardando ou aprovada, auditoria por trigger) e nunca aprovação;
+  `historico_versao_curriculo` marca a aprovada e a enviada; ligar o laço do F3.3 e as telas ficam
+  para o F5.2 e o chat
 - [ ] Fase 1 a Fase 9 e monitor de disponibilidade
 
 ## Contexto a ler antes de implementar

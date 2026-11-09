@@ -193,8 +193,10 @@ nao cair no historico; nunca reaproveitada entre o cluster da materia e o do ple
 | `pleito_app` | coletor, gerador, aplicador, email, LLM | select e escrita por tabela/coluna; insert em auditoria |
 | `pleito_painel` | painel | select e escrita limitada a configuracao, respostas, aprovacao e flags |
 | `pleito_leitura` | consulta e metricas | apenas select |
+| `pleito_chat` | chat de edicao (sem login ainda) | le `vaga` e `versao_curriculo`; insere versao de origem `chat`; nunca toca aprovacao nem candidatura |
 
-Os tres ultimos nao tem login. `pleito_app_login` herda `pleito_app` e
+Os quatro ultimos nao tem login (o do `pleito_chat` e a senha dele chegam com o item do chat).
+`pleito_app_login` herda `pleito_app` e
 `pleito_painel_login` herda `pleito_painel`; cada um recebe uma senha diferente. A migracao
 `db/policies/0002_usuario_app.sql` configura a senha da aplicacao. O login do painel fica
 inicialmente desabilitado; depois de aplicar as migracoes, ative-o com
@@ -225,6 +227,54 @@ depois de `make migrar`.
 O alvo recusa conexao a qualquer porta que nao seja 55432, e os testes normais offline nao
 conectam ao banco.
 
+## Versoes de curriculo por vaga
+
+`db/migrations/0005_versao_curriculo.sql` e `db/policies/0008_versao_curriculo.sql` (F5.1).
+
+- `versao_curriculo` guarda vaga, numero, nivel, hash do PDF, versao do prompt, modelo, caminho em
+  `dados/`, resultado das regras (`validacao`) e origem (`gerada`, `refeita`, `chat`). O numero e
+  sequencial por vaga: repetir ou pular recusa a insercao.
+- A versao e imutavel, inclusive para o dono do banco. So `nivel` e `protegida` mudam (campeoes,
+  plano 7.9); nenhum papel de componente tem `UPDATE` nem `DELETE` nela.
+- A uma pagina continua valendo por constraint (`versao_uma_pagina`) e por policy de insercao.
+- Gerar uma versao nova invalida as aprovacoes da vaga ainda nao consumidas
+  (`aprovacao.invalidada_em` e `invalidada_por_versao_id`, com linha em `auditoria` de ator
+  `banco`) e, se a vaga estava `aprovada`, devolve para `aguardando_aprovacao`, mesmo com a
+  aprovacao ja consumida: aquela versao deixou de ser a ultima e nao pode mais ser enviada.
+  Aprovacao ja consumida fica como foi gravada (o token de uso unico foi gasto naquela versao
+  exata), mas a candidatura so aceita a ultima versao da vaga: `candidatura_cria` (policy) e o
+  trigger `candidatura_ultima_versao`, que trava a linha da vaga e recalcula "ultima" na mesma
+  transacao, porque a policy usa o snapshot do inicio do comando e nao enxerga uma versao que
+  acabou de dar commit.
+- Gravar versao, criar candidatura, criar aprovacao e mudar `vaga.estado` se serializam por vaga
+  (`SELECT ... FOR NO KEY UPDATE` na linha de `vaga`; o `UPDATE` de `vaga.estado` ja trava a
+  propria linha). A ordem de lock e sempre `vaga` e depois `aprovacao`. Para isso a invalidacao
+  feita pela versao nova pula (`FOR UPDATE SKIP LOCKED`) a aprovacao que alguem esta consumindo,
+  em vez de esperar nela: esperar fecharia um ciclo com o envio, que consome a aprovacao e depois
+  pede a `vaga` (deadlock `40P01`). A aprovacao pulada nao fica utilizavel: `aprovacao_consome`,
+  a transicao para `aprovada` e a candidatura exigem a ultima versao, entao o envio concorrente e
+  recusado com `check_violation` e o consumo dele desfeito junto. Duas versoes simultaneas nao
+  repetem numero: a segunda espera e falha com `check_violation`, e quem grava tenta de novo.
+- O painel so cria aprovacao para a ultima versao da vaga e com o hash dela
+  (`aprovacao_cria` e o trigger `aprovacao_ultima_versao`, que trava a vaga); aprovacao invalidada nao pode ser consumida nem sustenta candidatura.
+- Quem escreve versao: a aplicacao (gerador) com origem `gerada` ou `refeita`; o chat com origem
+  `chat`, e so em vaga `aguardando_aprovacao` ou `aprovada` (`versao_escrita_chat`). O painel le e
+  aprova; o chat nunca le nem escreve `aprovacao` e `candidatura`, e nao tem `INSERT` em
+  `auditoria`: cada versao dele gera, por trigger do banco, a linha de ator `chat`.
+- `historico_versao_curriculo` (view com `security_invoker`) lista as versoes de cada vaga com
+  `aprovada` (aprovacao valida da ultima versao, ou de versao velha que chegou a ser enviada) e
+  `enviada` (candidatura dela).
+- `nivel` e `protegida` nao tem papel que atualize: hoje so o dono do banco muda, e o item dos
+  campeoes (7.9) decide quem ganha esse grant.
+- `caminho_pdf` e `hash_pdf` sao registro, nao prova do arquivo: quem consome a versao (aplicador,
+  painel) deve calcular o hash do arquivo real em `dados/` e comparar com `hash_pdf` antes de
+  mostrar ou enviar.
+- `transicao_estado_vaga` e a maquina de estados do plano 4.11 no banco: um `UPDATE` de
+  `vaga.estado` fora dela falha para qualquer papel. Estados de saida da vaga (`encerrada`) nao
+  voltam. Alem do par origem/destino, `aprovada` exige aprovacao nao consumida, nao invalidada, nao
+  expirada, da ultima versao e com o hash dela (consumida nao basta: a aplicacao nao refaz sozinha
+  o ciclo `aprovada` e `aguardando_aprovacao`), e `aplicada_*` exige candidatura da vaga. O teste confere que toda transicao de `config/eventos_email.yaml` esta na tabela.
+
 ## O que o banco garante sozinho
 
 Regras que nao dependem do codigo estar correto, porque vivem como constraint ou politica RLS.
@@ -243,6 +293,8 @@ Todas verificadas contra um Postgres 16 real:
   em fila (`evento_aplica` e `evento_aplicado_fora_da_fila`)
 - linha de auditoria aceita insert e recusa update, inclusive para o papel de aplicacao
 - token de aprovacao expirado ou ja consumido nao pode ser consumido de novo
+- aprovacao invalidada por versao nova nao pode ser consumida (`aprovacao_consome`)
+- transicao de estado fora da maquina do plano 4.11 falha (`vaga_transicao_de_estado`)
 
 ## Desligar
 
