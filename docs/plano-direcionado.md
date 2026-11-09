@@ -48,6 +48,12 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `dados/estado/alertas_lidos.jsonl`; cursor próprio, rotina em `config/limites.yaml`, sem
   rótulo nem arquivamento e sem acesso ao site; sem migration; tabela do gatilho em
   `docs/alertas-email.md`; contagem no resumo diário fica para o item do resumo
+- [x] F4.5, alertas da Gupy e da Solides pelo mesmo gatilho do F4.3 (`config/alertas.yaml`,
+  extrator por formato em `src/coletor/alertas/`): confirmação, teste, convite e marketing da
+  plataforma nunca viram vaga, remetente de domínio não exato é `suspeito`, cartão incompleto vira
+  `alerta_vazio`; sem migration, sem acesso ao site; InHire, Indeed, Glassdoor, Catho, Vagas.com e
+  InfoJobs esperam amostra real; calibração com email real depende do M1; doc em
+  `docs/alertas-email.md`
 - [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em

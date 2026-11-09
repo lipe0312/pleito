@@ -7,6 +7,10 @@ from src.config import RAIZ, carregar
 
 DOMINIO = "linkedin.com"
 MODULOS_DE_ALERTA = (
+    "src/coletor/alertas/cartao.py",
+    "src/coletor/alertas/extratores.py",
+    "src/coletor/alertas/rotulado.py",
+    "src/coletor/alertas/trio.py",
     "src/coletor/alertas_cartao.py",
     "src/coletor/alertas_coleta.py",
     "src/coletor/alertas_config.py",
@@ -102,6 +106,26 @@ def test_nenhum_arquivo_de_src_nem_de_scripts_tem_o_dominio_do_linkedin_no_codig
             if DOMINIO in caminho.read_text(encoding="utf-8").lower():
                 achados.append(str(caminho))
     assert achados == []
+
+
+def test_pacote_de_extratores_so_tem_os_modulos_cobertos_pelo_teste_de_rede():
+    existentes = {
+        str(caminho.relative_to(RAIZ))
+        for caminho in (RAIZ / "src/coletor/alertas").glob("*.py")
+        if caminho.name != "__init__.py"
+    }
+    assert existentes == {m for m in MODULOS_DE_ALERTA if m.startswith("src/coletor/alertas/")}
+
+
+def test_pacote_de_extratores_nao_tem_dominio_de_plataforma_no_codigo():
+    dominios = {
+        dominio
+        for nome in carregar("alertas")["plataformas"]
+        for dominio in carregar("emails")["plataformas"][nome]["dominios"]
+    }
+    for caminho in (RAIZ / "src/coletor/alertas").glob("*.py"):
+        texto = caminho.read_text(encoding="utf-8").lower()
+        assert not [d for d in dominios if d in texto], caminho
 
 
 def test_fonte_de_alertas_nao_libera_dominio_na_allowlist_de_coleta():

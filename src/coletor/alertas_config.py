@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 
 from src.config import carregar
 from src.email.regras import normalizar
+
+FORMATO_ROTULADO = "bloco_rotulado"
 
 
 class AlertasMalConfigurado(ValueError):
@@ -16,6 +18,7 @@ class AlertasMalConfigurado(ValueError):
 class PlataformaAlertas:
     nome: str
     fonte: str
+    formato: str
     pais_padrao: str
     caixas_alerta: tuple[str, ...]
     caixas_nunca_vaga: tuple[str, ...]
@@ -30,6 +33,11 @@ class PlataformaAlertas:
     cartao_campos: tuple[str, ...]
     cartao_minimo: tuple[str, ...]
     limites_campos: dict[str, int]
+    rotulos_campos: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    exige_assunto_alerta: bool = False
+
+    def url_da_vaga(self, achado: re.Match[str]) -> str:
+        return self.link_canonico.format(**achado.groupdict())
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,10 +58,18 @@ def _textos(valores: list[str]) -> tuple[str, ...]:
     return tuple(normalizar(valor) for valor in valores)
 
 
+def _formato(nome: str, dados: dict) -> str:
+    formato = dados.get("formato")
+    if not isinstance(formato, str):
+        raise AlertasMalConfigurado(f"{nome}: formato ausente")
+    return formato
+
+
 def _plataforma(nome: str, dados: dict) -> PlataformaAlertas:
     plataforma = PlataformaAlertas(
         nome=nome,
         fonte=dados["fonte"],
+        formato=_formato(nome, dados),
         pais_padrao=dados["pais_padrao"],
         caixas_alerta=_caixas(dados["caixas_alerta"]),
         caixas_nunca_vaga=_caixas(dados["caixas_nunca_vaga"]),
@@ -68,9 +84,26 @@ def _plataforma(nome: str, dados: dict) -> PlataformaAlertas:
         cartao_campos=tuple(dados["cartao_campos"]),
         cartao_minimo=tuple(dados["cartao_minimo"]),
         limites_campos={nome: int(valor) for nome, valor in dados["limites_campos"].items()},
+        exige_assunto_alerta=bool(dados.get("exige_assunto_alerta", False)),
+        rotulos_campos={
+            campo: _textos(rotulos) for campo, rotulos in dados.get("rotulos_campos", {}).items()
+        },
     )
-    if plataforma.link_vaga.groups != 1 or "{id}" not in plataforma.link_canonico:
-        raise AlertasMalConfigurado(f"{nome}: link_vaga com um grupo e link_canonico com {{id}}")
+    grupos = set(plataforma.link_vaga.groupindex)
+    if "id" not in grupos or "{id}" not in plataforma.link_canonico:
+        raise AlertasMalConfigurado(f"{nome}: link_vaga com grupo id e link_canonico com {{id}}")
+    if plataforma.link_vaga.groups != len(grupos):
+        raise AlertasMalConfigurado(f"{nome}: todo grupo de link_vaga precisa de nome")
+    if set(re.findall(r"{(\w+)}", plataforma.link_canonico)) - grupos:
+        raise AlertasMalConfigurado(f"{nome}: link_canonico cita campo fora de link_vaga")
+    if plataforma.exige_assunto_alerta and not plataforma.assunto_alerta:
+        raise AlertasMalConfigurado(f"{nome}: exige_assunto_alerta sem assunto_alerta")
+    if not plataforma.formato:
+        raise AlertasMalConfigurado(f"{nome}: formato vazio")
+    if plataforma.formato == FORMATO_ROTULADO and not set(plataforma.cartao_campos) <= set(
+        plataforma.rotulos_campos
+    ):
+        raise AlertasMalConfigurado(f"{nome}: rotulos_campos sem todos os cartao_campos")
     if not set(plataforma.cartao_minimo) <= set(plataforma.cartao_campos):
         raise AlertasMalConfigurado(f"{nome}: cartao_minimo fora de cartao_campos")
     if not set(plataforma.cartao_campos) <= set(plataforma.limites_campos):
