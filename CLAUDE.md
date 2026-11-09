@@ -35,7 +35,8 @@ Spike de viabilidade antes de qualquer fase do roteiro. Ler `README.md`, `docs/P
 
 ## Fluxo de desenvolvimento (ADR 0022)
 
-- fluxo padrao: `/next-task-full`; desenho em `docs/fluxo-de-desenvolvimento.md`
+- fluxo padrao: `/next-task-full`; onda inteira em paralelo nesta sessao: `/next-wave`; desenho em
+  `docs/fluxo-de-desenvolvimento.md`
 - backlog em `config/backlog.yaml` e a fonte das issues (`scripts/next-task-full/criar_issues.py`);
   item `M*` e manual do Filipe, nenhum agente executa
 - worktree obrigatorio por feature; paralelo so entre zonas diferentes e com uma migration

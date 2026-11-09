@@ -46,7 +46,8 @@ flowchart TD
 | rodar o próximo item, com perguntas | `/next-task-full` |
 | rodar um item sem perguntas até o merge | `/next-task-full F1.5 --rec` |
 | ver as ondas de paralelismo | `/next-issue` ou `.venv/bin/python scripts/next-task-full/painel.py --ondas` |
-| abrir frentes em paralelo | as linhas `claude --permission-mode bypassPermissions -n "<id>" "/next-task-full <id> --rec"` que o painel sugere, uma por terminal |
+| rodar a onda inteira (até 3 itens em paralelo) nesta sessão, do disparo ao merge | `/next-wave` |
+| abrir frentes em paralelo, cada uma no seu terminal | as linhas `claude --permission-mode bypassPermissions -n "<id>" "/next-task-full <id> --rec"` que o painel sugere, uma por terminal |
 | transformar ideia em item | `/groom-issue` |
 | criar as issues que faltam | `.venv/bin/python scripts/next-task-full/criar_issues.py --aplicar` |
 | atualizar a issue depois de mudar a ficha | `criar_issues.py --reescrever <id> --aplicar` |
@@ -64,7 +65,7 @@ Regras, aplicadas por `scripts/next-task-full/backlog.py` e testadas em
 - no máximo uma migration aberta, porque o banco é um só e compartilhado
 - item que depende de outro em andamento espera a onda seguinte
 - até 3 frentes por padrão (`--frentes N` muda)
-- item com `decisao:` não roda em `--rec`: a decisão é perguntada numa sessão com rodada
+- item com `decisao:` não roda em `--rec`: a decisão é perguntada numa sessão com rodada (a `next-wave` pergunta todas no começo)
 - manual `M*` nunca roda; aparece em MANUAIS DO FILIPE quando liberado
 
 ```mermaid
@@ -111,6 +112,7 @@ pronto: os critérios são provados offline (`docs/fluxos.md`, U5).
 | --- | --- |
 | `next-task-full` | orquestrador padrão, de ponta a ponta |
 | `next-task`, `feature`, `prompt-for-next-task` | variações para uso à parte |
+| `next-wave` | a onda 1 inteira em paralelo nesta sessão: até 3 implementers, PRs, previews, merge de cada um e a próxima onda |
 | `next-issue` | só o mapa de ondas |
 | `groom-issue` | ideia → item do backlog → issue |
 | `plan-issue` | plano curto antes de codar |
