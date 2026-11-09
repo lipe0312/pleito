@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar coletar-alertas resumo conteudo-sincronizar conteudo-aprovar avaliar validador-dados validador-calibrar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar coletar-alertas resumo conteudo-sincronizar conteudo-aprovar avaliar validador-dados validador-calibrar gerar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -103,6 +103,14 @@ validador-dados:
 
 validador-calibrar:
 	$(PY) -m src.avaliacao.calibracao
+
+gerar:
+	@test -n "$$VAGA" || (echo 'use: make gerar VAGA=ID FAMILIA=F IDIOMA=pt ou MOTIVO="..." make gerar VAGA=ID' && exit 2)
+	@argumentos=(--vaga "$$VAGA"); \
+	if [ -n "$$FAMILIA" ]; then argumentos+=(--familia "$$FAMILIA"); fi; \
+	if [ -n "$$IDIOMA" ]; then argumentos+=(--idioma "$$IDIOMA"); fi; \
+	if [ -n "$${MOTIVO+x}" ]; then argumentos+=(--refazer "$$MOTIVO"); fi; \
+	$(PY) -m src.gerador "$${argumentos[@]}"
 
 viabilidade:
 	$(PY) -m viabilidade.cli veredito
