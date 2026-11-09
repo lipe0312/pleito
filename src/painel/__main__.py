@@ -11,6 +11,7 @@ import uvicorn
 
 from src.config import carregar
 from src.painel.app import app, criar_app
+from src.painel.ficticio import ConteudoFicticio, CurriculosFicticio
 from src.painel.repositorio import RepositorioFicticio
 
 
@@ -27,7 +28,11 @@ def main(argv: Sequence[str] = ()) -> None:
     if argumentos.ficticio is not None:
         agora = datetime.now(ZoneInfo(configuracao["fuso"]))
         repositorio = RepositorioFicticio.de_arquivo(argumentos.ficticio, agora)
-        aplicacao = criar_app(repositorio=repositorio)
+        aplicacao = criar_app(
+            repositorio=repositorio,
+            curriculos=CurriculosFicticio.de_arquivo(argumentos.ficticio, agora),
+            conteudo=ConteudoFicticio.de_arquivo(argumentos.ficticio),
+        )
     uvicorn.run(aplicacao, host=configuracao["host_bind"], port=int(configuracao["porta"]))
 
 

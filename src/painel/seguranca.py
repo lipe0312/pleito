@@ -25,10 +25,20 @@ class ProtecaoPainel:
         self.fetch_site_aceitos = set(configuracao["fetch_site_aceitos"])
         self.cabecalho_csrf = configuracao["csrf_cabecalho"]
         self.metodos_seguros = {str(m).upper() for m in configuracao["metodos_seguros"]}
-        self.cabecalhos = {
-            **{str(k): str(v) for k, v in configuracao["cabecalhos"].items()},
+        pdf = configuracao["pdf"]
+        self.prefixo_pdf = str(pdf["prefixo_rota"])
+        self.cabecalhos = self._cabecalhos(configuracao["cabecalhos"], configuracao["csp"])
+        self.cabecalhos_pdf = self._cabecalhos(
+            {**configuracao["cabecalhos"], **pdf["cabecalhos"]},
+            {**configuracao["csp"], **pdf["csp"]},
+        )
+
+    @staticmethod
+    def _cabecalhos(cabecalhos: dict, csp: dict) -> dict[str, str]:
+        return {
+            **{str(k): str(v) for k, v in cabecalhos.items()},
             "Content-Security-Policy": "; ".join(
-                f"{diretiva} {fontes}" for diretiva, fontes in configuracao["csp"].items()
+                f"{diretiva} {fontes}" for diretiva, fontes in csp.items()
             ),
         }
 
@@ -40,10 +50,14 @@ class ProtecaoPainel:
             await send({"type": "websocket.close", "code": 1008})
             return
 
+        aplicaveis = (
+            self.cabecalhos_pdf if scope["path"].startswith(self.prefixo_pdf) else self.cabecalhos
+        )
+
         async def enviar(mensagem: Message) -> None:
             if mensagem["type"] == "http.response.start":
                 cabecalhos = MutableHeaders(scope=mensagem)
-                for nome, valor in self.cabecalhos.items():
+                for nome, valor in aplicaveis.items():
                     cabecalhos[nome] = valor
             await send(mensagem)
 

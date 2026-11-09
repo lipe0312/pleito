@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -30,11 +31,11 @@ def _fuso() -> ZoneInfo:
     return ZoneInfo(carregar("painel")["fuso"])
 
 
-def _local(momento: datetime) -> datetime:
+def momento_local(momento: datetime) -> datetime:
     return momento.astimezone(_fuso())
 
 
-def _selo(classe: str, texto: str) -> HtmlSeguro:
+def montar_selo(classe: str, texto: str) -> HtmlSeguro:
     return renderizar(modelo("selo.html"), classe=classe, texto=texto)
 
 
@@ -45,17 +46,17 @@ def _tipo(tipo: str) -> tuple[str, str]:
     return conhecido["rotulo"], conhecido["classe"]
 
 
-def _lista_ou_vazio(itens: list[HtmlSeguro], texto_vazio: str) -> HtmlSeguro:
+def lista_ou_vazio(itens: list[HtmlSeguro], texto_vazio: str) -> HtmlSeguro:
     if not itens:
         return renderizar(modelo("vazio.html"), texto=texto_vazio)
     return renderizar(modelo("lista.html"), itens=juntar(itens))
 
 
-def _meta(*partes: str | None) -> str:
+def juntar_meta(*partes: str | None) -> str:
     return " · ".join(parte for parte in partes if parte)
 
 
-def _pagina(contexto: Contexto, atual: str, titulo: str, conteudo: HtmlSeguro) -> HtmlSeguro:
+def montar_pagina(contexto: Contexto, atual: str, titulo: str, conteudo: HtmlSeguro) -> HtmlSeguro:
     configuracao = carregar("painel")
     textos = configuracao["textos"]
     navegacao = juntar(
@@ -77,6 +78,7 @@ def _pagina(contexto: Contexto, atual: str, titulo: str, conteudo: HtmlSeguro) -
     return renderizar(
         modelo("base.html"),
         titulo=titulo,
+        htmx_config=json.dumps(configuracao["htmx"]),
         pagina=textos["pagina"],
         csrf_cabecalho=contexto.csrf_cabecalho,
         csrf_token=contexto.csrf_token,
@@ -91,41 +93,41 @@ def _item_evento(evento: EventoDoDia) -> HtmlSeguro:
     configuracao = carregar("painel")
     comum = configuracao["textos"]["comum"]
     rotulo, classe = _tipo(evento.tipo)
-    selos = [_selo(classe, rotulo)]
+    selos = [montar_selo(classe, rotulo)]
     if not evento.autenticado:
-        selos.append(_selo("atencao", comum["nao_autenticado"]))
+        selos.append(montar_selo("atencao", comum["nao_autenticado"]))
     if evento.fila and evento.fila != evento.tipo:
         fila_rotulo, fila_classe = _tipo(evento.fila)
-        selos.append(_selo(fila_classe, fila_rotulo))
-    momento = _local(evento.recebido_em)
+        selos.append(montar_selo(fila_classe, fila_rotulo))
+    momento = momento_local(evento.recebido_em)
     return renderizar(
         modelo("item_evento.html"),
         classe=classe,
         iso=momento.isoformat(),
         hora=momento.strftime(configuracao["formato_hora"]),
         titulo=evento.vaga or comum["sem_vaga"],
-        meta=_meta(evento.empresa, evento.remetente),
+        meta=juntar_meta(evento.empresa, evento.remetente),
         selos=juntar(selos),
     )
 
 
 def _item_pendencia(pendencia: PendenciaAberta) -> HtmlSeguro:
     configuracao = carregar("painel")
-    momento = _local(pendencia.criada_em)
+    momento = momento_local(pendencia.criada_em)
     return renderizar(
         modelo("item_pendencia.html"),
         iso=momento.isoformat(),
         quando=momento.strftime(configuracao["formato_data"]),
         categoria=pendencia.categoria,
         detalhe=pendencia.detalhe,
-        meta=_meta(pendencia.vaga, pendencia.empresa),
+        meta=juntar_meta(pendencia.vaga, pendencia.empresa),
     )
 
 
 def pagina_hoje(repositorio: RepositorioLeitura, contexto: Contexto) -> HtmlSeguro:
     configuracao = carregar("painel")
     textos = configuracao["textos"]["hoje"]
-    agora = _local(contexto.agora)
+    agora = momento_local(contexto.agora)
     inicio = agora.replace(hour=0, minute=0, second=0, microsecond=0)
     eventos = repositorio.eventos_do_dia(inicio, inicio + timedelta(days=1))
     pendencias = repositorio.pendencias_abertas()
@@ -135,14 +137,14 @@ def pagina_hoje(repositorio: RepositorioLeitura, contexto: Contexto) -> HtmlSegu
         dia=agora.strftime(configuracao["formato_dia"]),
         rotulo_eventos=textos["eventos"],
         total_eventos=len(eventos),
-        eventos=_lista_ou_vazio([_item_evento(e) for e in eventos], textos["sem_eventos"]),
+        eventos=lista_ou_vazio([_item_evento(e) for e in eventos], textos["sem_eventos"]),
         rotulo_pendencias=textos["pendencias"],
         total_pendencias=len(pendencias),
-        pendencias=_lista_ou_vazio(
+        pendencias=lista_ou_vazio(
             [_item_pendencia(p) for p in pendencias], textos["sem_pendencias"]
         ),
     )
-    return _pagina(contexto, "hoje", textos["titulo"], conteudo)
+    return montar_pagina(contexto, "hoje", textos["titulo"], conteudo)
 
 
 def _ultimo_evento(ultimo: UltimoEvento | None) -> HtmlSeguro:
@@ -151,11 +153,11 @@ def _ultimo_evento(ultimo: UltimoEvento | None) -> HtmlSeguro:
     if ultimo is None:
         return renderizar(modelo("sem_ultimo_evento.html"), texto=textos["sem_evento"])
     rotulo, classe = _tipo(ultimo.tipo)
-    momento = _local(ultimo.recebido_em)
+    momento = momento_local(ultimo.recebido_em)
     return renderizar(
         modelo("ultimo_evento.html"),
         rotulo=textos["ultimo_evento"],
-        selo=_selo(classe, rotulo),
+        selo=montar_selo(classe, rotulo),
         iso=momento.isoformat(),
         quando=momento.strftime(configuracao["formato_data"]),
         remetente=ultimo.remetente,
@@ -189,7 +191,7 @@ def pagina_candidaturas(repositorio: RepositorioLeitura, contexto: Contexto) -> 
             estado=etapa["estado"],
             rotulo=etapa["rotulo"],
             total=len(por_estado[etapa["estado"]]),
-            itens=_lista_ou_vazio([_item_candidatura(c) for c in por_estado[etapa["estado"]]], ""),
+            itens=lista_ou_vazio([_item_candidatura(c) for c in por_estado[etapa["estado"]]], ""),
         )
         for etapa in etapas
         if por_estado[etapa["estado"]]
@@ -200,10 +202,10 @@ def pagina_candidaturas(repositorio: RepositorioLeitura, contexto: Contexto) -> 
         else renderizar(modelo("vazio.html"), texto=textos["vazio"])
     )
     conteudo = renderizar(modelo("candidaturas.html"), titulo=textos["titulo"], etapas=corpo)
-    return _pagina(contexto, "candidaturas", textos["titulo"], conteudo)
+    return montar_pagina(contexto, "candidaturas", textos["titulo"], conteudo)
 
 
-def pagina_erro(contexto: Contexto) -> HtmlSeguro:
-    textos = carregar("painel")["textos"]["erro"]
+def pagina_erro(contexto: Contexto, chave: str = "erro") -> HtmlSeguro:
+    textos = carregar("painel")["textos"][chave]
     conteudo = renderizar(modelo("erro.html"), titulo=textos["titulo"], corpo=textos["corpo"])
-    return _pagina(contexto, "", textos["titulo"], conteudo)
+    return montar_pagina(contexto, "", textos["titulo"], conteudo)

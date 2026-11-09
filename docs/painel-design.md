@@ -19,7 +19,7 @@ Fonte de verdade visual do painel local (`src/painel/`), do HTML do email de res
 | `--superficie` | `#ffffff` | `#1f2226` | linha, cartão, tabela |
 | `--borda` | `#d7dbe0` | `#33373d` | divisória |
 | `--apoio` | `#5b636e` | `#9aa1ab` | texto secundário, rótulo |
-| `--marca` | `#2f6f4f` | `#6fcf97` | ação primária, foco |
+| `--marca` | `#1f4f8f` | `#8db6ee` | ação primária, foco |
 | `--ok` | `#047857` | `#34d399` | aprovada, autenticado |
 | `--atencao` | `#b45309` | `#fbbf24` | classificar, orçamento perto do teto |
 | `--erro` | `#b91c1c` | `#f87171` | falha, recusa do validador |
@@ -77,7 +77,38 @@ Gradiente, glassmorphism, emoji como ícone, sombra pesada, texto centralizado e
   mensagem da exceção.
 - **Aviso de dados fictícios:** faixa no topo quando o painel roda com `make painel-ficticio`.
 
+## Currículos e projetos (implementado no F3.4)
+
+- **Rotas:** `/curriculos` (famílias e versões por vaga), `/curriculos/<tipo>/<id>` (detalhe),
+  `/pdf/<tipo>/<id>` (só o PDF), `/projetos` (sugestões pendentes e projetos dos blocos) e
+  `POST /sugestoes/<id>/aprovar` e `/rejeitar`. Os dados vêm de arquivos em `dados/`
+  (`src/painel/curriculos.py`, `src/painel/conteudo.py`), nunca do banco; o painel só lê, e a
+  única escrita é a das sugestões, pelas funções de `src/conteudo/aprovar.py`.
+- **Selo "Sem bloqueio":** só quando há versão publicada, `validacao.json` existe, nenhuma violação
+  tem nível de `curriculos.niveis_que_negam_selo` (hoje `bloqueia`) e o PDF existe. Sem validação
+  não ganha selo; indício não tira o selo porque o laço do F3.3 também aprova com indício.
+  Os outros estados saem em texto: Com bloqueio, Sem validação, Sem PDF, Sem versão publicada.
+- **Detalhe do currículo:** PDF embutido (`iframe` same-origin, ADR 0026) com link para abrir em
+  outra aba, regras do validador (código, nível em texto e cor, trecho, sugestão), diff e
+  versões publicadas. Diff da vaga é contra a família de mesma família e idioma; sem família, contra
+  a versão anterior (`diff.json`); sem nenhuma, a tela diz que é a primeira versão.
+- **Diff:** dois lados em 1280 (saiu em vermelho com −, entrou em verde com +), empilhado em 390.
+- **Sugestão pendente:** cartão com o efeito de aprovar escrito antes do botão. Aprovar é botão
+  cheio; rejeitar é botão contornado em `--erro` e só envia com motivo (obrigatório também no
+  servidor). A resposta troca o cartão por uma linha com quem, quando e o motivo.
+- **Link externo** só é clicável quando o domínio é o de `config/conteudo.yaml`; qualquer outro
+  vira texto.
+- **Erro de dados:** arquivo ilegível em `dados/` devolve 503 com `textos.erro_dados`, sem
+  mostrar a exceção nem o caminho.
+- O `htmx-config` vem de `config/painel.yaml` (`htmx`) e deixa o HTMX trocar o cartão nas
+  respostas 404, 409 e 422 do formulário.
+
 ## Preview (implementado no F1.6)
 
 `make painel-ficticio` sobe o painel em 127.0.0.1 com `tests/fixtures/painel_ficticio.yaml`, sem
-banco. A fixture traz texto de ataque (`<script>`, `<img onerror>`) para conferir o escape.
+banco. A fixture traz texto de ataque (`<script>`, `<img onerror>`) para conferir o escape. No F3.4 ela
+ganha currículos (famílias e vagas, com e sem bloqueio, com e sem PDF), projetos e sugestões
+fictícios; o PDF do preview é gerado em memória (`src/painel/ficticio.py`), nenhum PDF entra no
+repositório. Aprovar ou rejeitar no preview só muda a memória do processo.
+O PDF embutido precisa de navegador com visualizador de PDF (Chrome, Safari); o Chromium headless
+mostra o quadro vazio.
