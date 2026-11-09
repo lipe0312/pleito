@@ -38,6 +38,7 @@ CONFIG_BASE = {
             "termos": TERMOS_OK,
             "endpoint": "https://api.smartrecruiters.com/v1/companies/{identificador}/postings",
             "url_vaga": "https://jobs.smartrecruiters.com/{identificador}/{id}",
+            "paises_iso": {"br": "BR", "us": "US"},
         },
         "personio": {
             "tipo": "api_publica_por_empresa",

@@ -14,7 +14,6 @@ NIVEIS = {
     "director": Senioridade.SENIOR,
     "executive": Senioridade.SENIOR,
 }
-PAISES_ISO = {"br": "BR", "us": "US", "pt": "PT", "es": "ES", "mx": "MX", "ar": "AR"}
 
 
 @registrar
@@ -27,6 +26,7 @@ class FonteSmartRecruiters(ColetorAts):
         except ValueError as exc:
             raise ValueError(f"json invalido: {exc}") from exc
         modelo_url = self._config()["url_vaga"]
+        paises_iso = self._config()["paises_iso"]
         vagas = []
         for posting in payload.get("content") or []:
             titulo = posting.get("name") or ""
@@ -48,7 +48,7 @@ class FonteSmartRecruiters(ColetorAts):
                 titulo=titulo,
                 empresa=(posting.get("company") or {}).get("name") or identificador,
                 local=local,
-                pais=PAISES_ISO.get(pais_iso) or inferir_pais(local),
+                pais=paises_iso.get(pais_iso) or inferir_pais(local),
                 senioridade=senioridade,
                 modelo=modelo,
                 publicada_em=data_iso(posting.get("releasedDate")),

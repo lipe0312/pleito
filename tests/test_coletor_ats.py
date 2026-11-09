@@ -198,3 +198,32 @@ def test_limite_de_vagas_e_respeitado():
         mock.get(URL_SR).respond(200, json=SMARTRECRUITERS)
         resultado = _coletor(FonteSmartRecruiters).coletar(1)
     assert len(resultado.vagas) == 1
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://servidor-externo.example.net/vaga",
+        "https://apply.workable.com.evil.com/j/AB12",
+        "https://evilapply.workable.com.example.net/j/AB12",
+    ],
+)
+def test_workable_descarta_vaga_com_url_fora_do_dominio_da_fonte(url):
+    payload = {"name": "Acme", "jobs": [{**WORKABLE["jobs"][0], "url": url}, WORKABLE["jobs"][0]]}
+    with respx.mock() as mock:
+        _robots(mock, "apply.workable.com")
+        mock.get(URL_WORKABLE).respond(200, json=payload)
+        resultado = _coletor(FonteWorkable).coletar(10)
+    assert [v.url for v in resultado.vagas] == ["https://apply.workable.com/j/AB12"]
+    assert "descartada" in resultado.evidencia["falhas"]["acme"]
+
+
+def test_smartrecruiters_pais_vem_do_mapa_da_config(monkeypatch):
+    config = configuracao()
+    config["fontes"]["smartrecruiters"]["paises_iso"] = {"br": "PT"}
+    aplicar(monkeypatch, config)
+    with respx.mock() as mock:
+        _robots(mock, "api.smartrecruiters.com")
+        mock.get(URL_SR).respond(200, json=SMARTRECRUITERS)
+        resultado = _coletor(FonteSmartRecruiters).coletar(10)
+    assert {v.pais for v in resultado.vagas} == {"PT"}

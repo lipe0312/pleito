@@ -56,6 +56,7 @@ fontes:
       link: https://www.smartrecruiters.com/legal/
     endpoint: https://api.smartrecruiters.com/v1/companies/{identificador}/postings
     url_vaga: https://jobs.smartrecruiters.com/{identificador}/{id}
+    paises_iso: {br: BR, us: US, pt: PT, es: ES, mx: MX, ar: AR}
     observacao: ligar so depois de ler os termos; revisado_em e veredito vao em termos
   personio:
     tipo: api_publica_por_empresa

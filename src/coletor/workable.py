@@ -27,9 +27,13 @@ class FonteWorkable(ColetorAts):
             descricao = limpar_html(job.get("description") or "")
             tipo = job.get("employment_type") or ""
             remoto = "remote" if job.get("telecommuting") else ""
+            url = job.get("url") or job.get("shortlink") or ""
+            if not self._url_no_dominio(url):
+                self._descartes += 1
+                continue
             vaga = self._vaga(
                 id_externo=str(job.get("shortcode") or job.get("id") or ""),
-                url=job.get("url") or job.get("shortlink") or "",
+                url=url,
                 titulo=titulo,
                 empresa=empresa,
                 descricao=descricao,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from urllib.parse import urlparse
 
 import httpx
 
@@ -12,6 +13,7 @@ from src.coletor.conformidade import (
     TermosNaoPermitem,
     consultar_robots,
     exigir_termos_permitidos,
+    host_permitido,
 )
 from src.coletor.contratos import MotivoNoGo, ResultadoColeta, VagaBruta
 from src.config import carregar
@@ -24,6 +26,7 @@ class ConsultaAts:
     vagas: list[VagaBruta] = field(default_factory=list)
     erro: str | None = None
     robots_bloqueou: bool = False
+    descartadas: int = 0
 
 
 def identificador_valido(identificador: str) -> bool:
@@ -40,6 +43,8 @@ def data_iso(bruto: str | None) -> date | None:
 
 
 class ColetorAts(ColetorHttp):
+    _descartes = 0
+
     def _config(self) -> dict:
         return carregar("fontes")["fontes"][self.slug]
 
@@ -48,6 +53,10 @@ class ColetorAts(ColetorHttp):
 
     def _traduzir(self, identificador: str, resposta: httpx.Response) -> list[VagaBruta]:
         raise NotImplementedError
+
+    def _url_no_dominio(self, url: str) -> bool:
+        host = urlparse(url).netloc.lower().split(":")[0]
+        return host_permitido(host, frozenset(self._config().get("dominios", [])))
 
     def alvos(self) -> list[str]:
         return [
@@ -58,6 +67,7 @@ class ColetorAts(ColetorHttp):
 
     def consultar(self, identificador: str) -> ConsultaAts:
         consulta = ConsultaAts(identificador)
+        self._descartes = 0
         if not identificador_valido(identificador):
             consulta.erro = "identificador fora do padrao de config/fontes.yaml"
             return consulta
@@ -74,6 +84,7 @@ class ColetorAts(ColetorHttp):
                 consulta.erro = f"status {resposta.status_code}"
                 return consulta
             consulta.vagas = self._traduzir(identificador, resposta)
+            consulta.descartadas = self._descartes
         except DominioNaoPermitido as exc:
             consulta.erro = str(exc)
         except httpx.HTTPError as exc:
@@ -102,6 +113,10 @@ class ColetorAts(ColetorHttp):
             if consulta.erro:
                 falhas[identificador] = consulta.erro
                 continue
+            if consulta.descartadas:
+                falhas[identificador] = (
+                    f"{consulta.descartadas} vaga(s) descartada(s): url fora do dominio da fonte"
+                )
             empresas[identificador] = len(consulta.vagas)
             resultado.vagas.extend(consulta.vagas[: limite - len(resultado.vagas)])
         so_429 = all(e == "status 429" for e in falhas.values())
