@@ -5,7 +5,13 @@ from typing import Protocol
 
 import httpx
 
-from src.coletor.conformidade import Limitador, consultar_robots, exigir_dominio_permitido
+from src.coletor.conformidade import (
+    Limitador,
+    TermosNaoPermitem,
+    consultar_robots,
+    exigir_dominio_permitido,
+    exigir_termos_permitidos,
+)
 from src.coletor.contratos import (
     ModeloTrabalho,
     MotivoNoGo,
@@ -159,6 +165,12 @@ class ColetorHttp:
     def coletar(self, limite: int) -> ResultadoColeta:
         resultado = ResultadoColeta(fonte=self.slug)
         inicio = time.monotonic()
+        try:
+            exigir_termos_permitidos(self.slug)
+        except TermosNaoPermitem as exc:
+            resultado.erro = str(exc)
+            resultado.motivos.append(MotivoNoGo.TOS_PROIBE)
+            return resultado
         try:
             self._executar(resultado, limite)
         except httpx.HTTPError as exc:
