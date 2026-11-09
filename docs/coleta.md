@@ -57,4 +57,4 @@ desligada, vagas, únicas, completude média (campos de triagem preenchidos) e e
 3. teste offline com `respx`, incluindo sem termos, redirect fora da allowlist e 429
 4. ler os termos, preencher `termos` e só então `ativa: true`
 
-Gupy fica para a F4.7.
+Gupy não tem coleta direta (ADR 0025); entra por alerta de email (F4.5).

@@ -54,6 +54,9 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `alerta_vazio`; sem migration, sem acesso ao site; InHire, Indeed, Glassdoor, Catho, Vagas.com e
   InfoJobs esperam amostra real; calibração com email real depende do M1; doc em
   `docs/alertas-email.md`
+- [x] F4.7, fechado sem código: a Gupy segue `proibe (ambíguo)` no F4.4 e a ADR 0011 veda copiar
+  as vagas; o funil BR fica com os alertas de email (F4.5) e o ATS público (F4.8); reabre só com
+  veredito `permite` ou `permite_com_condicao` (ADR 0025)
 - [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em
