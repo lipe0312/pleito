@@ -545,9 +545,10 @@ def refazer(
         limpo = texto_limpo(motivo, config.laco.motivo_max_chars, "motivo")
     except SlotInvalido as erro:
         raise RefacaoRecusada(str(erro)) from erro
-    historico["refacoes"].append({"motivo": limpo, "pedida_em": agora()})
+    pedida = {"motivo": limpo, "pedida_em": agora()}
+    historico["refacoes"].append(pedida)
     gravar_historico(pasta, historico, config)
-    return executar_laco(
+    resultado = executar_laco(
         pedido,
         pasta,
         roteador,
@@ -558,3 +559,8 @@ def refazer(
         compilador=compilador,
         registrar_pendencia=registrar_pendencia,
     )
+    if resultado.estado is Estado.ADIADO and not resultado.tentativas:
+        historico = ler_historico(pasta, config)
+        historico["refacoes"] = [r for r in historico["refacoes"] if r != pedida]
+        gravar_historico(pasta, historico, config)
+    return resultado

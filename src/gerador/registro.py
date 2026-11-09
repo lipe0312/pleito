@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,7 +29,11 @@ def pasta_das_tentativas(pasta: Path, config: ConfiguracaoGerador) -> Path:
 
 def proxima_tentativa(pasta: Path, config: ConfiguracaoGerador) -> int:
     raiz = pasta_das_tentativas(pasta, config)
-    numeros = [int(item.name) for item in raiz.glob("*") if item.is_dir() and item.name.isdigit()]
+    numeros = [
+        int(item.name)
+        for item in raiz.glob("*")
+        if item.is_dir() and re.fullmatch("[0-9]+", item.name)
+    ]
     return max(numeros, default=0) + 1
 
 

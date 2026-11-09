@@ -65,7 +65,7 @@ O texto da vaga só serve para achar tecnologias do inventário e nunca entra no
 
 ## Laço de geração (F3.3)
 
-`executar_laco(pedido, pasta, roteador)` em `src/gerador/laco.py` repete gerar, montar, validar a fonte, compilar, validar o PDF, pontuar e decidir. `refazer(pedido, pasta, roteador, motivo)` roda o mesmo laço com o pedido do Filipe. Linha de comando: `make gerar ARGS="--vaga ID --familia F --idioma pt"` e `make gerar ARGS="--vaga ID --refazer \"motivo\""` (família e idioma da refação vêm da última versão).
+`executar_laco(pedido, pasta, roteador)` em `src/gerador/laco.py` repete gerar, montar, validar a fonte, compilar, validar o PDF, pontuar e decidir. `refazer(pedido, pasta, roteador, motivo)` roda o mesmo laço com o pedido do Filipe. Linha de comando: `make gerar VAGA=ID FAMILIA=F IDIOMA=pt` e `MOTIVO="mais foco em dados" make gerar VAGA=ID` (família e idioma da refação vêm da última versão). O Makefile lê `VAGA`, `FAMILIA`, `IDIOMA` e `MOTIVO` do ambiente e passa cada um como argumento entre aspas: `;`, `$(...)` ou crase no motivo chegam como texto, nunca como comando. Passe o motivo pelo ambiente (antes do `make`), não como `MOTIVO=` depois do `make`, porque o make expande `$` em variável da linha de comando.
 
 ```mermaid
 stateDiagram-v2

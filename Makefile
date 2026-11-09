@@ -105,8 +105,12 @@ validador-calibrar:
 	$(PY) -m src.avaliacao.calibracao
 
 gerar:
-	@test -n "$(ARGS)" || (echo 'use: make gerar ARGS="--vaga ID --familia F --idioma pt" ou ARGS="--vaga ID --refazer \"motivo\""' && exit 2)
-	$(PY) -m src.gerador $(ARGS)
+	@test -n "$$VAGA" || (echo 'use: make gerar VAGA=ID FAMILIA=F IDIOMA=pt ou MOTIVO="..." make gerar VAGA=ID' && exit 2)
+	@argumentos=(--vaga "$$VAGA"); \
+	if [ -n "$$FAMILIA" ]; then argumentos+=(--familia "$$FAMILIA"); fi; \
+	if [ -n "$$IDIOMA" ]; then argumentos+=(--idioma "$$IDIOMA"); fi; \
+	if [ -n "$${MOTIVO+x}" ]; then argumentos+=(--refazer "$$MOTIVO"); fi; \
+	$(PY) -m src.gerador "$${argumentos[@]}"
 
 viabilidade:
 	$(PY) -m viabilidade.cli veredito

@@ -379,7 +379,7 @@ sequenceDiagram
 
 ### R9. Gerar currículo por vaga ✅ F2.2, F2.3, F3.1 e F3.3, ⏳ F5.1 (#26) e F5.2 (#27)
 
-`make gerar ARGS="--vaga ID --familia F --idioma pt"`; refação com `ARGS="--vaga ID --refazer \"motivo\""`. Detalhes em `docs/geracao.md`.
+`make gerar VAGA=ID FAMILIA=F IDIOMA=pt`; refação com `MOTIVO="..." make gerar VAGA=ID`. Detalhes em `docs/geracao.md`.
 
 ```mermaid
 sequenceDiagram
