@@ -1,0 +1,66 @@
+cursor: estado/alertas_cursor.json
+registro: estado/alertas_lidos.jsonl
+consulta_inicial: in:inbox newer_than:7d from:linkedin.com
+lote_inicial: 100
+corpo_max_chars: 200000
+
+plataformas:
+  linkedin:
+    fonte: linkedin_alertas
+    pais_padrao: BR
+    caixas_alerta:
+      - jobs-noreply
+      - jobalerts-noreply
+      - jobs-listings
+      - jobs-noreply-comm
+    caixas_nunca_vaga:
+      - messages-noreply
+      - inmail-hit-reply
+      - invitations
+      - updates-noreply
+      - notifications-noreply
+      - newsletters-noreply
+      - security-noreply
+      - premium-noreply
+    caixas_mensagem_recrutador:
+      - messages-noreply
+      - inmail-hit-reply
+    assunto_alerta:
+      - novas vagas
+      - vagas para
+      - vagas recomendadas
+      - new jobs
+      - job alert
+    assunto_nunca_vaga:
+      - candidatura foi vista
+      - application was viewed
+      - premium
+      - novo login
+      - new login
+      - verifique
+      - codigo de seguranca
+      - convite para se conectar
+      - quer se conectar
+      - newsletter
+      - publicou
+      - postou
+    link_vaga: 'https://www\.linkedin\.com/comm/jobs/view/(\d+)'
+    link_canonico: 'https://www.linkedin.com/jobs/view/{id}'
+    rotulos_link:
+      - visualizar vaga
+      - view job
+      - ver vaga
+      - see job
+    ruido:
+      - ver todas as vagas
+      - pesquisar
+      - cancelar inscricao
+      - ajuda
+      - search-results
+    separador_cartao: '---'
+    cartao_campos: [titulo, empresa, local]
+    cartao_minimo: [titulo, empresa, local]
+    limites_campos:
+      titulo: 200
+      empresa: 120
+      local: 120

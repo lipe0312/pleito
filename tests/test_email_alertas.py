@@ -86,3 +86,33 @@ def test_coletor_conta_emails_descartados():
     assert len(r.vagas) == 3
     assert r.evidencia["emails_descartados_por_remetente"] == 1
     assert r.robots_permite is None
+
+
+def test_importar_o_modulo_nao_le_o_config(monkeypatch):
+    import importlib
+    import sys
+
+    import src.coletor
+
+    def quebrar():
+        raise RuntimeError("alertas.yaml invalido")
+
+    original = sys.modules.pop("src.coletor.email_alertas")
+    monkeypatch.setattr("src.coletor.alertas_config.configuracao_alertas", quebrar)
+    try:
+        novo = importlib.import_module("src.coletor.email_alertas")
+        with pytest.raises(RuntimeError):
+            _ = novo.LINK_VAGA
+    finally:
+        sys.modules["src.coletor.email_alertas"] = original
+        src.coletor.email_alertas = original
+
+
+def test_constantes_do_spike_continuam_disponiveis_sob_demanda():
+    from src.coletor import email_alertas
+
+    assert email_alertas.LINK_VAGA.search("https://www.linkedin.com/comm/jobs/view/9/")
+    assert "visualizar vaga" in email_alertas.ROTULOS_LINK
+    assert email_alertas.RUIDO
+    with pytest.raises(AttributeError):
+        _ = email_alertas.NAO_EXISTE
