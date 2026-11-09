@@ -139,12 +139,19 @@ def test_fonte_desativada_sai_da_allowlist_de_dominios(monkeypatch):
     assert "fonte-ficticia.example.net" not in dominios_permitidos()
 
 
+def _pendente(fonte: dict) -> bool:
+    return (fonte.get("termos") or {}).get("veredito") == "pendente"
+
+
 def test_yaml_real_toda_fonte_tem_termos_revisados():
     fontes = carregar("fontes")["fontes"]
     for slug, fonte in fontes.items():
         termos = fonte.get("termos") or {}
-        assert termos.get("revisado_em"), slug
         assert termos.get("link", "").startswith("https://"), slug
+        if _pendente(fonte):
+            assert not termos.get("revisado_em"), slug
+            continue
+        assert termos.get("revisado_em"), slug
         assert termos.get("veredito") in {*VEREDITOS_COLETAVEIS, "proibe"}, slug
 
 
@@ -154,7 +161,19 @@ def test_yaml_real_nenhuma_fonte_ativa_proibe():
         if fonte["termos"]["veredito"] == "proibe":
             assert fonte.get("ativa") is False, slug
         if fonte.get("ativa") is False:
-            assert fonte["termos"]["veredito"] == "proibe", slug
+            assert fonte["termos"]["veredito"] in {"proibe", "pendente"}, slug
+
+
+def test_yaml_real_fonte_com_termos_pendentes_fica_desligada():
+    pendentes = [s for s, f in carregar("fontes")["fontes"].items() if _pendente(f)]
+    assert pendentes
+    for slug in pendentes:
+        assert carregar("fontes")["fontes"][slug].get("ativa") is False, slug
+        with pytest.raises(TermosNaoPermitem):
+            exigir_termos_permitidos(slug)
+        assert not any(
+            d in dominios_permitidos() for d in carregar("fontes")["fontes"][slug]["dominios"]
+        ), slug
 
 
 def test_yaml_real_ativa_so_booleano():
@@ -172,5 +191,6 @@ def test_yaml_real_fonte_ativa_passa_na_regra():
 
 def test_doc_cobre_todas_as_fontes_e_a_gupy():
     texto = (RAIZ / "docs/fontes-termos.md").read_text(encoding="utf-8").lower()
-    for slug in [*carregar("fontes")["fontes"], "gupy"]:
+    revisadas = [s for s, f in carregar("fontes")["fontes"].items() if not _pendente(f)]
+    for slug in [*revisadas, "gupy"]:
         assert f"`{slug}`" in texto, slug
