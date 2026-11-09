@@ -11,7 +11,7 @@ Legenda: ✅ implementado · ⏳ item pendente (issue) · 👤 manual do Filipe.
 
 ### U1. Dia típico
 
-✅ coleta (F4.1), funil de triagem (F4.2, `docs/triagem.md`), gerador com e sem IA (F3.1) · ⏳ resumo F1.5 (#15), agendamento
+✅ coleta (F4.1), funil de triagem (F4.2, `docs/triagem.md`), gerador com e sem IA (F3.1) e laço com corte e refação (F3.3) · ⏳ resumo F1.5 (#15), agendamento
 F1.7 (#18), painel F1.6 (#17) e F5.2 (#27), aplicador F6.2 (#30) · 👤 launchd M3 (#40), push M2
 (#39), submit real M4 (#41).
 
@@ -28,8 +28,9 @@ flowchart TD
   F -- "não" --> X
   F -- "sim, as vagas_pre_pontuadas_max melhores" --> G["nota final com tier forte (JSON estrito, cache por hash)"]
   G --> G2["slots do currículo com tier forte"]
-  G2 --> H["validador: uma página, inventário, sem travessão"]
-  H -- "recusa" --> Y["versão descartada com motivo"]
+  G2 --> H["validador: uma página, inventário, sem travessão; corte de página sem IA"]
+  H -- "recusa" --> H2["devolve código e trecho à IA, até tentativas_max"]
+  H2 -- "esgotou" --> Y["pendência curriculo_invalido com a melhor tentativa"]
   H -- "aprova" --> I["fila de aprovação"]
   I --> J["07:45 email de resumo com o rótulo Candidaturas/Prontas"]
   J --> K["push no iPhone"]
@@ -376,35 +377,48 @@ sequenceDiagram
   Note over A,V: CAPTCHA nunca é resolvido, vira pendência
 ```
 
-### R9. Gerar currículo por vaga ✅ F2.2, F2.3 e F3.1, ⏳ F3.3 e F5.1 (#26)
+### R9. Gerar currículo por vaga ✅ F2.2, F2.3, F3.1 e F3.3, ⏳ F5.1 (#26) e F5.2 (#27)
+
+`make gerar ARGS="--vaga ID --familia F --idioma pt"`; refação com `ARGS="--vaga ID --refazer \"motivo\""`. Detalhes em `docs/geracao.md`.
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant G as src/gerador
+  participant L as src/gerador/laco.py
   participant C as dados/conteudo blocos e inventário
   participant R as roteador LLM
-  participant T as template travado
+  participant T as template travado e pdflatex
   participant V as src/validador
-  participant DB as versao_curriculo
-  G->>C: blocos e inventário da família
-  alt tier desligado, sem orçamento ou sem roteador
-    G->>G: escolhe blocos pela família e pelas techs da vaga, sem IA e sem uso_llm
-  else habilitado
-    G->>R: escrita_slots, tier forte, vaga como dado, sem telefone nem email
-    R-->>G: JSON de slots validado em modo estrito
-    G->>G: id de bloco ou bullet inexistente, campo extra ou tamanho acima: descarta
+  participant D as dados/vagas/ID
+  participant DB as pendencia
+  L->>C: blocos, inventário, travado
+  loop até laco.tentativas_max
+    alt 1ª tentativa sem roteador, tier ou orçamento
+      L->>L: slots sem IA, sem uso_llm
+    else IA
+      L->>R: reserva orçamento e escrita_slots; vaga e trechos de retorno só entre as marcas
+      R-->>L: JSON de slots estrito, ou OrcamentoEsgotado: para sem chamar (adiado)
+    end
+    L->>T: escapa slots, monta .tex
+    L->>V: validar_fonte; recusa não compila
+    L->>T: compila com -no-shell-escape
+    L->>V: validar_curriculo com PDF e log
+    opt V2, mais de uma página
+      loop ordem de corte do plano 7.6, sem IA
+        L->>V: validar_fonte do passo (recusado é desfeito)
+        L->>T: recompila
+        L->>V: revalida
+      end
+    end
+    L->>D: tentativas/N com slots, cv.tex, cv.pdf, validacao.json, meta.json
+    L->>L: bloqueio volta como código e trecho marcado; nota abaixo do mínimo pede uma melhoria
   end
-  G->>T: escapa cada slot e preenche, \tech montado pelo código
-  T->>V: fonte
-  V->>V: validar_fonte: inventário, sem travessão, comandos na allowlist
-  alt recusa
-    V-->>G: motivo, nada é devolvido
-  else aprova
-    G->>T: compila com -no-shell-escape, uma página
-    T->>DB: INSERT versão com hash e nível (F5.1)
+  alt alguma aprovada
+    L->>D: cv.tex, cv.pdf, diff.json, validacao.json e historico.json
+  else nenhuma
+    L->>DB: INSERT pendência curriculo_invalido com os códigos e a melhor tentativa
   end
-  Note over T,DB: contato vem do cabeçalho travado e nunca entra em prompt
+  Note over T,D: contato vem do cabeçalho travado e nunca entra em prompt
 ```
 
 ### R10. Sincronizar projetos do GitHub e do portfólio ✅ F2.7, ⏳ tela no F3.4

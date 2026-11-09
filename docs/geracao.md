@@ -29,7 +29,7 @@ Qualquer um destes vira `RespostaDescartada` e nada chega ao template:
 - tecnologia fora do inventário em `techs`, ou `enfase` fora das tecnologias do próprio bloco
 - disciplina que não é âncora `disciplina` do inventário
 
-O roteador já grava `invalida` em `uso_llm` quando o JSON ou o schema falham. Nova tentativa, corte de página e correção pela IA são do F3.3; aqui a função só levanta o erro.
+O roteador já grava `invalida` em `uso_llm` quando o JSON ou o schema falham. Nova tentativa, corte de página e correção pela IA ficam no laço (seção abaixo); `gerar_curriculo` só levanta o erro.
 
 ## Caminho com IA
 
@@ -63,11 +63,65 @@ O texto da vaga só serve para achar tecnologias do inventário e nunca entra no
 - a saída passa por `validar_fonte` antes de ser devolvida; quem a compila (`compilar`) recebe o `.tex` já aprovado
 - a compilação roda sem shell escape e `compilar` recusa PDF acima de `compilacao.paginas_max` (F2.2); isso fica fora de `gerar_curriculo`, que só entrega a fonte aprovada
 
+## Laço de geração (F3.3)
+
+`executar_laco(pedido, pasta, roteador)` em `src/gerador/laco.py` repete gerar, montar, validar a fonte, compilar, validar o PDF, pontuar e decidir. `refazer(pedido, pasta, roteador, motivo)` roda o mesmo laço com o pedido do Filipe. Linha de comando: `make gerar ARGS="--vaga ID --familia F --idioma pt"` e `make gerar ARGS="--vaga ID --refazer \"motivo\""` (família e idioma da refação vêm da última versão).
+
+```mermaid
+stateDiagram-v2
+  [*] --> gerar
+  gerar --> adiado: sem orçamento ou modelo, da 2ª tentativa em diante (sem chamar)
+  gerar --> descartada: JSON ou ids fora do esquema
+  gerar --> fonte: slots aceitos
+  fonte --> recusada: validar_fonte bloqueia (não compila)
+  fonte --> compilado: aprovada
+  compilado --> corte: V2 com PDF de mais de uma página
+  corte --> corte: próximo passo, revalida
+  corte --> regras: cabe numa página ou passos esgotados
+  compilado --> regras: uma página
+  regras --> decidir
+  descartada --> decidir
+  recusada --> decidir
+  decidir --> gerar: bloqueio ou descarte, devolve código e trecho marcado
+  decidir --> gerar: aprovada com nota abaixo de nota_minima (uma melhoria só)
+  decidir --> aprovado: aprovada e nota suficiente, ou tentativas esgotadas com alguma aprovada
+  decidir --> curriculo_invalido: tentativas esgotadas sem nenhuma aprovada
+```
+
+- **Tentativas**: no máximo `laco.tentativas_max`, contando a de melhoria. Toda chamada passa pelo roteador, que reserva o orçamento antes do envio; `OrcamentoEsgotado` ou `ModeloIndisponivel` da segunda tentativa em diante encerra o laço sem chamar e o estado é `adiado` (escrita adiada, ADR 0018), sem pendência. Na primeira tentativa de uma geração nova vale o modo sem IA do F3.1; na refação, não.
+- **Retorno à IA**: só o código (`V<n>`, ou o nome da regra sem código), a descrição curta de `laco.retorno.regras` e o trecho do próprio currículo, cortado em `retorno.trecho_max_chars` e sempre entre as marcas de dado não confiável de `config/padroes_curriculo.yaml` (marcas dentro do trecho são neutralizadas). Detalhe e sugestão do validador não vão. Resposta descartada volta com o erro também marcado. Melhoria manda os critérios fracos da rubrica (descrições do yaml, confiáveis).
+- **Rubrica**: `avaliar` do F3.0 sobre o Sobre e os bullets dos slots, contra as techs do inventário que a vaga cita. Entre as aprovadas, vence a de maior nota (empate: a primeira).
+- **Ordem de corte** (`corte.ordem`, plano 7.6), sem IA, um passo por vez; cada passo monta o `.tex`, roda `validar_fonte` (passo recusado é desfeito e registrado com os códigos), compila e revalida tudo:
+  1. `remover_quarto_projeto`: corta projetos acima de `ia.entradas_min`
+  2. `encurtar_bullets`: bullet acima de `corte.bullet_longo_chars` troca pela redação aprovada mais curta do mesmo bloco que cita todas as techs dele
+  3. `reduzir_espaco_vertical`: `\vspace{corte.espaco_vertical.de}` do corpo vira `para`
+  4. `remover_bullet_menos_aderente`: tira o bullet de menor aderência (techs da vaga, `sem_ia.peso_tech`) da experiência menos aderente que tem mais de um bullet; experiência nunca sai
+  5. `reduzir_entrelinha`: `\linespread` no mínimo do idioma de `layout.por_idioma` do validador, nunca abaixo
+  6. `reduzir_margem_vertical`: `top` e `bottom` em `corte.margem_vertical_cm`, subindo para `margem_min_mm` do validador se o yaml pedir menos
+
+  Resultado de cada passo: `sem_efeito`, `recusado`, `ainda_estoura` ou `resolveu`. Hoje os passos 5 e 6 saem `recusado` por V17: a allowlist de `latex.preambulo` em `config/validador.yaml` não tem `\linespread` nem `top`/`bottom` do `geometry`, embora V6 e V18 já os aceitem. Liberar é decisão à parte; o laço já respeita os mínimos (testado com a allowlist ampliada).
+- **Refação**: o motivo passa por `texto_limpo` (até `laco.motivo_max_chars`), é registrado em `historico.json` antes de qualquer chamada e entra no prompt como pedido confiável. Sem versão anterior, motivo vazio ou `laco.refacoes_max` atingido: `RefacaoRecusada`, nenhuma chamada.
+- **Esgotado**: estado `curriculo_invalido`, pendência `laco.categoria_pendencia` na tabela `pendencia` (sem schema novo) com os códigos da melhor tentativa (menos bloqueios) e o link `vagas/ID/tentativas/N`.
+
+### O que cada arquivo guarda (`dados/vagas/ID/`)
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `tentativas/N/slots.json` | slots finais da tentativa, já com o corte aplicado |
+| `tentativas/N/cv.tex`, `cv.pdf`, `cv.log` | fonte e PDF da tentativa (sem PDF quando `validar_fonte` recusou) |
+| `tentativas/N/validacao.json` | cada violação: código, regra, nível, detalhe, trecho, sugestão |
+| `tentativas/N/meta.json` | origem (`inicial`, `violacoes`, `descarte`, `melhoria`, `refacao`), modo, modelo, tier, versão e hash do prompt, custo e tokens, motivo da refação, passos de corte, resumo das regras, nota e critérios fracos |
+| `cv.tex`, `cv.pdf`, `validacao.json` | cópia da tentativa escolhida |
+| `diff.json` | slots que mudaram contra a versão anterior e os passos de corte |
+| `historico.json` | versões publicadas (tentativa, família, idioma, motivo, hash do PDF) e refações pedidas |
+
+`N` continua a contagem entre execuções: refação nunca apaga tentativa anterior. Reaproveitar o PDF da família quando a diferença é pequena (plano 4.4.2) ainda não existe.
+
 ## Como conferir
 
 ```bash
-.venv/bin/python -m pytest tests/test_gerador_esquema.py tests/test_gerador_sem_ia.py tests/test_gerador_ia.py -q
-.venv/bin/python -m pytest -m latex tests/test_gerador_geracao_latex.py -q
+.venv/bin/python -m pytest tests/test_gerador_esquema.py tests/test_gerador_sem_ia.py tests/test_gerador_ia.py tests/test_gerador_laco.py tests/test_gerador_laco_cli.py -q
+.venv/bin/python -m pytest -m latex tests/test_gerador_geracao_latex.py tests/test_gerador_laco_latex.py -q
 ```
 
 Os testes usam um cliente falso no transporte do roteador e blocos fictícios; nenhuma chamada real.

@@ -131,6 +131,16 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   modo sem IA (`selecao.py`, família mais techs da vaga, determinístico, `uso_llm` fica vazio); em
   ambos o `.tex` só é devolvido depois de `validar_fonte`; contrato em `docs/geracao.md`; tentativas,
   corte de página e retry ficam no F3.3 e a versão por vaga no F5.1
+- [x] F3.3, `src/gerador/laco.py` (`make gerar`): laço gerar, montar, validar fonte, compilar,
+  validar PDF, pontuar e decidir até `laco.tentativas_max`, com orçamento reservado pelo roteador a
+  cada chamada e parada limpa quando acaba (`adiado`); PDF acima de uma página passa pela ordem de
+  corte do plano 7.6 sem IA (`src/gerador/corte.py`), um passo por vez, revalidando e sem passar dos
+  mínimos do validador; violação volta à IA só com código e trecho entre as marcas de dado não
+  confiável; rubrica abaixo de `nota_minima` pede uma melhoria; refação com motivo até
+  `refacoes_max`; esgotado vira pendência `curriculo_invalido`; cada tentativa em
+  `dados/vagas/ID/tentativas/N/` com `meta.json` (modelo, prompt, custo, regras); passos 5 e 6 do
+  corte ainda recusados por V17 (allowlist do preâmbulo) e reaproveitar o PDF da família fica para
+  depois
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)
