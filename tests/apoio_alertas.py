@@ -9,7 +9,7 @@ from src.email.modelo import Email
 from tests.test_email_organizador import mensagem
 
 MARCADOR = "--CARTOES--"
-CAMINHO = Path(__file__).parent / "fixtures" / "alertas_linkedin.yaml"
+PASTA = Path(__file__).parent / "fixtures"
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,8 +36,8 @@ class CasoAlerta:
         )
 
 
-def casos() -> list[CasoAlerta]:
-    bruto = yaml.safe_load(CAMINHO.read_text(encoding="utf-8"))
+def casos(plataforma: str = "linkedin") -> list[CasoAlerta]:
+    bruto = yaml.safe_load((PASTA / f"alertas_{plataforma}.yaml").read_text(encoding="utf-8"))
     lista = []
     for caso in bruto["casos"]:
         cartoes = "".join(bruto[nome] for nome in caso["cartoes"])
@@ -54,8 +54,8 @@ def casos() -> list[CasoAlerta]:
     return lista
 
 
-def caso(nome: str) -> CasoAlerta:
-    return next(c for c in casos() if c.nome == nome)
+def caso(nome: str, plataforma: str = "linkedin") -> CasoAlerta:
+    return next(c for c in casos(plataforma) if c.nome == nome)
 
 
 class DestinoFalso:

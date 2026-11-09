@@ -36,6 +36,39 @@ fontes:
              linear, posthog,
              snowflake, clickhouse, sentry, astronomer, confluent, percona, airbyte, zapier,
              atlan, prefect, montecarlodata, hex, materialize, buffer]
+  workable:
+    tipo: api_publica_por_empresa
+    dominios: [apply.workable.com]
+    verificar_robots: true
+    ativa: false
+    termos:
+      veredito: pendente
+      link: https://apply.workable.com/terms/
+    endpoint: https://apply.workable.com/api/v1/widget/accounts/{identificador}?details=true
+    observacao: ligar so depois de ler os termos; revisado_em e veredito vao em termos
+  smartrecruiters:
+    tipo: api_publica_por_empresa
+    dominios: [api.smartrecruiters.com]
+    verificar_robots: true
+    ativa: false
+    termos:
+      veredito: pendente
+      link: https://www.smartrecruiters.com/legal/
+    endpoint: https://api.smartrecruiters.com/v1/companies/{identificador}/postings
+    url_vaga: https://jobs.smartrecruiters.com/{identificador}/{id}
+    paises_iso: {br: BR, us: US, pt: PT, es: ES, mx: MX, ar: AR}
+    observacao: ligar so depois de ler os termos; revisado_em e veredito vao em termos
+  personio:
+    tipo: api_publica_por_empresa
+    dominios: [jobs.personio.de]
+    verificar_robots: true
+    ativa: false
+    termos:
+      veredito: pendente
+      link: https://www.personio.com/legal/
+    endpoint: https://{identificador}.jobs.personio.de/xml
+    url_vaga: https://{identificador}.jobs.personio.de/job/{id}
+    observacao: respondeu 429 na sondagem; ligar so depois de ler os termos
   remotive:
     tipo: agregador_api_publica
     dominios: [remotive.com]
@@ -135,18 +168,35 @@ fontes:
       link: https://www.linkedin.com/legal/user-agreement
     observacao: site nunca automatizado, entrada apenas por email de alerta no Gmail
 
+backoff_429:
+  base_s: 2
+  max_s: 30
+
+ats:
+  fontes: [workable, smartrecruiters, personio]
+  identificador_padrao: "^[A-Za-z0-9_-]{1,64}$"
+  candidatos_max: 4
+  saida_descoberta: dados/descobertas/ats.json
+  relatorio:
+    vagas_minimas: 1
+    completude_minima: 0.5
+
 descobertas_pendentes:
-  workable:
-    endpoint: https://apply.workable.com/api/v1/widget/accounts/{conta}?details=true
-    estado: endpoint valido, nenhuma conta brasileira conhecida ainda
-  smartrecruiters:
-    endpoint: https://api.smartrecruiters.com/v1/companies/{empresa}/postings
-    estado: endpoint valido, identificador exato das empresas a descobrir
-  personio:
-    endpoint: https://{empresa}.jobs.personio.de/xml
-    estado: respondeu 429 na sondagem, precisa de backoff
   comeet:
     endpoint: https://www.comeet.co/careers-api/2.0/company/{id}/positions
     estado: exige token por empresa
 
-empresas_alvo: []
+empresas_alvo:
+  - nome: Nubank
+    ats: {}
+  - nome: Hotmart
+    ats: {}
+  - nome: Zenvia
+    ats: {}
+  - nome: Take Blip
+    ats: {}
+    candidatos: [blip]
+  - nome: Dock
+    ats: {}
+  - nome: Sympla
+    ats: {}

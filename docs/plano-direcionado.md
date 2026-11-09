@@ -33,6 +33,10 @@ Legenda: [x] concluído e verificado, [ ] pendente.
 - [x] F4.4, termos de uso das fontes lidos e registrados em `docs/fontes-termos.md` e em `termos`
   de `config/fontes.yaml`; o coletor recusa fonte sem `revisado_em` ou com `proibe`;
   `weworkremotely`, `jobspresso`, `hackernews`, `solides`, `lever`, `arbeitnow` e `workingnomads` saíram da coleta (`ativa: false`)
+- [x] F4.6, coletores de Workable, SmartRecruiters e Personio em `src/coletor/` com backoff de 429
+  de `config/fontes.yaml`, `empresas_alvo`, descoberta por tentativa gravada como sugestão e
+  relatório por fonte (`docs/coleta.md`); as três fontes seguem `ativa: false` até os termos serem
+  lidos
 - [x] F4.2, funil de triagem em `src/triagem/` (duplicata, filtros, pré-nota sem IA, pontuação final
   só para as `vagas_pre_pontuadas_max` melhores acima de `pre_nota_minima_para_forte`, com cache por
   hash); sem migration, o motivo do descarte e a nota ficam em `vaga.motivo_descarte` e `vaga.nota`;
@@ -44,6 +48,12 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `dados/estado/alertas_lidos.jsonl`; cursor próprio, rotina em `config/limites.yaml`, sem
   rótulo nem arquivamento e sem acesso ao site; sem migration; tabela do gatilho em
   `docs/alertas-email.md`; contagem no resumo diário fica para o item do resumo
+- [x] F4.5, alertas da Gupy e da Solides pelo mesmo gatilho do F4.3 (`config/alertas.yaml`,
+  extrator por formato em `src/coletor/alertas/`): confirmação, teste, convite e marketing da
+  plataforma nunca viram vaga, remetente de domínio não exato é `suspeito`, cartão incompleto vira
+  `alerta_vazio`; sem migration, sem acesso ao site; InHire, Indeed, Glassdoor, Catho, Vagas.com e
+  InfoJobs esperam amostra real; calibração com email real depende do M1; doc em
+  `docs/alertas-email.md`
 - [x] F1.1, cliente Gmail com OAuth próprio (loopback + PKCE), escopo `gmail.modify` e
   refresh token no Keychain (ADR 0020); falta o Filipe rodar `make gmail-autorizar` uma vez
 - [x] F1.2, classificador de email por regra e verificador de remetente por domínio exato em

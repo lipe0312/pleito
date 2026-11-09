@@ -1,12 +1,13 @@
 cursor: estado/alertas_cursor.json
 registro: estado/alertas_lidos.jsonl
-consulta_inicial: in:inbox newer_than:7d from:linkedin.com
+consulta_inicial: in:inbox newer_than:7d from:(linkedin.com OR gupy.com.br OR solides.com)
 lote_inicial: 100
 corpo_max_chars: 200000
 
 plataformas:
   linkedin:
     fonte: linkedin_alertas
+    formato: trio_antes_do_link
     pais_padrao: BR
     caixas_alerta:
       - jobs-noreply
@@ -44,7 +45,7 @@ plataformas:
       - newsletter
       - publicou
       - postou
-    link_vaga: 'https://www\.linkedin\.com/comm/jobs/view/(\d+)'
+    link_vaga: 'https://www\.linkedin\.com/comm/jobs/view/(?P<id>\d+)'
     link_canonico: 'https://www.linkedin.com/jobs/view/{id}'
     rotulos_link:
       - visualizar vaga
@@ -57,6 +58,115 @@ plataformas:
       - cancelar inscricao
       - ajuda
       - search-results
+    separador_cartao: '---'
+    cartao_campos: [titulo, empresa, local]
+    cartao_minimo: [titulo, empresa, local]
+    limites_campos:
+      titulo: 200
+      empresa: 120
+      local: 120
+
+  gupy:
+    fonte: gupy
+    formato: trio_antes_do_link
+    exige_assunto_alerta: true
+    pais_padrao: BR
+    caixas_alerta:
+      - no-reply
+    caixas_nunca_vaga:
+      - marketing
+      - newsletter
+      - suporte
+      - contato
+    caixas_mensagem_recrutador: []
+    assunto_alerta:
+      - novas vagas
+      - nova vaga
+      - vaga nova
+      - vagas para voce
+    assunto_nunca_vaga:
+      - novidades
+      - dicas
+      - newsletter
+      - pesquisa de satisfacao
+      - avalie
+      - webinar
+      - curso gratuito
+      - promocao
+      - bem-vindo
+      - complete seu perfil
+      - atualize seu curriculo
+      - redefinir senha
+      - confirme seu email
+      - codigo de verificacao
+      - teste de perfil
+      - avaliacao comportamental
+    link_vaga: 'https://(?P<empresa>[a-z0-9-]+)\.gupy\.io/jobs/(?P<id>\d+)'
+    link_canonico: 'https://{empresa}.gupy.io/jobs/{id}'
+    rotulos_link:
+      - ver vaga
+      - candidatar-se
+    ruido:
+      - ver todas as vagas
+      - cancelar inscricao
+      - ajuda
+      - job-search
+    separador_cartao: '---'
+    cartao_campos: [titulo, empresa, local]
+    cartao_minimo: [titulo, empresa, local]
+    limites_campos:
+      titulo: 200
+      empresa: 120
+      local: 120
+
+  solides:
+    fonte: solides
+    formato: bloco_rotulado
+    exige_assunto_alerta: true
+    pais_padrao: BR
+    caixas_alerta:
+      - system
+    caixas_nunca_vaga:
+      - marketing
+      - newsletter
+      - suporte
+      - contato
+    caixas_mensagem_recrutador: []
+    assunto_alerta:
+      - novas vagas
+      - nova vaga
+      - vaga nova
+      - vagas para o seu perfil
+    assunto_nunca_vaga:
+      - novidades
+      - dicas
+      - newsletter
+      - pesquisa de satisfacao
+      - avalie
+      - webinar
+      - curso gratuito
+      - promocao
+      - bem-vindo
+      - complete seu perfil
+      - atualize seu curriculo
+      - redefinir senha
+      - confirme seu email
+      - codigo de verificacao
+      - teste de perfil
+      - avaliacao comportamental
+    link_vaga: 'https://vagas\.solides\.com\.br/vaga/(?P<id>\d+)'
+    link_canonico: 'https://vagas.solides.com.br/vaga/{id}'
+    rotulos_link:
+      - ver vaga
+    rotulos_campos:
+      titulo: [vaga, cargo]
+      empresa: [empresa]
+      local: [local, localizacao]
+    ruido:
+      - ver todas as vagas
+      - cancelar inscricao
+      - ajuda
+      - vagas/todas
     separador_cartao: '---'
     cartao_campos: [titulo, empresa, local]
     cartao_minimo: [titulo, empresa, local]

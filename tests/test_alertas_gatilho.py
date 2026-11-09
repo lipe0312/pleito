@@ -221,8 +221,10 @@ def test_plataforma_mencionada_so_para_email_que_cita_a_marca():
     assert plataforma_mencionada(golpe, ALERTAS) is LINKEDIN
     pessoal = Email("amigo@exemplo.com", "Almoco?", "oi", autenticacao=AUTENTICADO)
     assert plataforma_mencionada(pessoal, ALERTAS) is None
-    gupy = Email("no-reply@gupy.com.br", "Recebemos sua candidatura", "x", autenticacao=AUTENTICADO)
-    assert plataforma_mencionada(gupy, ALERTAS) is None
+    inhire = Email(
+        "no-reply@ses-mail.inhire.app", "Novas vagas", "x", autenticacao=AUTENTICADO
+    )
+    assert plataforma_mencionada(inhire, ALERTAS) is None
 
 
 def test_config_so_tem_caixa_de_alerta_conhecida_do_f1_2():
