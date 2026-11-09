@@ -218,3 +218,36 @@ def pdf_com_operacoes(operacoes: bytes) -> bytes:
     fonte = b"/F1 10 Tf "
     base = pdf_posicionado([(40, 780, "x")])
     return base.replace(b"BT /F1 10 Tf 40 780 Td (x) Tj ET", b"BT " + fonte + operacoes + b" ET")
+
+
+def banco_ficticio(**evidencias):
+    from src.validador.banco import BancoTecnologias, Evidencia, TecnologiaDoBanco
+
+    return BancoTecnologias(
+        tecnologias=[
+            TecnologiaDoBanco(
+                tech=tech,
+                evidencias=[
+                    Evidencia(
+                        origem=origem,
+                        ref="proj_repositorio_ficticio",
+                        fonte=f"https://example.invalid/{origem}",
+                    )
+                    for origem in origens
+                ],
+            )
+            for tech, origens in evidencias.items()
+        ]
+    )
+
+
+def vocabulario_ficticio(pt=None, en=None):
+    from src.validador.vocabulario import TermosDoIdioma, Vocabulario
+
+    return Vocabulario({"pt": TermosDoIdioma(**(pt or {})), "en": TermosDoIdioma(**(en or {}))})
+
+
+def contexto_com(idioma="pt", vaga=VAGA_FICTICIA, **campos):
+    from dataclasses import replace
+
+    return replace(contexto_rico(idioma, vaga), **campos)

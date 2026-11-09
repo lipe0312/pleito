@@ -4,6 +4,15 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 
+class Nivel(StrEnum):
+    BLOQUEIA = "bloqueia"
+    INDICIO = "indicio"
+    OK = "ok"
+
+
+GRAVIDADE = {Nivel.OK: 0, Nivel.INDICIO: 1, Nivel.BLOQUEIA: 2}
+
+
 class Regra(StrEnum):
     PAGINAS = "paginas"
     TECNOLOGIA = "tecnologia"
@@ -30,6 +39,19 @@ class Regra(StrEnum):
     SOBREPOSICAO = "sobreposicao"
     LIMITES_DE_LAYOUT = "limites_de_layout"
 
+
+REGRAS_DE_SEGURANCA = frozenset(
+    {
+        Regra.PAGINAS,
+        Regra.LATEX,
+        Regra.ALFABETO,
+        Regra.CARACTERE_INVISIVEL,
+        Regra.CABECALHO,
+        Regra.EMPRESA_DA_VAGA,
+        Regra.COMPILACAO,
+        Regra.ESCAPE,
+    }
+)
 
 CODIGOS = {
     Regra.COMPILACAO: "V1",
@@ -62,6 +84,8 @@ class Violacao:
     detalhe: str
     trecho: str = ""
     sugestao: str = ""
+    nivel: Nivel = Nivel.BLOQUEIA
+    evidencia: str = ""
 
     @property
     def codigo(self) -> str:
@@ -72,17 +96,36 @@ class Violacao:
 class Resultado:
     violacoes: tuple[Violacao, ...]
 
+    def _do_nivel(self, nivel: Nivel) -> tuple[Violacao, ...]:
+        return tuple(v for v in self.violacoes if v.nivel is nivel)
+
+    @property
+    def bloqueios(self) -> tuple[Violacao, ...]:
+        return self._do_nivel(Nivel.BLOQUEIA)
+
+    @property
+    def indicios(self) -> tuple[Violacao, ...]:
+        return self._do_nivel(Nivel.INDICIO)
+
+    @property
+    def salvos(self) -> tuple[Violacao, ...]:
+        return self._do_nivel(Nivel.OK)
+
     @property
     def aprovado(self) -> bool:
-        return not self.violacoes
+        return not self.bloqueios
 
     @property
     def regras(self) -> tuple[Regra, ...]:
         return tuple(dict.fromkeys(v.regra for v in self.violacoes))
 
+    @property
+    def regras_bloqueadas(self) -> tuple[Regra, ...]:
+        return tuple(dict.fromkeys(v.regra for v in self.bloqueios))
+
 
 class CurriculoInvalido(ValueError):
     def __init__(self, resultado: Resultado) -> None:
         self.resultado = resultado
-        resumo = "; ".join(f"{v.regra}: {v.detalhe}" for v in resultado.violacoes)
+        resumo = "; ".join(f"{v.regra}: {v.detalhe}" for v in resultado.bloqueios)
         super().__init__(resumo)

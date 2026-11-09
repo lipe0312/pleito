@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar coletar-alertas resumo conteudo-sincronizar conteudo-aprovar avaliar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar coletar-alertas resumo conteudo-sincronizar conteudo-aprovar avaliar validador-dados validador-calibrar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -97,6 +97,12 @@ agendamento-plist:
 avaliar:
 	@test -n "$(TIER)" || (echo "use: make avaliar TIER=forte [ARGS=--real]" && exit 2)
 	$(PY) -m src.avaliacao --tier $(TIER) $(ARGS)
+
+validador-dados:
+	$(PY) -m src.validador.dados
+
+validador-calibrar:
+	$(PY) -m src.avaliacao.calibracao
 
 viabilidade:
 	$(PY) -m viabilidade.cli veredito

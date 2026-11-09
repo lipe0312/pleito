@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.conteudo.modelo import Inventario
+from src.validador import niveis
 from src.validador.analise import ContextoConteudo
+from src.validador.banco import BancoTecnologias
 from src.validador.caracteres import validar_alfabeto, validar_invisiveis, validar_travessao
 from src.validador.configuracao import ConfiguracaoValidador, configuracao_validador
 from src.validador.conteudo import validar_conteudo
@@ -14,8 +16,16 @@ from src.validador.resultado import CurriculoInvalido, Regra, Resultado, Violaca
 from src.validador.tecnologias import validar_tecnologias, validar_tecnologias_no_texto
 
 
+def _resultado(violacoes: list[Violacao], config: ConfiguracaoValidador) -> Resultado:
+    return Resultado(tuple(dict.fromkeys(niveis.aplicar_niveis(violacoes, config))))
+
+
 def validar_fonte(
-    tex: str, inventario: Inventario, config: ConfiguracaoValidador | None = None
+    tex: str,
+    inventario: Inventario,
+    config: ConfiguracaoValidador | None = None,
+    *,
+    banco: BancoTecnologias | None = None,
 ) -> Resultado:
     config = config or configuracao_validador()
     violacoes: list[Violacao] = []
@@ -23,8 +33,8 @@ def validar_fonte(
     violacoes += validar_invisiveis(tex, config)
     violacoes += validar_alfabeto(tex, config)
     violacoes += validar_travessao(tex, config)
-    violacoes += validar_tecnologias(tex, inventario, config)
-    return Resultado(tuple(dict.fromkeys(violacoes)))
+    violacoes += validar_tecnologias(tex, inventario, config, banco)
+    return _resultado(violacoes, config)
 
 
 def validar_arquivos(
@@ -32,9 +42,11 @@ def validar_arquivos(
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
     pdf: Path | None = None,
+    *,
+    banco: BancoTecnologias | None = None,
 ) -> Resultado:
     config = config or configuracao_validador()
-    violacoes = list(validar_fonte(tex, inventario, config).violacoes)
+    violacoes = list(validar_fonte(tex, inventario, config, banco=banco).violacoes)
     if pdf is None:
         violacoes.append(Violacao(Regra.PAGINAS, "pdf ausente, paginas nao conferidas"))
     else:
@@ -42,8 +54,8 @@ def validar_arquivos(
         violacoes += validar_paginas(pdf, config)
         violacoes += validar_alfabeto(texto, config)
         violacoes += validar_travessao(texto, config)
-        violacoes += validar_tecnologias_no_texto(texto, inventario, config)
-    return Resultado(tuple(dict.fromkeys(violacoes)))
+        violacoes += validar_tecnologias_no_texto(texto, inventario, config, banco)
+    return _resultado(violacoes, config)
 
 
 def validar_curriculo(
@@ -56,16 +68,28 @@ def validar_curriculo(
     log: Path | None = None,
 ) -> Resultado:
     config = config or configuracao_validador()
-    violacoes = list(validar_arquivos(tex, inventario, config, pdf).violacoes)
+    violacoes = list(
+        validar_arquivos(
+            tex,
+            inventario,
+            config,
+            pdf,
+            banco=contexto.banco,
+        ).violacoes
+    )
     violacoes += validar_conteudo(tex, inventario, contexto, config)
     violacoes += validar_layout(tex, inventario, contexto, pdf, log, config)
-    return Resultado(tuple(dict.fromkeys(violacoes)))
+    return _resultado(violacoes, config)
 
 
 def exigir_fonte_valida(
-    tex: str, inventario: Inventario, config: ConfiguracaoValidador | None = None
+    tex: str,
+    inventario: Inventario,
+    config: ConfiguracaoValidador | None = None,
+    *,
+    banco: BancoTecnologias | None = None,
 ) -> None:
-    resultado = validar_fonte(tex, inventario, config)
+    resultado = validar_fonte(tex, inventario, config, banco=banco)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)
 
@@ -75,8 +99,10 @@ def exigir_arquivos_validos(
     inventario: Inventario,
     config: ConfiguracaoValidador | None = None,
     pdf: Path | None = None,
+    *,
+    banco: BancoTecnologias | None = None,
 ) -> None:
-    resultado = validar_arquivos(tex, inventario, config, pdf)
+    resultado = validar_arquivos(tex, inventario, config, pdf, banco=banco)
     if not resultado.aprovado:
         raise CurriculoInvalido(resultado)
 

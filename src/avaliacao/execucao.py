@@ -13,7 +13,7 @@ from src.padroes.configuracao import configuracao_padroes
 from src.padroes.prompt import montar_prompt
 from src.validador.analise import ContextoConteudo, Vaga
 from src.validador.conteudo import validar_conteudo
-from src.validador.resultado import CurriculoInvalido
+from src.validador.resultado import CurriculoInvalido, Nivel
 
 FALHA_ESQUEMA = "esquema"
 FALHA_PROIBIDO = "proibido"
@@ -84,7 +84,7 @@ def gerar_e_validar(
             padroes,
         )
     except CurriculoInvalido as erro:
-        return execucao(*(regra.value for regra in erro.resultado.regras))
+        return execucao(*(regra.value for regra in erro.resultado.regras_bloqueadas))
     except RespostaDescartada:
         return execucao(FALHA_ESQUEMA)
     if resultado.modo is not ModoGeracao.IA:
@@ -99,6 +99,7 @@ def gerar_e_validar(
     falhas = [
         violacao.regra.value
         for violacao in validar_conteudo(resultado.tex, conteudo.inventario, contexto)
+        if violacao.nivel is Nivel.BLOQUEIA
     ]
     if termos_proibidos(resultado.slots, entrada.proibidos):
         falhas.append(FALHA_PROIBIDO)

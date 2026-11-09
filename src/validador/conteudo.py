@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from src.conteudo.modelo import Inventario
+from src.validador import niveis
 from src.validador.analise import Analise, ContextoConteudo, Vaga, analisar
 from src.validador.configuracao import ConfiguracaoValidador, configuracao_validador
 from src.validador.regras_estrutura import (
@@ -58,4 +59,4 @@ def validar_conteudo(
     violacoes: list[Violacao] = []
     for funcao in REGRAS:
         violacoes += funcao(analise, config)
-    return list(dict.fromkeys(violacoes))
+    return list(dict.fromkeys(niveis.aplicar_niveis(violacoes, config)))

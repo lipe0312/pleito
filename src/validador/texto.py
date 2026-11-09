@@ -6,7 +6,7 @@ from typing import NamedTuple
 
 from src.conteudo.decompor import ESCAPE
 from src.validador.configuracao import ConfiguracaoValidador
-from src.validador.resultado import Regra, Violacao
+from src.validador.resultado import Nivel, Regra, Violacao
 
 DESTINO_DO_LINK = re.compile(r"\\href\s*\{([^{}]*)\}")
 SIMBOLO_DE_CONTROLE = re.compile(r"\\[^A-Za-z]", re.S)
@@ -51,9 +51,17 @@ def ao_redor(texto: str, inicio: int, fim: int, config: ConfiguracaoValidador) -
 
 
 def violacao(
-    config: ConfiguracaoValidador, regra: Regra, detalhe: str, trecho: str, sugestao: str
+    config: ConfiguracaoValidador,
+    regra: Regra,
+    detalhe: str,
+    trecho: str,
+    sugestao: str,
+    nivel: Nivel = Nivel.BLOQUEIA,
+    evidencia: str = "",
 ) -> Violacao:
-    return Violacao(regra, detalhe, recorte(trecho, config), sugestao)
+    return Violacao(
+        regra, detalhe, recorte(trecho, config), sugestao, nivel, recorte(evidencia, config)
+    )
 
 
 def ocorrencias(texto: list[Palavra], sequencia: list[str]) -> list[int]:
