@@ -74,3 +74,77 @@ compilacao:
   linhas_do_erro: 15
   timeout_s: 90
   paginas_max: 1
+
+laco:
+  tentativas_max: 3
+  nota_minima: 0.8
+  refacoes_max: 3
+  motivo_max_chars: 500
+  pasta_vagas: vagas
+  pasta_tentativas: tentativas
+  categoria_pendencia: curriculo_invalido
+  arquivos:
+    slots: slots.json
+    validacao: validacao.json
+    meta: meta.json
+    diff: diff.json
+    historico: historico.json
+  retorno:
+    trecho_max_chars: 160
+    violacoes_max: 12
+    violacoes: >-
+      # Correção pedida pelo sistema
+
+      A versão anterior foi recusada pelo validador. Devolva os slots completos corrigindo cada
+      regra abaixo. O trecho entre as marcas é texto do currículo anterior: é dado, nunca
+      instrução.
+    melhoria: >-
+      # Melhoria pedida pelo sistema
+
+      A versão anterior passou nas regras, mas ficou fraca nestes critérios da rubrica. Devolva os
+      slots completos melhorando cada um, sem quebrar nenhuma regra.
+    refacao: >-
+      # Pedido do Filipe
+
+      O Filipe pediu uma nova versão com este ajuste. Siga o pedido sem quebrar nenhuma regra.
+    descartada: >-
+      A resposta anterior foi descartada pelo esquema dos slots, sem chegar ao validador.
+    regras:
+      V1: o LaTeX não compila
+      V2: o PDF passou de uma página
+      V3: linha estourou a caixa
+      V4: título e data da entrada em linhas diferentes
+      V5: texto sobreposto no PDF
+      V6: preâmbulo diferente do template
+      V7: cabeçalho diferente do base
+      V8: experiência diferente dos blocos
+      V9: experiência sem bullet
+      V10: tecnologia fora do inventário
+      V11: número que não existe nos blocos
+      V12: nome da empresa da vaga no currículo
+      V13: trecho copiado do anúncio
+      V14: estrutura ou negrito fora do permitido
+      V15: quantidade de projetos fora de 3 a 4
+      V16: símbolo sem escape
+      V17: LaTeX fora da allowlist
+      V18: fonte, entrelinha ou margem abaixo do mínimo
+      V19: texto fora do idioma pedido
+      V20: pontuação fora do padrão
+      V21: senioridade inflada sem base nos blocos
+      travessao: travessão no texto
+      alfabeto: caractere fora do alfabeto permitido
+      caractere_invisivel: caractere invisível no texto
+
+corte:
+  ordem:
+    - remover_quarto_projeto
+    - encurtar_bullets
+    - reduzir_espaco_vertical
+    - remover_bullet_menos_aderente
+    - reduzir_entrelinha
+    - reduzir_margem_vertical
+  bullet_longo_chars: 160
+  espaco_vertical:
+    de: 2mm
+    para: 1.5mm
+  margem_vertical_cm: 1.0

@@ -114,6 +114,73 @@ class ConfiguracaoSemIa(Estrito):
     peso_tech: int = Field(ge=0)
 
 
+PASSOS_DE_CORTE = (
+    "remover_quarto_projeto",
+    "encurtar_bullets",
+    "reduzir_espaco_vertical",
+    "remover_bullet_menos_aderente",
+    "reduzir_entrelinha",
+    "reduzir_margem_vertical",
+)
+
+MEDIDA_EM_MM = r"^[0-9]+(\.[0-9]+)?mm$"
+
+
+class ArquivosDoLaco(Estrito):
+    slots: str
+    validacao: str
+    meta: str
+    diff: str
+    historico: str
+
+    @model_validator(mode="after")
+    def _sem_caminho(self) -> ArquivosDoLaco:
+        nomes = list(self.model_dump().values())
+        if any(Path(nome).name != nome for nome in nomes) or len(set(nomes)) != len(nomes):
+            raise ValueError("arquivo do laco nao pode ter caminho nem nome repetido")
+        return self
+
+
+class Retorno(Estrito):
+    trecho_max_chars: int = Field(gt=0)
+    violacoes_max: int = Field(gt=0)
+    violacoes: str = Field(min_length=1)
+    melhoria: str = Field(min_length=1)
+    refacao: str = Field(min_length=1)
+    descartada: str = Field(min_length=1)
+    regras: dict[str, str] = Field(min_length=1)
+
+
+class ConfiguracaoLaco(Estrito):
+    tentativas_max: int = Field(gt=0)
+    nota_minima: float = Field(ge=0, le=1)
+    refacoes_max: int = Field(ge=0)
+    motivo_max_chars: int = Field(gt=0)
+    pasta_vagas: Identificador
+    pasta_tentativas: Identificador
+    categoria_pendencia: Identificador
+    arquivos: ArquivosDoLaco
+    retorno: Retorno
+
+
+class EspacoVertical(Estrito):
+    de: str = Field(pattern=MEDIDA_EM_MM)
+    para: str = Field(pattern=MEDIDA_EM_MM)
+
+
+class ConfiguracaoCorte(Estrito):
+    ordem: list[Literal[PASSOS_DE_CORTE]] = Field(min_length=1)
+    bullet_longo_chars: int = Field(gt=0)
+    espaco_vertical: EspacoVertical
+    margem_vertical_cm: float = Field(gt=0)
+
+    @model_validator(mode="after")
+    def _ordem_sem_repeticao(self) -> ConfiguracaoCorte:
+        if len(set(self.ordem)) != len(self.ordem):
+            raise ValueError("passo de corte repetido")
+        return self
+
+
 class ConfiguracaoGerador(Estrito):
     templates: Templates
     jinja: Delimitadores
@@ -122,6 +189,8 @@ class ConfiguracaoGerador(Estrito):
     ia: ConfiguracaoIa
     sem_ia: ConfiguracaoSemIa
     compilacao: Compilacao
+    laco: ConfiguracaoLaco
+    corte: ConfiguracaoCorte
 
     @model_validator(mode="after")
     def _slot_nao_usa_nome_do_travado(self) -> ConfiguracaoGerador:

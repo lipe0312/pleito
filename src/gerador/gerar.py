@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -55,6 +56,29 @@ def _validado(
     return tex
 
 
+def versao_do_prompt(versao: int, texto: str) -> str:
+    return f"gerar_slots_v{versao}_{hashlib.sha256(texto.encode('utf-8')).hexdigest()[:12]}"
+
+
+def pedir_slots(
+    roteador: Roteador,
+    texto: str,
+    versao: str,
+    blocos: Blocos,
+    inventario: Inventario,
+    config: ConfiguracaoGerador,
+) -> tuple[dict, Enfase]:
+    esquema = esquema_dos_slots(config)
+    try:
+        resposta = roteador.chamar(config.ia.tarefa, config.ia.tier, texto, esquema, versao)
+    except ValueError as erro:
+        raise RespostaDescartada(f"resposta recusada: {type(erro).__name__}") from erro
+    try:
+        return slots_da_resposta(resposta, blocos, inventario, config)
+    except SlotInvalido as erro:
+        raise RespostaDescartada(str(erro)) from erro
+
+
 def gerar_sem_ia(
     familia: str,
     idioma: str,
@@ -99,18 +123,20 @@ def gerar_curriculo(
     if roteador is None:
         return sem_ia(MotivoSemIa.SEM_ROTEADOR)
     prompt = montar_prompt(padroes, idioma, familia, vaga, blocos, inventario)
-    esquema = esquema_dos_slots(config)
-    versao = f"gerar_slots_v{prompt.versao}_{prompt.sha256[:12]}"
     try:
-        resposta = roteador.chamar(config.ia.tarefa, config.ia.tier, prompt.texto, esquema, versao)
+        slots, enfase = pedir_slots(
+            roteador,
+            prompt.texto,
+            versao_do_prompt(prompt.versao, prompt.texto),
+            blocos,
+            inventario,
+            config,
+        )
     except ModeloIndisponivel:
         return sem_ia(MotivoSemIa.MODELO_INDISPONIVEL)
     except OrcamentoEsgotado:
         return sem_ia(MotivoSemIa.SEM_ORCAMENTO)
-    except ValueError as erro:
-        raise RespostaDescartada(f"resposta recusada: {type(erro).__name__}") from erro
     try:
-        slots, enfase = slots_da_resposta(resposta, blocos, inventario, config)
         tex = _validado(idioma, slots, blocos, inventario, travado, config, validador)
     except SlotInvalido as erro:
         raise RespostaDescartada(str(erro)) from erro

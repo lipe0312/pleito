@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar coletar-alertas resumo conteudo-sincronizar conteudo-aprovar avaliar validador-dados validador-calibrar
+.PHONY: setup banco banco-status banco-baixo pgadmin-container migrar psql senha-banco senha-app senha-rotacionar testes testes-banco auditoria painel painel-ficticio lint viabilidade limpar gmail-autorizar conteudo gmail-organizar coletar-alertas resumo conteudo-sincronizar conteudo-aprovar avaliar validador-dados validador-calibrar gerar
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv || python3.11 -m venv .venv
@@ -103,6 +103,10 @@ validador-dados:
 
 validador-calibrar:
 	$(PY) -m src.avaliacao.calibracao
+
+gerar:
+	@test -n "$(ARGS)" || (echo 'use: make gerar ARGS="--vaga ID --familia F --idioma pt" ou ARGS="--vaga ID --refazer \"motivo\""' && exit 2)
+	$(PY) -m src.gerador $(ARGS)
 
 viabilidade:
 	$(PY) -m viabilidade.cli veredito
