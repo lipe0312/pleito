@@ -117,6 +117,14 @@ stateDiagram-v2
 
 `N` continua a contagem entre execuções: refação nunca apaga tentativa anterior. Reaproveitar o PDF da família quando a diferença é pequena (plano 4.4.2) ainda não existe.
 
+## Onde ver (F3.4)
+
+`/curriculos` no painel lista as famílias (`dados/familias/<nome>/`) e as versões por vaga
+(`dados/vagas/ID/`) com o selo "Funcional", o número de tentativas e o custo somado dos `meta.json`.
+O detalhe mostra o `cv.pdf`, o `validacao.json` e o diff contra a família de mesma família e idioma
+(ou contra a versão anterior, pelo `diff.json`). A pasta de famílias vem de
+`config/painel.yaml` (`curriculos.pasta_familias`); quem a preenche é o F3.2.
+
 ## Como conferir
 
 ```bash

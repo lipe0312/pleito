@@ -298,7 +298,7 @@ sequenceDiagram
 Teto diário ou mensal esgotado bloqueia a chamada sem fallback (ADR 0018). Cache de prompt
 desligado (ADR 0019).
 
-### R6. Requisição ao painel ⏳ F1.8 (#16) e F1.6 (#17)
+### R6. Requisição ao painel ⏳ F1.8 (#16) e F1.6 (#17); currículos e projetos F3.4 (#68)
 
 ```mermaid
 sequenceDiagram
@@ -322,6 +322,12 @@ sequenceDiagram
   P->>P: sem token, recusa
   P->>DB: grava aprovação e auditoria
 ```
+
+Currículos e projetos (F3.4) não passam pelo banco: o painel lê `dados/vagas/`, `dados/familias/` e
+`dados/conteudo/`. O PDF aparece num `iframe` do próprio painel (rota `/pdf/<tipo>/<id>`, CSP com
+`frame-src 'self'`, ADR 0026). Aprovar ou rejeitar uma sugestão do `make conteudo-sincronizar` é um
+`POST /sugestoes/<id>/aprovar` ou `/rejeitar` com token CSRF; sem token, 403 e nada muda. Aprovar
+grava quem e quando em `sugestoes.yaml` e o bloco ou a âncora; rejeitar exige motivo.
 
 ### R7. Resumo diário ⏳ F1.5 (#15), F1.7 (#18)
 

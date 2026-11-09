@@ -72,3 +72,108 @@ candidaturas:
     empresa: "Casa de Dados"
     estado: encerrada
     ultimo_evento: {tipo: encerrada, remetente: "selecao@casa-de-dados.example", dias_atras: 6, hora: "11:05"}
+curriculos:
+  - tipo: familia
+    id: backend_pt
+    titulo: "backend_arquitetura (pt)"
+    versoes:
+      - {versao: 1, tentativa: 1, familia: backend_arquitetura, idioma: pt, dias_atras: 3, hora: "10:15", motivo: null}
+      - {versao: 2, tentativa: 3, familia: backend_arquitetura, idioma: pt, dias_atras: 1, hora: "14:40", motivo: "mais foco em APIs"}
+    violacoes: []
+    tentativas: 3
+    custo_usd: "0.0420"
+    tem_pdf: true
+    projetos: [proj_api_exemplo, proj_painel_exemplo]
+    base_tipo: anterior
+    diff:
+      - nome: sobre
+        saiu: ["sobre / texto: Desenvolvedor com foco em sistemas."]
+        entrou: ["sobre / texto: Desenvolvedor com foco em APIs e sistemas distribuidos."]
+    texto_pdf: ["Curriculo ficticio", "Familia backend_arquitetura (pt)", "Dados de exemplo, sem pessoa real"]
+  - tipo: familia
+    id: dados_en
+    titulo: "dados_ml (en)"
+    versoes:
+      - {versao: 1, tentativa: 2, familia: dados_ml, idioma: en, dias_atras: 2, hora: "09:05", motivo: null}
+    violacoes:
+      - {codigo: V10, regra: tecnologia, nivel: bloqueia, detalhe: "Tecnologia fora do inventario: Fortran.", trecho: "Built models with \\tech{Fortran}", sugestao: "Troque por uma tecnologia do inventario."}
+    tentativas: 3
+    custo_usd: "0.0810"
+    tem_pdf: false
+    projetos: []
+    base_tipo: nenhuma
+  - tipo: vaga
+    id: "101"
+    titulo: "Vaga 101"
+    versoes:
+      - {versao: 1, tentativa: 1, familia: backend_arquitetura, idioma: pt, dias_atras: 0, hora: "08:20", motivo: null}
+    violacoes:
+      - {codigo: V20, regra: pontuacao, nivel: indicio, detalhe: "Bullet sem ponto final.", trecho: "Criou a API de pedidos", sugestao: "Termine o bullet com ponto."}
+      - {codigo: V10, regra: tecnologia, nivel: ok, detalhe: "Python tem evidencia forte no banco.", trecho: "", sugestao: ""}
+    tentativas: 1
+    custo_usd: "0.0140"
+    tem_pdf: true
+    projetos: [proj_api_exemplo]
+    base_tipo: familia
+    base_rotulo: "backend_arquitetura (pt)"
+    diff:
+      - nome: projetos
+        saiu: ["projetos / proj_painel_exemplo / bullet_1: Montou o painel local com HTMX."]
+        entrou: ["projetos / proj_api_exemplo / bullet_2: Criou a API de pedidos com testes."]
+    texto_pdf: ["Curriculo ficticio", "Versao para a vaga 101", "Dados de exemplo, sem pessoa real"]
+  - tipo: vaga
+    id: "102"
+    titulo: "<script>alert('vaga')</script>"
+    versoes:
+      - {versao: 1, tentativa: 2, familia: backend_arquitetura, idioma: pt, dias_atras: 0, hora: "07:45", motivo: null}
+    violacoes:
+      - {codigo: V13, regra: copia_da_vaga, nivel: bloqueia, detalhe: "<script>alert('detalhe')</script>", trecho: "<img src=x onerror=alert(1)>", sugestao: "<b>reescreva</b>"}
+    tentativas: 2
+    custo_usd: "0.0300"
+    tem_pdf: true
+    projetos: []
+    base_tipo: familia
+    base_rotulo: "backend_arquitetura (pt)"
+    texto_pdf: ["Curriculo ficticio", "Versao com bloqueio"]
+projetos:
+  - id: proj_api_exemplo
+    nome: "API de Pedidos (exemplo)"
+    descricao: "API REST de exemplo com testes automatizados."
+    link: "https://github.example/pessoa-ficticia/api-pedidos"
+    origem: github
+    techs: [Python, FastAPI, PostgreSQL]
+  - id: proj_painel_exemplo
+    nome: "<script>alert('projeto')</script>"
+    descricao: "<img src=x onerror=alert(1)> README com marcacao de ataque."
+    link: "https://portfolio.example/painel"
+    origem: portfolio
+    techs: []
+  - id: proj_guia_exemplo
+    nome: "Projeto do guia (exemplo)"
+    descricao: ""
+    link: ""
+    origem: guia
+    techs: [Java]
+sugestoes:
+  - id: sug_aaaaaaaaaaaa
+    tipo: projeto_novo
+    origem: github
+    nome: "Robo de Estudos (exemplo)"
+    url: "https://github.example/pessoa-ficticia/robo-estudos"
+    descricao: "Robo de exemplo para estudo de visao computacional."
+    evidencias: ["linguagem:Python", "topic:opencv"]
+  - id: sug_bbbbbbbbbbbb
+    tipo: tecnologia_nova
+    origem: github
+    nome: "API de Pedidos (exemplo)"
+    tech: Docker
+    url: "https://github.example/pessoa-ficticia/api-pedidos"
+    descricao: ""
+    evidencias: ["topic:docker"]
+  - id: sug_cccccccccccc
+    tipo: projeto_novo
+    origem: portfolio
+    nome: "<script>alert('sugestao')</script>"
+    url: "https://portfolio.example/<script>"
+    descricao: "<b>descricao em negrito</b>"
+    evidencias: ["pagina:<script>"]

@@ -22,6 +22,13 @@ csp:
   form-action: "'self'"
   base-uri: "'none'"
   frame-ancestors: "'none'"
+  frame-src: "'self'"
+pdf:
+  prefixo_rota: /pdf/
+  csp:
+    frame-ancestors: "'self'"
+  cabecalhos:
+    X-Frame-Options: SAMEORIGIN
 cabecalhos:
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
@@ -38,10 +45,49 @@ limite_eventos_dia: 100
 limite_pendencias: 50
 limite_candidaturas: 300
 rota_inicial: /hoje
+htmx:
+  includeIndicatorStyles: false
+  allowEval: false
+  responseHandling:
+    - {code: "204", swap: false}
+    - {code: "[23]..", swap: true}
+    - {code: "^(404|409|422)$", swap: true, error: false}
+    - {code: "[45]..", swap: false, error: true}
+status_da_decisao:
+  motivo_vazio: 422
+  motivo_longo: 422
+  invalida: 422
+  ja_decidida: 409
+  projeto_nao_aprovado: 409
+  inexistente: 404
+corpo_max_bytes: 4096
+motivo_max_chars: 500
+aprovador: Filipe
+
+curriculos:
+  pasta_familias: familias
+  padrao_id: '^[A-Za-z0-9_-]+$'
+  json_max_bytes: 1000000
+  pdf_max_bytes: 5000000
+  niveis_que_negam_selo: [bloqueia]
+  casas_custo: 4
+  rotulo_vaga: "Vaga {id}"
+  rota: /curriculos
+  limite: 300
+  niveis_de_selo: {bloqueia: erro, indicio: atencao, ok: ok}
+  sinais_do_diff: {saiu: "−", entrou: "+"}
+  classe_da_situacao:
+    funcional: ok
+    com_bloqueio: erro
+    sem_pdf: atencao
+    sem_validacao: atencao
+    sem_versao: neutro
 
 navegacao:
   - {chave: hoje, rota: /hoje, rotulo: Hoje}
   - {chave: candidaturas, rota: /candidaturas, rotulo: Candidaturas}
+  - {chave: curriculos, rota: /curriculos, rotulo: Currículos}
+  - {chave: projetos, rota: /projetos, rotulo: Projetos}
 
 etapas_candidatura:
   - {estado: oferta, rotulo: Oferta}
@@ -85,3 +131,92 @@ textos:
   erro:
     titulo: Não consegui ler o banco
     corpo: "Confira se o Postgres está no ar (make banco-status) e recarregue a página."
+  erro_dados:
+    titulo: Não consegui ler os arquivos de dados
+    corpo: "Um arquivo em dados/ está ilegível ou fora do formato. Rode make gerar ou make conteudo-sincronizar de novo e recarregue a página."
+  curriculos:
+    titulo: Currículos
+    familias: Famílias
+    vagas: Versões por vaga
+    sem_familias: "Nenhuma família em dados/familias ainda. As oito variantes chegam quando a geração das famílias rodar."
+    sem_vagas: "Nenhum currículo gerado para vaga. Gere um com make gerar VAGA=ID FAMILIA=F IDIOMA=pt."
+    funcional: Funcional
+    com_bloqueio: Com bloqueio
+    sem_validacao: Sem validação
+    sem_pdf: Sem PDF
+    tentativa_um: "1 tentativa"
+    tentativa_varias: "{n} tentativas"
+    custo: "US$ {valor}"
+    sem_versao: Sem versão publicada
+    abrir: Abrir
+  curriculo_nao_encontrado:
+    titulo: Currículo não encontrado
+    corpo: "Esse currículo não existe em dados/. Volte para a lista e escolha um."
+  curriculo:
+    pdf: PDF
+    titulo_pdf: "Pré-visualização do PDF de {titulo}"
+    abrir_pdf: Abrir o PDF em outra aba
+    sem_pdf: "Esta versão não tem PDF. O laço só publica o PDF depois de a fonte passar no validador."
+    regras: Regras do validador
+    sem_violacoes: Nenhuma regra acusou problema na última validação.
+    sem_validacao: "Sem validação gravada para esta versão. Rode make gerar de novo."
+    nivel_bloqueia: Bloqueia
+    nivel_indicio: Indício
+    nivel_ok: Salvo pela evidência
+    sugestao: Sugestão
+    diff: O que mudou
+    base_familia: "Comparado com a família {base}."
+    base_anterior: "Comparado com a versão anterior."
+    base_nenhuma: "Primeira versão: ainda não há com o que comparar."
+    sem_mudanca: Nenhuma diferença nos slots.
+    saiu: Saiu
+    entrou: Entrou
+    versoes: Versões publicadas
+    sem_versoes: Nada publicado ainda.
+    versao: "v{versao}, tentativa {tentativa}"
+    sem_motivo: Sem pedido de refação
+    voltar: Voltar para os currículos
+    sem_data: sem data
+  projetos:
+    titulo: Projetos
+    sugestoes: Sugestões pendentes
+    blocos: Projetos nos blocos
+    sem_sugestoes: "Nenhuma sugestão pendente. Rode make conteudo-sincronizar para buscar projetos novos no GitHub e no portfólio."
+    sem_projetos: "Nenhum projeto nos blocos. Rode make conteudo para montar os blocos do guia."
+    origem_github: GitHub
+    origem_portfolio: Portfólio
+    origem_guia: Guia
+    tipo_projeto_novo: Projeto novo
+    tipo_tecnologia_nova: Tecnologia nova
+    tipo_projeto_arquivado: Projeto arquivado
+    tipo_projeto_sumido: Projeto sumido
+    efeito_projeto_novo: "Aprovar cria o bloco do projeto em dados/conteudo/blocos.yaml."
+    efeito_tecnologia_nova: "Aprovar grava a âncora da tecnologia em dados/conteudo/inventario.yaml."
+    efeito_projeto_arquivado: "Aprovar só registra que você viu."
+    efeito_projeto_sumido: "Aprovar só registra que você viu."
+    efeito_rejeitar: "Rejeitar cala esta sugestão: ela não volta."
+    aprovar: Aprovar
+    rejeitar: Rejeitar com motivo
+    motivo: Motivo da rejeição
+    evidencias: Evidências
+    techs: Techs ancoradas
+    sem_techs: Nenhuma tech ancorada neste projeto.
+    usado_em: Usado em
+    nao_usado: Nenhuma família nem versão usa este projeto ainda.
+    sem_descricao: Sem descrição
+    selo_aprovada: Aprovada
+    selo_rejeitada: Rejeitada
+    aprovada: "Aprovada por {por} em {quando}."
+    rejeitada: "Rejeitada por {por} em {quando}: {motivo}"
+    rotulos_de_erro:
+      inexistente: Não encontrada
+      ja_decidida: Já decidida
+      projeto_nao_aprovado: Projeto pendente
+      invalida: Não registrada
+    erros:
+      motivo_vazio: "Escreva o motivo da rejeição antes de rejeitar."
+      motivo_longo: "O motivo passou de {max} caracteres. Encurte e envie de novo."
+      inexistente: "Esta sugestão não existe mais. Recarregue a página."
+      ja_decidida: "Esta sugestão já foi decidida. Recarregue a página."
+      projeto_nao_aprovado: "Aprove antes o projeto desta tecnologia."
+      invalida: "Não consegui registrar a decisão. Confira os arquivos em dados/conteudo e tente de novo."

@@ -13,7 +13,8 @@ O inventário e os blocos do currículo (ADR 0021) nascem do guia. Este fluxo (i
 - `make conteudo-aprovar ARGS="--id sug_xxx --por Filipe"`: aprova e grava.
 - `make conteudo-aprovar ARGS="--id sug_xxx --por Filipe --rejeitar --motivo 'projeto de disciplina'"`.
 
-A tela de aprovação chega no F3.4; até lá é este comando.
+A tela `/projetos` do painel (F3.4) faz o mesmo por botão: aprovar grava quem e quando, rejeitar
+exige motivo, os dois por `POST` com token CSRF. O comando continua valendo.
 
 ## De onde vem cada sugestão
 

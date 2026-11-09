@@ -151,6 +151,15 @@ Legenda: [x] concluído e verificado, [ ] pendente.
   `dados/vagas/ID/tentativas/N/` com `meta.json` (modelo, prompt, custo, regras); passos 5 e 6 do
   corte ainda recusados por V17 (allowlist do preâmbulo) e reaproveitar o PDF da família fica para
   depois
+- [x] F3.4, `/curriculos` e `/projetos` no painel (`src/painel/curriculos.py`, `conteudo.py`,
+  `telas_curriculos.py`, `telas_projetos.py`): famílias e versões por vaga com selo "Funcional" só
+  quando há PDF e nenhuma regra bloqueia na última validação, tentativas e custo do F3.3; detalhe
+  com PDF embutido em `iframe` same-origin (CSP só ganha `frame-src 'self'`, e só a rota
+  `/pdf/...` aceita ser embutida, ADR 0026), violações e diff contra a família ou a versão
+  anterior; projetos dos blocos com techs ancoradas, famílias e versões que os usam e origem;
+  sugestões do F2.7 com aprovar e rejeitar por POST com CSRF (aprovar grava quem e quando,
+  rejeitar exige motivo); `make painel-ficticio` com currículos e projetos fictícios e PDF gerado
+  em memória; diff e aprovação por vaga ficam no F5.2
 - [x] F1.8, painel recusa Host fora de `config/painel.yaml` (DNS rebinding), põe CSP estrita e
   cabeçalhos de segurança em toda resposta, exige token CSRF por header em toda ação que escreve,
   recusa websocket e escapa texto externo (ADR 0023)

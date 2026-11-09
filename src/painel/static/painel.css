@@ -55,7 +55,8 @@ body {
 .topo {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
   padding: 0 1rem;
   background: var(--superficie);
   border-bottom: 1px solid var(--linha);
@@ -68,6 +69,7 @@ body {
 
 nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
 }
 
@@ -252,9 +254,175 @@ section .item:has(.ultimo) {
   border-radius: 6px;
 }
 
+a {
+  color: var(--marca);
+}
+
+.item--duas {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.selos--linha {
+  justify-content: flex-start;
+  margin: 0.5rem 0;
+}
+
+.voltar {
+  margin: 0.75rem 0 0;
+}
+
+.corpo .rotulo {
+  font-size: 0.8125rem;
+}
+
+.trecho {
+  margin: 0.25rem 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--neutro-fundo);
+  border-radius: 6px;
+  font: 0.8125rem/1.4 ui-monospace, Menlo, monospace;
+}
+
+.pdf {
+  display: block;
+  width: 100%;
+  height: 80vh;
+  min-height: 24rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+}
+
+.diff {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diff__slot {
+  margin-bottom: 0.75rem;
+}
+
+.diff__nome {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+}
+
+.diff__lados {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.diff__lado {
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  list-style: none;
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+.diff__lado--saiu {
+  background: var(--erro-fundo);
+  color: var(--erro);
+}
+
+.diff__lado--entrou {
+  background: var(--ok-fundo);
+  color: var(--ok);
+}
+
+.sinal {
+  display: inline-block;
+  width: 1ch;
+  font-weight: 700;
+}
+
+.efeito {
+  margin: 0.5rem 0 0;
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+}
+
+.decisao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 14rem;
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+}
+
+.campo input {
+  min-height: 36px;
+  padding: 0 0.5rem;
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.botao {
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--marca);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--marca);
+  font: inherit;
+  cursor: pointer;
+}
+
+.botao--primario {
+  background: var(--marca);
+  color: var(--fundo);
+}
+
+.botao--perigo {
+  border-color: var(--erro);
+  color: var(--erro);
+}
+
+.botao:focus-visible,
+.campo input:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.erro-form {
+  margin: 0.5rem 0 0;
+  color: var(--erro);
+}
+
 @media (max-width: 600px) {
+  .diff__lados {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  nav a {
+    padding: 0 0.5rem;
+  }
+
   .item {
     grid-template-columns: 3rem minmax(0, 1fr);
+  }
+
+  .item.item--duas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .item--duas .selos {
+    grid-column: 1;
   }
 
   .item--data {

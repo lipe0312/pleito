@@ -1,0 +1,21 @@
+<li class="item item--duas item--atencao" id="sugestao-{{id}}">
+  <div class="corpo">
+    <p class="titulo">{{titulo}}</p>
+    <p class="detalhe">{{descricao}}</p>
+    <p class="meta">{{url}}</p>
+    <p class="meta"><span class="rotulo">{{rotulo_evidencias}}</span> {{evidencias}}</p>
+    <p class="efeito">{{efeito}}</p>
+    <form class="decisao" hx-post="{{rota_aprovar}}" hx-target="closest li" hx-swap="outerHTML">
+      <button class="botao botao--primario" type="submit">{{aprovar}}</button>
+    </form>
+    <form class="decisao" hx-post="{{rota_rejeitar}}" hx-target="closest li" hx-swap="outerHTML">
+      <label class="campo">{{rotulo_motivo}}
+        <input name="motivo" type="text" required maxlength="{{motivo_max}}" autocomplete="off">
+      </label>
+      <button class="botao botao--perigo" type="submit">{{rejeitar}}</button>
+    </form>
+    {{erro}}
+    <p class="efeito">{{efeito_rejeitar}}</p>
+  </div>
+  <div class="selos">{{selos}}</div>
+</li>
