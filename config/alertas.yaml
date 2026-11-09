@@ -69,6 +69,7 @@ plataformas:
   gupy:
     fonte: gupy
     formato: trio_antes_do_link
+    exige_assunto_alerta: true
     pais_padrao: BR
     caixas_alerta:
       - no-reply
@@ -81,6 +82,7 @@ plataformas:
     assunto_alerta:
       - novas vagas
       - nova vaga
+      - vaga nova
       - vagas para voce
     assunto_nunca_vaga:
       - novidades
@@ -120,6 +122,7 @@ plataformas:
   solides:
     fonte: solides
     formato: bloco_rotulado
+    exige_assunto_alerta: true
     pais_padrao: BR
     caixas_alerta:
       - system
@@ -132,6 +135,7 @@ plataformas:
     assunto_alerta:
       - novas vagas
       - nova vaga
+      - vaga nova
       - vagas para o seu perfil
     assunto_nunca_vaga:
       - novidades

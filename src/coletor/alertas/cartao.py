@@ -66,18 +66,19 @@ class Acumulador:
     def __init__(self, plataforma: PlataformaAlertas) -> None:
         self.plataforma = plataforma
         self.completos: list[Cartao] = []
-        self.descartados: list[CartaoDescartado] = []
+        self.descartados: dict[str, CartaoDescartado] = {}
         self.vistos: set[str] = set()
 
     def adicionar(self, achado: re.Match[str], campos: dict) -> None:
         id_vaga = achado.group("id")
         if id_vaga in self.vistos:
             return
-        self.vistos.add(id_vaga)
         motivo = _motivo_de_descarte(campos, self.plataforma)
         if motivo:
-            self.descartados.append(CartaoDescartado(id_vaga, motivo))
+            self.descartados.setdefault(id_vaga, CartaoDescartado(id_vaga, motivo))
             return
+        self.vistos.add(id_vaga)
+        self.descartados.pop(id_vaga, None)
         self.completos.append(
             Cartao(
                 id_vaga,
@@ -89,7 +90,7 @@ class Acumulador:
         )
 
     def resultado(self) -> ResultadoCartoes:
-        return ResultadoCartoes(tuple(self.completos), tuple(self.descartados))
+        return ResultadoCartoes(tuple(self.completos), tuple(self.descartados.values()))
 
 
 def vaga_do_cartao(

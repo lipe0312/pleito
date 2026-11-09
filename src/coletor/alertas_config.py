@@ -34,6 +34,7 @@ class PlataformaAlertas:
     cartao_minimo: tuple[str, ...]
     limites_campos: dict[str, int]
     rotulos_campos: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    exige_assunto_alerta: bool = False
 
     def url_da_vaga(self, achado: re.Match[str]) -> str:
         return self.link_canonico.format(**achado.groupdict())
@@ -83,6 +84,7 @@ def _plataforma(nome: str, dados: dict) -> PlataformaAlertas:
         cartao_campos=tuple(dados["cartao_campos"]),
         cartao_minimo=tuple(dados["cartao_minimo"]),
         limites_campos={nome: int(valor) for nome, valor in dados["limites_campos"].items()},
+        exige_assunto_alerta=bool(dados.get("exige_assunto_alerta", False)),
         rotulos_campos={
             campo: _textos(rotulos) for campo, rotulos in dados.get("rotulos_campos", {}).items()
         },
@@ -94,6 +96,8 @@ def _plataforma(nome: str, dados: dict) -> PlataformaAlertas:
         raise AlertasMalConfigurado(f"{nome}: todo grupo de link_vaga precisa de nome")
     if set(re.findall(r"{(\w+)}", plataforma.link_canonico)) - grupos:
         raise AlertasMalConfigurado(f"{nome}: link_canonico cita campo fora de link_vaga")
+    if plataforma.exige_assunto_alerta and not plataforma.assunto_alerta:
+        raise AlertasMalConfigurado(f"{nome}: exige_assunto_alerta sem assunto_alerta")
     if not plataforma.formato:
         raise AlertasMalConfigurado(f"{nome}: formato vazio")
     if plataforma.formato == FORMATO_ROTULADO and not set(plataforma.cartao_campos) <= set(

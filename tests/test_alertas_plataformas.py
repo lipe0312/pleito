@@ -138,7 +138,8 @@ def test_sem_o_padrao_de_etapa_o_retorno_da_plataforma_viraria_alerta(plataforma
     c = caso(nome, plataforma)
     config = ALERTAS.plataformas[plataforma]
     sem_etapas = replace(regras(), etapas={})
-    assert classificar_alerta(c.email, config, sem_etapas).tipo is TipoAlerta.ALERTA_VAGA
+    aberta = replace(config, exige_assunto_alerta=False)
+    assert classificar_alerta(c.email, aberta, sem_etapas).tipo is TipoAlerta.ALERTA_VAGA
     assert classificar_alerta(c.email, config).tipo is TipoAlerta.RETORNO
 
 
@@ -147,7 +148,7 @@ def test_sem_o_padrao_de_etapa_o_retorno_da_plataforma_viraria_alerta(plataforma
 def test_sem_assunto_nunca_vaga_o_marketing_da_plataforma_viraria_alerta(plataforma, nome):
     c = caso(nome, plataforma)
     config = ALERTAS.plataformas[plataforma]
-    sem_regra = replace(config, assunto_nunca_vaga=())
+    sem_regra = replace(config, assunto_nunca_vaga=(), exige_assunto_alerta=False)
     assert classificar_alerta(c.email, sem_regra).tipo is TipoAlerta.ALERTA_VAGA
     resultado = classificar_alerta(c.email, config)
     assert resultado.tipo is TipoAlerta.OUTRO
@@ -408,3 +409,92 @@ def test_config_recusa_formato_sem_nome():
 def test_config_recusa_bloco_rotulado_sem_rotulos_de_todos_os_campos():
     with pytest.raises(AlertasMalConfigurado):
         montar(_com("solides", rotulos_campos={"titulo": ["vaga"]}))
+
+
+@pytest.mark.parametrize("plataforma", PLATAFORMAS)
+def test_aviso_de_processo_com_vaga_sugerida_no_fim_nao_vira_vaga(plataforma):
+    c = caso("aviso_de_processo_com_vaga_sugerida", plataforma)
+    config = ALERTAS.plataformas[plataforma]
+    assert len(extrair_cartoes(c.corpo, config, LIMITE).completos) == 1
+    resultado = classificar_alerta(c.email, config)
+    assert resultado.tipo is TipoAlerta.OUTRO
+    assert resultado.regra is RegraGatilho.RESTO
+    assert resultado.cartoes == ()
+
+
+@pytest.mark.parametrize("plataforma", PLATAFORMAS)
+def test_sem_exigir_assunto_de_alerta_o_aviso_de_processo_viraria_vaga(plataforma):
+    c = caso("aviso_de_processo_com_vaga_sugerida", plataforma)
+    config = replace(ALERTAS.plataformas[plataforma], exige_assunto_alerta=False)
+    assert classificar_alerta(c.email, config).tipo is TipoAlerta.ALERTA_VAGA
+
+
+def test_so_o_linkedin_dispensa_o_assunto_de_alerta():
+    assert {n: p.exige_assunto_alerta for n, p in ALERTAS.plataformas.items()} == {
+        "linkedin": False,
+        "gupy": True,
+        "solides": True,
+    }
+
+
+@pytest.mark.parametrize("plataforma", PLATAFORMAS)
+def test_alerta_sem_vaga_nova_continua_alerta_vazio_com_assunto_exigido(plataforma):
+    c = caso("alerta_sem_vaga_nova", plataforma)
+    assert classificar_alerta(c.email, ALERTAS.plataformas[plataforma]).tipo is (
+        TipoAlerta.ALERTA_VAZIO
+    )
+
+
+def test_link_incompleto_antes_do_cartao_completo_do_mesmo_id_nao_perde_a_vaga_na_gupy():
+    config = ALERTAS.plataformas["gupy"]
+    link = "Ver vaga: https://empresaficticia-alfa.gupy.io/jobs/2000000001"
+    corpo = f"Suas vagas\n{link}\n\nEstagio X\nEmpresa Y\nRecife - PE\n{link}\n"
+    resultado = extrair_cartoes(corpo, config, LIMITE)
+    assert [c.id_vaga for c in resultado.completos] == ["2000000001"]
+    assert resultado.completos[0].titulo == "Estagio X"
+    assert resultado.descartados == ()
+
+
+def test_link_incompleto_antes_do_cartao_completo_do_mesmo_id_nao_perde_a_vaga_na_solides():
+    config = ALERTAS.plataformas["solides"]
+    link = "Ver vaga: https://vagas.solides.com.br/vaga/3000000001"
+    corpo = f"{link}\n\nVaga: Estagio X\nEmpresa: Empresa Y\nLocal: Recife\n{link}\n"
+    resultado = extrair_cartoes(corpo, config, LIMITE)
+    assert [c.id_vaga for c in resultado.completos] == ["3000000001"]
+    assert resultado.descartados == ()
+
+
+def test_id_so_incompleto_continua_descartado_uma_vez():
+    config = ALERTAS.plataformas["solides"]
+    link = "Ver vaga: https://vagas.solides.com.br/vaga/3000000001"
+    resultado = extrair_cartoes(f"{link}\n{link}\n", config, LIMITE)
+    assert resultado.completos == ()
+    assert [d.id_vaga for d in resultado.descartados] == ["3000000001"]
+
+
+def test_dois_cartoes_colados_com_o_segundo_sem_local_descarta_o_segundo_sem_trocar_campos():
+    config = ALERTAS.plataformas["gupy"]
+    corpo = (
+        "Estagio A\nEmpresa A\nRecife - PE\n"
+        "Ver vaga: https://a.gupy.io/jobs/1\n"
+        "Estagio B\nEmpresa B\n"
+        "Ver vaga: https://b.gupy.io/jobs/2\n"
+    )
+    resultado = extrair_cartoes(corpo, config, LIMITE)
+    assert [(c.id_vaga, c.titulo, c.empresa, c.local) for c in resultado.completos] == [
+        ("1", "Estagio A", "Empresa A", "Recife - PE")
+    ]
+    assert [(d.id_vaga, d.motivo) for d in resultado.descartados] == [("2", "local_ausente")]
+
+
+def test_cartao_colado_nao_usa_campos_do_cartao_anterior_para_completar_o_seguinte():
+    config = ALERTAS.plataformas["gupy"]
+    corpo = (
+        "Estagio A\nEmpresa A\nRecife - PE\n"
+        "Ver vaga: https://a.gupy.io/jobs/1\n"
+        "Empresa B\n"
+        "Ver vaga: https://b.gupy.io/jobs/2\n"
+    )
+    resultado = extrair_cartoes(corpo, config, LIMITE)
+    assert [c.id_vaga for c in resultado.completos] == ["1"]
+    assert [d.id_vaga for d in resultado.descartados] == ["2"]

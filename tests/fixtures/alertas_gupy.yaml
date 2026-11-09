@@ -158,3 +158,11 @@ casos:
     corpo: "Suas vagas\n\n--CARTOES--\n"
     cartoes: [cartao_sem_local]
     esperado: {tipo: alerta_vazio, regra: 6_alerta_sem_cartao, completos: 0, descartados: 1, motivos: [local_ausente]}
+
+  - nome: aviso_de_processo_com_vaga_sugerida
+    remetente: "Gupy <no-reply@gupy.com.br>"
+    assunto: "Atualizacao do seu processo"
+    autenticacao: "mx.exemplo.com; dmarc=pass"
+    corpo: "Seu processo na Empresa Ficticia teve uma atualizacao. Veja o andamento no portal.\n\nVagas sugeridas\n\n--CARTOES--\n"
+    cartoes: [cartao_a]
+    esperado: {tipo: outro, regra: 7_resto, completos: 0, descartados: 0}

@@ -81,13 +81,14 @@ def classificar_alerta(
     nome = plataforma.nome
     assunto = normalizar(email.assunto)
     caixa = caixa_de(email.remetente)
+    assunto_de_alerta = _contem(assunto, plataforma.assunto_alerta)
 
     def decidir(tipo: TipoAlerta, regra: RegraGatilho, **resto) -> ResultadoAlerta:
         return ResultadoAlerta(
             tipo,
             regra,
             nome,
-            assunto_de_alerta=_contem(assunto, plataforma.assunto_alerta),
+            assunto_de_alerta=assunto_de_alerta,
             **resto,
         )
 
@@ -104,7 +105,8 @@ def classificar_alerta(
         return decidir(TipoAlerta.RETORNO, RegraGatilho.ETAPA_RETORNO)
     if _contem(assunto, plataforma.assunto_nunca_vaga):
         return decidir(TipoAlerta.OUTRO, RegraGatilho.ASSUNTO_NUNCA_VAGA)
-    if caixa in plataforma.caixas_alerta:
+    alerta_permitido = assunto_de_alerta or not plataforma.exige_assunto_alerta
+    if caixa in plataforma.caixas_alerta and alerta_permitido:
         achados = extrair_cartoes(email.corpo, plataforma, limite)
         if achados.completos:
             return decidir(

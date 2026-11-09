@@ -64,7 +64,9 @@ Observações:
   assunto, mesmo escrito `dmarc=pass`, nunca conta.
 - A regra 2 vem antes da etapa: mensagem de recrutador que cita entrevista continua
   `mensagem_recrutador`.
-- `assunto_alerta` não decide nada. É gravado em cada email lido (`assunto_de_alerta`) para calibrar
+- `assunto_alerta` não decide nada no LinkedIn. Na Gupy e na Solides (`exige_assunto_alerta: true`) a
+  regra 5 e a 6 só valem com assunto de alerta; sem ele o email cai na regra 7 (`outro`), para que um
+  aviso de processo com vaga sugerida no fim nunca vire vaga. Em todas é gravado em cada email lido (`assunto_de_alerta`) para calibrar
   a lista sem ler o email.
 - Risco conhecido: a regra 3 usa os padrões do F1.2. Um alerta cujo texto contenha, por exemplo,
   "outros candidatos" vira `retorno` e não gera vaga. A coluna `regra` do registro mostra isso.
@@ -90,6 +92,10 @@ canônica, sem descrição.
 |---|---|---|
 | `trio_antes_do_link` | as três linhas imediatamente antes da linha do link, na ordem de `cartao_campos` | LinkedIn, Gupy |
 | `bloco_rotulado` | linhas `Rótulo: valor` (`rotulos_campos`) desde o último separador ou link, fechadas pela linha do link | Solides |
+
+No `trio_antes_do_link` o cartão só usa as linhas depois do link anterior; se sobram menos linhas que
+campos, os campos entram na ordem e o que falta vira descarte. Um id só conta como visto quando um
+cartão completo é aceito, então um link incompleto antes do cartão completo não perde a vaga.
 
 Nos dois, o campo que falta descarta o cartão com `<campo>_ausente`; o extrator nunca completa campo com
 o cartão vizinho nem devolve vaga incompleta. Sem cartão completo o gatilho devolve `alerta_vazio`.
