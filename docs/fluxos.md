@@ -121,7 +121,7 @@ flowchart TD
 
 | Credencial ausente | O que continua | O que espera |
 | --- | --- | --- |
-| refresh token do Gmail (M1) | organizador, eventos, resumo, alertas do LinkedIn nos testes | rodar `make gmail-organizar` de verdade |
+| refresh token do Gmail (M1) | organizador, eventos, resumo, alertas do LinkedIn nos testes | rodar `make gmail-organizar` e `make coletar-alertas` de verdade |
 | chave da OpenAI ou tier desligado | coleta, filtros, validador, gerador com blocos base, painel | pré-nota, nota final, chat |
 | banco parado | `make testes` e lint | `make testes-banco` (Gate B pulado) e o painel com dado |
 | token do submit real (M4) | aplicador inteiro em `dry_run` | a prova da página de confirmação |
@@ -234,6 +234,37 @@ sequenceDiagram
     C->>DB: INSERT vagas e empresas, só parâmetros
   end
 ```
+
+### R4b. Alertas de vaga do LinkedIn por email (`make coletar-alertas`) ✅ F4.3
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant A as src/coletor/alertas_coleta.py
+  participant C as dados/estado/alertas_cursor.json
+  participant G as gmail.googleapis.com
+  participant R as dados/estado/alertas_lidos.jsonl
+  participant DB as Postgres papel do coletor
+  A->>C: lê historyId e última leitura
+  alt dentro do alertas_intervalo_min
+    A-->>A: adia, sem rede
+  else hora de ler
+    A->>G: GET history desde o historyId, ou a consulta inicial do config/alertas.yaml
+    loop cada mensagem nova ainda fora do registro
+      A->>G: GET messages/id
+      A->>A: ignora o que não cita a plataforma
+      A->>A: gatilho de 7 regras em ordem fixa
+      Note over A: 1 suspeito, 2 caixa nunca vaga, 3 retorno, 4 assunto nunca vaga, 5 alerta com cartão, 6 alerta vazio, 7 outro
+    end
+    A->>DB: INSERT das vagas de alerta_vaga, uma por cartão completo
+    A->>R: uma linha por email com tipo, regra e contagem de cartões
+    A->>C: grava o historyId novo
+  end
+  Note over A,G: só GET, nenhum rótulo, arquivamento ou acesso ao site: o link do email nunca é aberto
+```
+
+Falha ao gravar as vagas deixa registro e cursor como estavam, e a rodada seguinte repete sem
+duplicar. Tabela do gatilho, tipos e exemplos em `docs/alertas-email.md`.
 
 ### R5. Chamada ao roteador de LLM ✅ roteador, uso em F3.1 e na pontuação final da F4.2, 👤 M7 e M8
 
